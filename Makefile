@@ -26,6 +26,10 @@ test-e2e:
 	@echo "Stopping test database..."
 	docker compose -f docker-compose.test.yml down
 
+test-e2e-ci:
+	@echo "Running e2e tests in CI environment..."
+	go test ./tests/e2e/... -v
+
 # Сборка
 build: build-server build-playground
 
@@ -84,6 +88,7 @@ help:
 	@echo "  test              - Run all tests (unit + e2e)"
 	@echo "  test-unit         - Run unit tests only"
 	@echo "  test-e2e          - Run e2e tests only"
+	@echo "  test-e2e-ci       - Run e2e tests in CI environment"
 	@echo "  build             - Build all binaries"
 	@echo "  build-server      - Build server binary"
 	@echo "  build-playground  - Build playground binary"

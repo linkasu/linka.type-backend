@@ -28,6 +28,9 @@ type TestData struct {
 
 // setupTestServer создает тестовый сервер
 func setupTestServer() *gin.Engine {
+	// Устанавливаем переменные окружения для тестов
+	setupTestEnvironmentNoT()
+	
 	// Инициализируем базу данных
 	if err := db.InitDB(); err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
