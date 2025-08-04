@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 )
@@ -35,13 +34,6 @@ func setupTestEnvironmentNoT() {
 	if os.Getenv("POSTGRES_DB") == "" {
 		os.Setenv("POSTGRES_DB", "linkatype_test")
 	}
-	
-	// Debug: print environment variables
-	fmt.Printf("Database connection settings:\n")
-	fmt.Printf("  POSTGRES_HOST: %s\n", os.Getenv("POSTGRES_HOST"))
-	fmt.Printf("  POSTGRES_PORT: %s\n", os.Getenv("POSTGRES_PORT"))
-	fmt.Printf("  POSTGRES_USER: %s\n", os.Getenv("POSTGRES_USER"))
-	fmt.Printf("  POSTGRES_DB: %s\n", os.Getenv("POSTGRES_DB"))
 }
 
 // TestMain настраивает тестовую среду перед запуском тестов

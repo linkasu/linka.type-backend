@@ -20,9 +20,6 @@ func InitDB() error {
 	password := getEnv("POSTGRES_PASSWORD", "postgres")
 	dbname := getEnv("POSTGRES_DB", "linkatype")
 
-	// Debug: print connection info (without password)
-	log.Printf("Connecting to database: host=%s port=%s user=%s dbname=%s", host, port, user, dbname)
-
 	// Use Docker environment variables from docker-compose.yml
 	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		host, port, user, password, dbname)
