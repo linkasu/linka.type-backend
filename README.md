@@ -1,11 +1,13 @@
-# Linka Type Backend - PostgreSQL CRUD Implementation
+# Linka Type Backend - PostgreSQL CRUD Implementation with JWT API
 
-This project implements a complete CRUD (Create, Read, Update, Delete) system for PostgreSQL database using Go with Firebase data migration capabilities.
+This project implements a complete CRUD (Create, Read, Update, Delete) system for PostgreSQL database using Go with Firebase data migration capabilities and a RESTful API with JWT authentication.
 
 ## Features
 
 - **PostgreSQL Database**: Uses PostgreSQL 17 with Docker
 - **Complete CRUD Operations**: Full CRUD support for Users, Categories, and Statements
+- **RESTful API**: Gin-based HTTP API with JWT authentication
+- **JWT Authentication**: Secure token-based authentication system
 - **Firebase Migration System**: Robust migration system from Firebase to PostgreSQL
 - **Incremental Import**: Supports multiple runs without data duplication
 - **Migration Tracking**: Comprehensive logging and tracking of migration progress
@@ -259,14 +261,92 @@ exists, err := statementCRUD.StatementExists(statementID)
 
 1. Build and start the services:
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-2. The application will automatically:
-   - Start PostgreSQL database
-   - Create necessary tables
-   - Run CRUD examples
-   - Display results in the console
+2. The application will start:
+   - **Playground** (port 8080): Data migration and CRUD examples
+   - **API Server** (port 8081): RESTful API with JWT authentication
+   - **PostgreSQL** database
+
+### API Server
+
+The API server provides a complete RESTful interface:
+
+- **Base URL**: `http://localhost:8081/api`
+- **Authentication**: JWT tokens required for protected endpoints
+- **Documentation**: See `docs/api.md` for complete API documentation
+
+#### Quick Start with API
+
+1. Register a new user:
+```bash
+curl -X POST http://localhost:8081/api/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "password123"}'
+```
+
+2. Login to get a token:
+```bash
+curl -X POST http://localhost:8081/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "password123"}'
+```
+
+3. Use the token for authenticated requests:
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN" \
+  http://localhost:8081/api/categories
+```
+
+### Manual Setup
+
+1. Install dependencies:
+```bash
+go mod download
+```
+
+2. Set up PostgreSQL database with the schema
+
+3. Set environment variables or use defaults
+
+4. Run the playground (data migration):
+```bash
+go run cmd/playground/main.go
+```
+
+5. Run the API server:
+```bash
+go run cmd/server/main.go
+```
+
+## Testing
+
+The project includes comprehensive testing:
+
+### Unit Tests
+```bash
+make test-unit
+```
+Tests individual components without external dependencies.
+
+### Integration Tests
+```bash
+make test-integration
+```
+Tests API endpoints and JWT functionality without database.
+
+### E2E Tests
+```bash
+make test-e2e
+```
+Full end-to-end tests with database (requires Docker).
+
+### All Tests
+```bash
+make test
+```
+Runs all tests (unit + integration + e2e).
 
 ### Manual Setup
 
@@ -297,29 +377,42 @@ The main application (`cmd/playground/main.go`) demonstrates:
 ```
 linka.type-backend/
 ├── cmd/
-│   └── playground/
-│       └── main.go              # Main application entry point
+│   ├── playground/
+│   │   └── main.go              # Data migration playground
+│   └── server/
+│       └── main.go              # API server entry point
+├── auth/
+│   ├── jwt.go                   # JWT token generation and validation
+│   └── middleware.go            # JWT authentication middleware
+├── handlers/
+│   ├── auth.go                  # Authentication handlers (login/register)
+│   └── data.go                  # Data handlers (statements/categories)
+├── utils/
+│   ├── password.go              # Password hashing utilities
+│   ├── password_test.go         # Password utilities tests
+│   └── id.go                    # ID generation utilities
 ├── bl/
 │   ├── importUser.go            # User import logic
 │   ├── importCategories.go      # Category import system
 │   ├── importStatements.go      # Statement import system
 │   └── import_test.go           # Import system tests
-├── utils/
-│   ├── password.go              # Password hashing utilities
-│   └── password_test.go         # Password utilities tests
 ├── db/
 │   ├── types.go                 # Data models (User, Category, Statement)
 │   ├── connection.go            # Database connection and table creation
 │   ├── migration_tracker.go     # Migration tracking system
 │   ├── user_crud.go            # User CRUD operations
 │   ├── category_crud.go        # Category CRUD operations
-│   ├── statement_crud.go       # Statement CRUD operations
-│   └── examples.go             # Comprehensive CRUD examples
+│   └── statement_crud.go       # Statement CRUD operations
 ├── fb/                         # Firebase integration
 ├── docs/
-│   └── import_system.md        # Migration system documentation
+│   ├── import_system.md        # Migration system documentation
+│   └── api.md                  # API documentation
+├── scripts/
+│   ├── migrate.sh              # Database migration script
+│   └── run-server.sh           # Server startup script
 ├── docker-compose.yml          # Docker services configuration
-├── Dockerfile.playground       # Docker build configuration
+├── Dockerfile.playground       # Docker build for playground
+├── Dockerfile.server           # Docker build for API server
 ├── go.mod                      # Go module dependencies
 └── README.md                   # This file
 ```
@@ -361,6 +454,8 @@ strength := hasher.GetPasswordStrength("MyPass123!")
 ## Dependencies
 
 - `github.com/lib/pq`: PostgreSQL driver
+- `github.com/gin-gonic/gin`: HTTP web framework
+- `github.com/golang-jwt/jwt/v4`: JWT token handling
 - `github.com/google/uuid`: UUID generation
 - `github.com/joho/godotenv`: Environment variable loading
 - `golang.org/x/crypto/bcrypt`: Password hashing
