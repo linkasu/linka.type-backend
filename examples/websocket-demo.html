@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Demo - Linka Type Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 2px 0;
+        }
+        .log-entry.info {
+            color: #007bff;
+        }
+        .log-entry.success {
+            color: #28a745;
+        }
+        .log-entry.error {
+            color: #dc3545;
+        }
+        .log-entry.warning {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WebSocket Demo - Linka Type Backend</h1>
+        
+        <div class="form-group">
+            <label for="token">JWT Token:</label>
+            <input type="text" id="token" placeholder="Введите ваш JWT токен">
+        </div>
+        
+        <div class="form-group">
+            <button id="connectBtn" onclick="connect()">Подключиться</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>Отключиться</button>
+            <button id="clearBtn" onclick="clearLog()">Очистить лог</button>
+        </div>
+        
+        <div id="status" class="status disconnected">
+            Статус: Отключено
+        </div>
+        
+        <div class="form-group">
+            <label>Лог сообщений:</label>
+            <div id="log" class="log"></div>
+        </div>
+        
+        <div class="form-group">
+            <h3>Тестирование API</h3>
+            <p>Используйте эти команды curl для тестирования (замените YOUR_TOKEN на ваш токен):</p>
+            <pre>
+# Создать категорию
+curl -X POST http://localhost:8081/api/categories \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title": "Тестовая категория"}'
+
+# Обновить категорию
+curl -X PUT http://localhost:8081/api/categories/CATEGORY_ID \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title": "Обновленная категория"}'
+
+# Удалить категорию
+curl -X DELETE http://localhost:8081/api/categories/CATEGORY_ID \
+  -H "Authorization: Bearer YOUR_TOKEN"
+
+# Создать statement
+curl -X POST http://localhost:8081/api/statements \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title": "Тестовый statement", "categoryId": "CATEGORY_ID"}'
+
+# Обновить statement
+curl -X PUT http://localhost:8081/api/statements/STATEMENT_ID \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"title": "Обновленный statement", "categoryId": "CATEGORY_ID"}'
+
+# Удалить statement
+curl -X DELETE http://localhost:8081/api/statements/STATEMENT_ID \
+  -H "Authorization: Bearer YOUR_TOKEN"
+            </pre>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+
+        function log(message, type = 'info') {
+            const logElement = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logElement.appendChild(entry);
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function updateStatus(connected) {
+            const statusElement = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            isConnected = connected;
+            
+            if (connected) {
+                statusElement.className = 'status connected';
+                statusElement.textContent = 'Статус: Подключено';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                statusElement.className = 'status disconnected';
+                statusElement.textContent = 'Статус: Отключено';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            const token = document.getElementById('token').value.trim();
+            
+            if (!token) {
+                log('Ошибка: Введите JWT токен', 'error');
+                return;
+            }
+
+            try {
+                // Создаем WebSocket соединение
+                ws = new WebSocket(`ws://localhost:8081/api/ws`);
+                
+                ws.onopen = function(event) {
+                    log('WebSocket соединение установлено', 'success');
+                    updateStatus(true);
+                    
+                    // Отправляем токен для аутентификации
+                    ws.send(JSON.stringify({
+                        type: 'auth',
+                        token: token
+                    }));
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        log(`Получено сообщение: ${JSON.stringify(message, null, 2)}`, 'info');
+                        
+                        if (message.type === 'category_update') {
+                            const payload = message.payload;
+                            log(`Обновление категории: ${payload.action}`, 'warning');
+                            
+                            if (payload.action === 'created') {
+                                log(`Создана категория: ${payload.category.title}`, 'success');
+                            } else if (payload.action === 'updated') {
+                                log(`Обновлена категория: ${payload.category.title}`, 'success');
+                            } else if (payload.action === 'deleted') {
+                                log(`Удалена категория: ${payload.categoryId}`, 'warning');
+                            }
+                        } else if (message.type === 'statement_update') {
+                            const payload = message.payload;
+                            log(`Обновление statement: ${payload.action}`, 'warning');
+                            
+                            if (payload.action === 'created') {
+                                log(`Создан statement: ${payload.statement.text}`, 'success');
+                            } else if (payload.action === 'updated') {
+                                log(`Обновлен statement: ${payload.statement.text}`, 'success');
+                            } else if (payload.action === 'deleted') {
+                                log(`Удален statement: ${payload.statementId}`, 'warning');
+                            }
+                        } else if (message.type === 'ack') {
+                            log('Подтверждение получения сообщения', 'info');
+                        }
+                    } catch (error) {
+                        log(`Ошибка парсинга сообщения: ${error.message}`, 'error');
+                    }
+                };
+                
+                ws.onclose = function(event) {
+                    log(`WebSocket соединение закрыто: ${event.code} ${event.reason}`, 'error');
+                    updateStatus(false);
+                };
+                
+                ws.onerror = function(error) {
+                    log(`WebSocket ошибка: ${error.message}`, 'error');
+                    updateStatus(false);
+                };
+                
+            } catch (error) {
+                log(`Ошибка подключения: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            updateStatus(false);
+            log('WebSocket соединение закрыто', 'info');
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Автоматическое подключение при загрузке страницы
+        window.onload = function() {
+            log('Демо WebSocket загружено. Введите JWT токен и нажмите "Подключиться"', 'info');
+        };
+    </script>
+</body>
+</html> 

@@ -106,6 +106,9 @@ func CreateStatement(c *gin.Context) {
 		return
 	}
 
+	// Отправляем WebSocket уведомление
+	NotifyStatementCreated(userID, statement)
+
 	c.JSON(http.StatusCreated, statement)
 }
 
@@ -148,6 +151,9 @@ func UpdateStatement(c *gin.Context) {
 		return
 	}
 
+	// Отправляем WebSocket уведомление
+	NotifyStatementUpdated(userID, statement)
+
 	c.JSON(http.StatusOK, statement)
 }
 
@@ -168,6 +174,9 @@ func DeleteStatement(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete statement"})
 		return
 	}
+
+	// Отправляем WebSocket уведомление
+	NotifyStatementDeleted(userID, statementID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Statement deleted successfully"})
 }
@@ -237,6 +246,9 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
+	// Отправляем WebSocket уведомление
+	NotifyCategoryCreated(userID, category)
+
 	c.JSON(http.StatusCreated, category)
 }
 
@@ -270,6 +282,9 @@ func UpdateCategory(c *gin.Context) {
 		return
 	}
 
+	// Отправляем WebSocket уведомление
+	NotifyCategoryUpdated(userID, category)
+
 	c.JSON(http.StatusOK, category)
 }
 
@@ -290,6 +305,9 @@ func DeleteCategory(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete category"})
 		return
 	}
+
+	// Отправляем WebSocket уведомление
+	NotifyCategoryDeleted(userID, categoryID)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Category deleted successfully"})
 }

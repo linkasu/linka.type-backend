@@ -18,6 +18,9 @@ func main() {
 	}
 	defer db.CloseDB()
 
+	// Инициализируем WebSocket менеджер
+	handlers.InitWebSocketManager()
+
 	// Создаем Gin роутер
 	r := gin.Default()
 
@@ -76,6 +79,9 @@ func main() {
 				"email":   email,
 			})
 		})
+
+		// WebSocket endpoint
+		protected.GET("/ws", handlers.HandleWebSocket)
 	}
 
 	// Запускаем сервер

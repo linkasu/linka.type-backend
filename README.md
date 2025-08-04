@@ -8,6 +8,7 @@ This project implements a complete CRUD (Create, Read, Update, Delete) system fo
 - **Complete CRUD Operations**: Full CRUD support for Users, Categories, and Statements
 - **RESTful API**: Gin-based HTTP API with JWT authentication
 - **JWT Authentication**: Secure token-based authentication system
+- **WebSocket Support**: Real-time notifications for category updates
 - **Firebase Migration System**: Robust migration system from Firebase to PostgreSQL
 - **Incremental Import**: Supports multiple runs without data duplication
 - **Migration Tracking**: Comprehensive logging and tracking of migration progress
@@ -299,6 +300,15 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
   http://localhost:8081/api/categories
 ```
 
+4. Connect to WebSocket for real-time updates:
+```javascript
+const ws = new WebSocket('ws://localhost:8081/api/ws');
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Category update:', message);
+};
+```
+
 ### Manual Setup
 
 1. Install dependencies:
@@ -384,6 +394,8 @@ linka.type-backend/
 ├── auth/
 │   ├── jwt.go                   # JWT token generation and validation
 │   └── middleware.go            # JWT authentication middleware
+├── websocket/
+│   └── manager.go               # WebSocket connection management
 ├── handlers/
 │   ├── auth.go                  # Authentication handlers (login/register)
 │   └── data.go                  # Data handlers (statements/categories)
@@ -407,6 +419,8 @@ linka.type-backend/
 ├── docs/
 │   ├── import_system.md        # Migration system documentation
 │   └── api.md                  # API documentation
+├── examples/
+│   └── websocket-demo.html     # WebSocket demo page
 ├── scripts/
 │   ├── migrate.sh              # Database migration script
 │   └── run-server.sh           # Server startup script

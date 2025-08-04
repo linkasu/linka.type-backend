@@ -1,2 +1,32 @@
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# Firebase config
 firebase.json
+
+# Binary files
+server
+main
+bin/
+*.exe
+*.bin
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db

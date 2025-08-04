@@ -145,6 +145,153 @@ PUT /categories/:id
 DELETE /categories/:id
 ```
 
+### WebSocket
+
+#### Подключение к WebSocket
+```
+GET /ws
+```
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: <base64-encoded-key>
+Sec-WebSocket-Version: 13
+```
+
+**Пример подключения на JavaScript:**
+```javascript
+const token = 'your-jwt-token';
+const ws = new WebSocket(`ws://localhost:8081/api/ws`, {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+ws.onopen = () => {
+  console.log('WebSocket connected');
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Received:', message);
+  
+  if (message.type === 'category_update') {
+    // Обработка обновления категории
+    console.log('Category update:', message.payload);
+  } else if (message.type === 'statement_update') {
+    // Обработка обновления statement
+    console.log('Statement update:', message.payload);
+  }
+};
+
+ws.onclose = () => {
+  console.log('WebSocket disconnected');
+};
+```
+
+**Формат сообщений:**
+
+1. **Уведомление о создании категории:**
+```json
+{
+  "type": "category_update",
+  "payload": {
+    "action": "created",
+    "category": {
+      "id": "category_123",
+      "title": "Новая категория",
+      "userId": "user_123"
+    }
+  },
+  "user_id": "user_123"
+}
+```
+
+2. **Уведомление об обновлении категории:**
+```json
+{
+  "type": "category_update",
+  "payload": {
+    "action": "updated",
+    "category": {
+      "id": "category_123",
+      "title": "Обновленная категория",
+      "userId": "user_123"
+    }
+  },
+  "user_id": "user_123"
+}
+```
+
+3. **Уведомление об удалении категории:**
+```json
+{
+  "type": "category_update",
+  "payload": {
+    "action": "deleted",
+    "categoryId": "category_123"
+  },
+  "user_id": "user_123"
+}
+```
+
+4. **Уведомление о создании statement:**
+```json
+{
+  "type": "statement_update",
+  "payload": {
+    "action": "created",
+    "statement": {
+      "id": "statement_123",
+      "text": "Новый statement",
+      "userId": "user_123",
+      "categoryId": "category_123"
+    }
+  },
+  "user_id": "user_123"
+}
+```
+
+5. **Уведомление об обновлении statement:**
+```json
+{
+  "type": "statement_update",
+  "payload": {
+    "action": "updated",
+    "statement": {
+      "id": "statement_123",
+      "text": "Обновленный statement",
+      "userId": "user_123",
+      "categoryId": "category_123"
+    }
+  },
+  "user_id": "user_123"
+}
+```
+
+6. **Уведомление об удалении statement:**
+```json
+{
+  "type": "statement_update",
+  "payload": {
+    "action": "deleted",
+    "statementId": "statement_123"
+  },
+  "user_id": "user_123"
+}
+```
+
+7. **Подтверждение получения сообщения:**
+```json
+{
+  "type": "ack",
+  "payload": "Message received"
+}
+```
+
 ### Statements
 
 #### Получить все statements пользователя
