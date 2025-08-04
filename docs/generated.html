@@ -1,0 +1,4417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linka Type Backend - Документация</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 5px;
+        }
+        h3 {
+            color: #2c3e50;
+            margin-top: 25px;
+        }
+        h4 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: black; }
+        .method.delete { background: #dc3545; color: white; }
+        .auth {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-left: 10px;
+        }
+        .auth.required { background: #dc3545; color: white; }
+        .auth.optional { background: #6c757d; color: white; }
+        .param {
+            background: #e9ecef;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .required { color: #dc3545; font-weight: bold; }
+        .optional { color: #6c757d; }
+        .function, .struct {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .file-info {
+            font-size: 12px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        .toc {
+            background: #e9ecef;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .toc ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .toc li {
+            margin: 5px 0;
+        }
+        .toc a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        .toc a:hover {
+            text-decoration: underline;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        code {
+            background: #f1f3f4;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Linka Type Backend - Документация</h1>
+        <p><strong>Сгенерировано:</strong> 2025-08-04 15:47:48</p>
+
+        <div class="toc">
+            <h3>📋 Содержание</h3>
+            <ul>
+                <li><a href="#api-endpoints">🚀 API Endpoints</a></li>
+                
+                <li><a href="#auth">📦 auth</a></li>
+                
+                <li><a href="#bl">📦 bl</a></li>
+                
+                <li><a href="#db">📦 db</a></li>
+                
+                <li><a href="#fb">📦 fb</a></li>
+                
+                <li><a href="#handlers">📦 handlers</a></li>
+                
+                <li><a href="#utils">📦 utils</a></li>
+                
+                <li><a href="#websocket">📦 websocket</a></li>
+                
+            </ul>
+        </div>
+
+        <h2 id="api-endpoints">🚀 API Endpoints</h2>
+
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method post">POST</span>
+                <code>/api/register</code>
+                
+                <span class="auth optional">No Auth</span>
+                
+            </h3>
+            <p>Регистрация нового пользователя</p>
+            <p><strong>Handler:</strong> <code>handlers.Register</code></p>
+
+            
+            <h4>📝 Параметры:</h4>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Email пользователя
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Пароль пользователя
+            </div>
+            
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>200</code> - Успешная регистрация
+            </div>
+            
+            <div class="param">
+                <code>400</code> - Ошибка валидации
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method post">POST</span>
+                <code>/api/login</code>
+                
+                <span class="auth optional">No Auth</span>
+                
+            </h3>
+            <p>Авторизация пользователя</p>
+            <p><strong>Handler:</strong> <code>handlers.Login</code></p>
+
+            
+            <h4>📝 Параметры:</h4>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Email пользователя
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Пароль пользователя
+            </div>
+            
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>200</code> - Успешная авторизация
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Неверные учетные данные
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method get">GET</span>
+                <code>/api/statements</code>
+                
+                <span class="auth required">Auth Required</span>
+                
+            </h3>
+            <p>Получение списка statements</p>
+            <p><strong>Handler:</strong> <code>handlers.GetStatements</code></p>
+
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>200</code> - Список statements
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Не авторизован
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method post">POST</span>
+                <code>/api/statements</code>
+                
+                <span class="auth required">Auth Required</span>
+                
+            </h3>
+            <p>Создание нового statement</p>
+            <p><strong>Handler:</strong> <code>handlers.CreateStatement</code></p>
+
+            
+            <h4>📝 Параметры:</h4>
+            
+            <div class="param">
+                <code>title</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Заголовок statement
+            </div>
+            
+            <div class="param">
+                <code>content</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Содержание statement
+            </div>
+            
+            <div class="param">
+                <code>category_id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - ID категории
+            </div>
+            
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>201</code> - Statement создан
+            </div>
+            
+            <div class="param">
+                <code>400</code> - Ошибка валидации
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Не авторизован
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method get">GET</span>
+                <code>/api/categories</code>
+                
+                <span class="auth required">Auth Required</span>
+                
+            </h3>
+            <p>Получение списка категорий</p>
+            <p><strong>Handler:</strong> <code>handlers.GetCategories</code></p>
+
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>200</code> - Список категорий
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Не авторизован
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method post">POST</span>
+                <code>/api/categories</code>
+                
+                <span class="auth required">Auth Required</span>
+                
+            </h3>
+            <p>Создание новой категории</p>
+            <p><strong>Handler:</strong> <code>handlers.CreateCategory</code></p>
+
+            
+            <h4>📝 Параметры:</h4>
+            
+            <div class="param">
+                <code>name</code> (string) 
+                <span class="required">*обязательный*</span>
+                - Название категории
+            </div>
+            
+            <div class="param">
+                <code>description</code> (string) 
+                <span class="optional">опциональный</span>
+                - Описание категории
+            </div>
+            
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>201</code> - Категория создана
+            </div>
+            
+            <div class="param">
+                <code>400</code> - Ошибка валидации
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Не авторизован
+            </div>
+            
+            <div class="param">
+                <code>500</code> - Внутренняя ошибка сервера
+            </div>
+            
+        </div>
+        
+        <div class="endpoint">
+            <h3>
+                <span class="method get">GET</span>
+                <code>/api/ws</code>
+                
+                <span class="auth required">Auth Required</span>
+                
+            </h3>
+            <p>WebSocket подключение для real-time уведомлений</p>
+            <p><strong>Handler:</strong> <code>handlers.HandleWebSocket</code></p>
+
+            
+
+            <h4>📤 Ответы:</h4>
+            
+            <div class="param">
+                <code>101</code> - WebSocket upgrade успешен
+            </div>
+            
+            <div class="param">
+                <code>401</code> - Не авторизован
+            </div>
+            
+        </div>
+        
+
+        
+        <h2 id="auth">📦 auth</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>GenerateToken</h4>
+            <p>GenerateToken генерирует JWT токен для пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt.go:21</div>
+        </div>
+        
+        <div class="function">
+            <h4>ValidateToken</h4>
+            <p>ValidateToken валидирует JWT токен и возвращает claims</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>tokenString</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*Claims</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt.go:42</div>
+        </div>
+        
+        <div class="function">
+            <h4>SetJWTSecret</h4>
+            <p>SetJWTSecret устанавливает секретный ключ для JWT (для конфигурации)</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>secret</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt.go:62</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestGenerateAndValidateToken</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt_test.go:7</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestValidateInvalidToken</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt_test.go:37</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestTokenExpiration</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt_test.go:45</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestSetJWTSecret</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt_test.go:66</div>
+        </div>
+        
+        <div class="function">
+            <h4>JWTAuthMiddleware</h4>
+            <p>JWTAuthMiddleware middleware для проверки JWT токена</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>gin.HandlerFunc</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/middleware.go:11</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetUserIDFromContext</h4>
+            <p>GetUserIDFromContext получает user_id из контекста Gin</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/middleware.go:44</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetEmailFromContext</h4>
+            <p>GetEmailFromContext получает email из контекста Gin</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/middleware.go:52</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>Claims</h4>
+            <p>Claims структура для JWT claims</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>UserID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt.go:14</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="bl">📦 bl</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>ImportCategories</h4>
+            <p>ImportCategories импортирует категории пользователя из Firebase в PostgreSQL Поддерживает многократные запуски с инкрементальным обновлением</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>login</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ImportCategoriesResult</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:33</div>
+        </div>
+        
+        <div class="function">
+            <h4>determineAction</h4>
+            <p>determineAction определяет действие на основе статуса миграции и существования категории</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>lastMigration</code> (*db.MigrationLog) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>existsInPostgres</code> (bool) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:153</div>
+        </div>
+        
+        <div class="function">
+            <h4>importNewCategory</h4>
+            <p>importNewCategory импортирует новую категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>fbCategory</code> (*fb.FBCategory) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>categoryCRUD</code> (*db.CategoryCRUD) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>migrationTracker</code> (*db.MigrationTracker) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:183</div>
+        </div>
+        
+        <div class="function">
+            <h4>updateExistingCategory</h4>
+            <p>updateExistingCategory обновляет существующую категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>fbCategory</code> (*fb.FBCategory) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>categoryCRUD</code> (*db.CategoryCRUD) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>migrationTracker</code> (*db.MigrationTracker) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:203</div>
+        </div>
+        
+        <div class="function">
+            <h4>ImportCategoriesForAllUsers</h4>
+            <p>ImportCategoriesForAllUsers импортирует категории для всех пользователей Полезно для массовой миграции</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ImportCategoriesResult</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:224</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetImportStatus</h4>
+            <p>GetImportStatus получает статус импорта для пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ast.MapType</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:231</div>
+        </div>
+        
+        <div class="function">
+            <h4>ImportStatements</h4>
+            <p>ImportStatements импортирует statements пользователя из Firebase в PostgreSQL Поддерживает многократные запуски с инкрементальным обновлением</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>login</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ImportStatementsResult</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:26</div>
+        </div>
+        
+        <div class="function">
+            <h4>importNewStatement</h4>
+            <p>importNewStatement импортирует новое statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>fbStatement</code> (*fb.FBStatement) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statementCRUD</code> (*db.StatementCRUD) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>migrationTracker</code> (*db.MigrationTracker) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:160</div>
+        </div>
+        
+        <div class="function">
+            <h4>updateExistingStatement</h4>
+            <p>updateExistingStatement обновляет существующее statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>fbStatement</code> (*fb.FBStatement) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statementCRUD</code> (*db.StatementCRUD) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>migrationTracker</code> (*db.MigrationTracker) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:181</div>
+        </div>
+        
+        <div class="function">
+            <h4>ImportAllData</h4>
+            <p>ImportAllData импортирует пользователя, категории и statements</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>login</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ImportAllDataResult</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:202</div>
+        </div>
+        
+        <div class="function">
+            <h4>ImportUser</h4>
+            <p>ImportUser импортирует пользователя и его категории из Firebase в PostgreSQL</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>login</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importUser.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetUser</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*MockUser</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:22</div>
+        </div>
+        
+        <div class="function">
+            <h4>CheckPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>bool</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:29</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategories</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>user</code> (*MockUser) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*fb.FBCategory</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:37</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestImportCategories</h4>
+            <p>TestImportCategories тестирует основную логику импорта</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:45</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestMigrationTracker</h4>
+            <p>TestMigrationTracker тестирует трекер миграций</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:128</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestDetermineAction</h4>
+            <p>TestDetermineAction тестирует логику определения действия</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:171</div>
+        </div>
+        
+        <div class="function">
+            <h4>clearTestData</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:230</div>
+        </div>
+        
+        <div class="function">
+            <h4>importCategoriesWithMock</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>mockClient</code> (*MockFirebaseClient) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ImportCategoriesResult</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:245</div>
+        </div>
+        
+        <div class="function">
+            <h4>BenchmarkImportCategories</h4>
+            <p>BenchmarkImportCategories тестирует производительность импорта</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>b</code> (*testing.B) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:253</div>
+        </div>
+        
+        <div class="function">
+            <h4>clearTestDataForBenchmark</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>b</code> (*testing.B) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:269</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>ImportCategoriesResult</h4>
+            <p>ImportCategoriesResult содержит результат импорта категорий</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>TotalProcessed</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Imported</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Updated</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Skipped</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Failed</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Errors</code> ([]ImportError) - 
+            </div>
+            
+            <div class="param">
+                <code>Stats</code> (*ast.MapType) - 
+            </div>
+            
+            <div class="param">
+                <code>Duration</code> (time.Duration) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:13</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ImportError</h4>
+            <p>ImportError содержит информацию об ошибке импорта</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>CategoryID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Error</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importCategories.go:25</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ImportStatementsResult</h4>
+            <p>ImportStatementsResult содержит результат импорта statements</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>TotalProcessed</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Imported</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Updated</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Skipped</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Failed</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>Errors</code> ([]ImportError) - 
+            </div>
+            
+            <div class="param">
+                <code>Stats</code> (*ast.MapType) - 
+            </div>
+            
+            <div class="param">
+                <code>Duration</code> (time.Duration) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:13</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ImportAllDataResult</h4>
+            <p>ImportAllDataResult содержит результат полного импорта данных</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>StatementsResult</code> (*ImportStatementsResult) - 
+            </div>
+            
+            <div class="param">
+                <code>Duration</code> (time.Duration) - 
+            </div>
+            
+            <div class="param">
+                <code>StartTime</code> (time.Time) - 
+            </div>
+            
+            <div class="param">
+                <code>EndTime</code> (time.Time) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/importStatements.go:249</div>
+        </div>
+        
+        <div class="struct">
+            <h4>MockFirebaseClient</h4>
+            <p>MockFirebaseClient для тестирования</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>users</code> (*ast.MapType) - 
+            </div>
+            
+            <div class="param">
+                <code>categories</code> (*ast.MapType) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:12</div>
+        </div>
+        
+        <div class="struct">
+            <h4>MockUser</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>UID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 bl/import_test.go:17</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="db">📦 db</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>CreateCategory</h4>
+            <p>CreateCategory creates a new category</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>category</code> (*Category) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategoryByID</h4>
+            <p>GetCategoryByID retrieves a category by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*Category</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:29</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategoriesByUserID</h4>
+            <p>GetCategoriesByUserID retrieves all categories for a specific user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*Category</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:45</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetAllCategories</h4>
+            <p>GetAllCategories retrieves all categories</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*Category</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:71</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateCategory</h4>
+            <p>UpdateCategory updates an existing category</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>category</code> (*Category) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:97</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteCategory</h4>
+            <p>DeleteCategory deletes a category by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:123</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteCategoriesByUserID</h4>
+            <p>DeleteCategoriesByUserID deletes all categories for a specific user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:144</div>
+        </div>
+        
+        <div class="function">
+            <h4>CategoryExists</h4>
+            <p>CategoryExists checks if a category exists by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>bool</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:165</div>
+        </div>
+        
+        <div class="function">
+            <h4>InitDB</h4>
+            <p>InitDB initializes the database connection</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/connection.go:16</div>
+        </div>
+        
+        <div class="function">
+            <h4>CloseDB</h4>
+            <p>CloseDB closes the database connection</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/connection.go:59</div>
+        </div>
+        
+        <div class="function">
+            <h4>createTables</h4>
+            <p>createTables creates the necessary tables if they don&#39;t exist</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/connection.go:67</div>
+        </div>
+        
+        <div class="function">
+            <h4>getEnv</h4>
+            <p>getEnv gets an environment variable or returns a default value</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>key</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>defaultValue</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/connection.go:131</div>
+        </div>
+        
+        <div class="function">
+            <h4>ExampleCRUDOperations</h4>
+            <p>ExampleCRUDOperations demonstrates all CRUD operations</p>
+
+            
+
+            
+
+            
+
+            <div class="file-info">📁 db/examples.go:11</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateMigrationLogsTable</h4>
+            <p>CreateMigrationLogsTable создает таблицу для отслеживания миграций</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:26</div>
+        </div>
+        
+        <div class="function">
+            <h4>LogMigration</h4>
+            <p>LogMigration записывает информацию о миграции</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>entityType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>entityID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>action</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>status</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>errorMsg</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:50</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetLastMigrationStatus</h4>
+            <p>GetLastMigrationStatus получает статус последней миграции для сущности</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>entityType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>entityID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*MigrationLog</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:72</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetMigrationStats</h4>
+            <p>GetMigrationStats получает статистику миграций</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>entityType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*ast.MapType</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:97</div>
+        </div>
+        
+        <div class="function">
+            <h4>ClearMigrationLogs</h4>
+            <p>ClearMigrationLogs очищает логи миграций (для тестирования)</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>entityType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:125</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateStatement</h4>
+            <p>CreateStatement creates a new statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>statement</code> (*Statement) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatementByID</h4>
+            <p>GetStatementByID retrieves a statement by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*Statement</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:29</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatementsByUserID</h4>
+            <p>GetStatementsByUserID retrieves all statements for a specific user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*Statement</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:45</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatementsByCategoryID</h4>
+            <p>GetStatementsByCategoryID retrieves all statements for a specific category</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>categoryID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*Statement</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:71</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetAllStatements</h4>
+            <p>GetAllStatements retrieves all statements</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*Statement</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:97</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateStatement</h4>
+            <p>UpdateStatement updates an existing statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>statement</code> (*Statement) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:123</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteStatement</h4>
+            <p>DeleteStatement deletes a statement by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:149</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteStatementsByUserID</h4>
+            <p>DeleteStatementsByUserID deletes all statements for a specific user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:170</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteStatementsByCategoryID</h4>
+            <p>DeleteStatementsByCategoryID deletes all statements for a specific category</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>categoryID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:191</div>
+        </div>
+        
+        <div class="function">
+            <h4>StatementExists</h4>
+            <p>StatementExists checks if a statement exists by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>bool</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:212</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateUser</h4>
+            <p>CreateUser creates a new user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>user</code> (*User) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetUserByID</h4>
+            <p>GetUserByID retrieves a user by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*User</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:29</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetUserByEmail</h4>
+            <p>GetUserByEmail retrieves a user by email</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*User</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:45</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetAllUsers</h4>
+            <p>GetAllUsers retrieves all users</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*User</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:61</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateUser</h4>
+            <p>UpdateUser updates an existing user</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>user</code> (*User) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:87</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteUser</h4>
+            <p>DeleteUser deletes a user by ID</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:113</div>
+        </div>
+        
+        <div class="function">
+            <h4>UserExists</h4>
+            <p>UserExists checks if a user exists by email</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>bool</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:134</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>CategoryCRUD</h4>
+            <p>CategoryCRUD provides CRUD operations for Category entity</p>
+
+            
+
+            
+
+            <div class="file-info">📁 db/category_crud.go:10</div>
+        </div>
+        
+        <div class="struct">
+            <h4>MigrationLog</h4>
+            <p>MigrationLog представляет запись о миграции</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (int) - 
+            </div>
+            
+            <div class="param">
+                <code>EntityType</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>EntityID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Action</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Status</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Error</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CreatedAt</code> (time.Time) - 
+            </div>
+            
+            <div class="param">
+                <code>UpdatedAt</code> (time.Time) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:10</div>
+        </div>
+        
+        <div class="struct">
+            <h4>MigrationTracker</h4>
+            <p>MigrationTracker предоставляет методы для отслеживания миграций</p>
+
+            
+
+            
+
+            <div class="file-info">📁 db/migration_tracker.go:23</div>
+        </div>
+        
+        <div class="struct">
+            <h4>StatementCRUD</h4>
+            <p>StatementCRUD provides CRUD operations for Statement entity</p>
+
+            
+
+            
+
+            <div class="file-info">📁 db/statement_crud.go:10</div>
+        </div>
+        
+        <div class="struct">
+            <h4>Statement</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserId</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CategoryId</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/types.go:3</div>
+        </div>
+        
+        <div class="struct">
+            <h4>Category</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserId</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/types.go:10</div>
+        </div>
+        
+        <div class="struct">
+            <h4>User</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Password</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/types.go:16</div>
+        </div>
+        
+        <div class="struct">
+            <h4>UserCRUD</h4>
+            <p>UserCRUD provides CRUD operations for User entity</p>
+
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:10</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="fb">📦 fb</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>CheckPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*FirebaseAuthResponse</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/CheckPassword.go:29</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategories</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>user</code> (*auth.UserRecord) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*FBCategory</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetCategories.go:15</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatements</h4>
+            <p></p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]*FBStatement</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetStatements.go:21</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetUser</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*auth.UserRecord</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetUser.go:9</div>
+        </div>
+        
+        <div class="function">
+            <h4>init</h4>
+            <p></p>
+
+            
+
+            
+
+            
+
+            <div class="file-info">📁 fb/fb.go:14</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>FirebaseAuthResponse</h4>
+            <p>FirebaseAuthResponse represents the response from Firebase Authentication API</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>IDToken</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>RefreshToken</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>ExpiresIn</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>LocalID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Registered</code> (bool) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/CheckPassword.go:13</div>
+        </div>
+        
+        <div class="struct">
+            <h4>FirebaseAuthRequest</h4>
+            <p>FirebaseAuthRequest represents the request to Firebase Authentication API</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Password</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>ReturnSecureToken</code> (bool) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/CheckPassword.go:23</div>
+        </div>
+        
+        <div class="struct">
+            <h4>FBCategory</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Label</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserId</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetCategories.go:9</div>
+        </div>
+        
+        <div class="struct">
+            <h4>FBStatement</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CreatedAt</code> (time.Time) - 
+            </div>
+            
+            <div class="param">
+                <code>Text</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserId</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CategoryId</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetStatements.go:8</div>
+        </div>
+        
+        <div class="struct">
+            <h4>fbStatementRaw</h4>
+            <p></p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>CreatedAt</code> (int64) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 fb/GetStatements.go:16</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="handlers">📦 handlers</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>Register</h4>
+            <p>Register обрабатывает регистрацию пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:37</div>
+        </div>
+        
+        <div class="function">
+            <h4>Login</h4>
+            <p>Login обрабатывает логин пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:94</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatements</h4>
+            <p>GetStatements получает все statements пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:36</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetStatement</h4>
+            <p>GetStatement получает конкретный statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:54</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateStatement</h4>
+            <p>CreateStatement создает новый statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:75</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateStatement</h4>
+            <p>UpdateStatement обновляет statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:116</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteStatement</h4>
+            <p>DeleteStatement удаляет statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:161</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategories</h4>
+            <p>GetCategories получает все категории пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:185</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetCategory</h4>
+            <p>GetCategory получает конкретную категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:203</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateCategory</h4>
+            <p>CreateCategory создает новую категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:224</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateCategory</h4>
+            <p>UpdateCategory обновляет категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:256</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteCategory</h4>
+            <p>DeleteCategory удаляет категорию</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:292</div>
+        </div>
+        
+        <div class="function">
+            <h4>InitWebSocketManager</h4>
+            <p>InitWebSocketManager инициализирует WebSocket менеджер</p>
+
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:16</div>
+        </div>
+        
+        <div class="function">
+            <h4>HandleWebSocket</h4>
+            <p>HandleWebSocket обрабатывает WebSocket подключения</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:21</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyCategoryUpdate</h4>
+            <p>NotifyCategoryUpdate отправляет уведомление об обновлении категории</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>category</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>action</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:33</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyCategoryCreated</h4>
+            <p>NotifyCategoryCreated отправляет уведомление о создании категории</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>category</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:44</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyCategoryUpdated</h4>
+            <p>NotifyCategoryUpdated отправляет уведомление об обновлении категории</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>category</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:49</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyCategoryDeleted</h4>
+            <p>NotifyCategoryDeleted отправляет уведомление об удалении категории</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>categoryID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:54</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyStatementUpdate</h4>
+            <p>NotifyStatementUpdate отправляет уведомление об обновлении statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statement</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>action</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:65</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyStatementCreated</h4>
+            <p>NotifyStatementCreated отправляет уведомление о создании statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statement</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:76</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyStatementUpdated</h4>
+            <p>NotifyStatementUpdated отправляет уведомление об обновлении statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statement</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:81</div>
+        </div>
+        
+        <div class="function">
+            <h4>NotifyStatementDeleted</h4>
+            <p>NotifyStatementDeleted отправляет уведомление об удалении statement</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>statementID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/websocket.go:86</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>LoginRequest</h4>
+            <p>LoginRequest структура для запроса логина</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Password</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:16</div>
+        </div>
+        
+        <div class="struct">
+            <h4>RegisterRequest</h4>
+            <p>RegisterRequest структура для запроса регистрации</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Password</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:22</div>
+        </div>
+        
+        <div class="struct">
+            <h4>LoginResponse</h4>
+            <p>LoginResponse структура для ответа при логине</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Token</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>User</code> (*ast.StructType) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:28</div>
+        </div>
+        
+        <div class="struct">
+            <h4>CreateStatementRequest</h4>
+            <p>CreateStatementRequest структура для создания statement</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CategoryID</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:14</div>
+        </div>
+        
+        <div class="struct">
+            <h4>UpdateStatementRequest</h4>
+            <p>UpdateStatementRequest структура для обновления statement</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>CategoryID</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:20</div>
+        </div>
+        
+        <div class="struct">
+            <h4>CreateCategoryRequest</h4>
+            <p>CreateCategoryRequest структура для создания категории</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:26</div>
+        </div>
+        
+        <div class="struct">
+            <h4>UpdateCategoryRequest</h4>
+            <p>UpdateCategoryRequest структура для обновления категории</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Title</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/data.go:31</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="utils">📦 utils</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>GenerateID</h4>
+            <p>GenerateID генерирует простой уникальный ID</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/id.go:9</div>
+        </div>
+        
+        <div class="function">
+            <h4>NewPasswordHasher</h4>
+            <p>NewPasswordHasher создает новый экземпляр PasswordHasher</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*PasswordHasher</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:14</div>
+        </div>
+        
+        <div class="function">
+            <h4>HashPassword</h4>
+            <p>HashPassword хеширует пароль с использованием bcrypt</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:19</div>
+        </div>
+        
+        <div class="function">
+            <h4>CheckPassword</h4>
+            <p>CheckPassword проверяет пароль против хеша</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>hashedPassword</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:30</div>
+        </div>
+        
+        <div class="function">
+            <h4>GenerateRandomPassword</h4>
+            <p>GenerateRandomPassword генерирует случайный пароль заданной длины</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>length</code> (int) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:40</div>
+        </div>
+        
+        <div class="function">
+            <h4>ValidatePasswordStrength</h4>
+            <p>ValidatePasswordStrength проверяет сложность пароля</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>bool</code></div>
+            
+            <div class="param"><code>[]string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:65</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetPasswordStrength</h4>
+            <p>GetPasswordStrength возвращает оценку сложности пароля (0-100)</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>password</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>int</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:119</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetPasswordStrengthText</h4>
+            <p>GetPasswordStrengthText возвращает текстовое описание сложности пароля</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>strength</code> (int) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:173</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_HashPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:8</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_CheckPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:53</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_GenerateRandomPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:105</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_ValidatePasswordStrength</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:184</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_GetPasswordStrength</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:264</div>
+        </div>
+        
+        <div class="function">
+            <h4>TestPasswordHasher_GetPasswordStrengthText</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>t</code> (*testing.T) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:316</div>
+        </div>
+        
+        <div class="function">
+            <h4>BenchmarkPasswordHasher_HashPassword</h4>
+            <p>Benchmark тесты для производительности</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>b</code> (*testing.B) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:362</div>
+        </div>
+        
+        <div class="function">
+            <h4>BenchmarkPasswordHasher_CheckPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>b</code> (*testing.B) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:375</div>
+        </div>
+        
+        <div class="function">
+            <h4>BenchmarkPasswordHasher_GenerateRandomPassword</h4>
+            <p></p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>b</code> (*testing.B) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password_test.go:392</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>PasswordHasher</h4>
+            <p>PasswordHasher предоставляет методы для работы с паролями</p>
+
+            
+
+            
+
+            <div class="file-info">📁 utils/password.go:11</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+        <h2 id="websocket">📦 websocket</h2>
+        
+
+        
+        <h3>🔧 Функции</h3>
+        
+        <div class="function">
+            <h4>NewManager</h4>
+            <p>NewManager создает новый WebSocket менеджер</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*Manager</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:40</div>
+        </div>
+        
+        <div class="function">
+            <h4>HandleWebSocket</h4>
+            <p>HandleWebSocket обрабатывает WebSocket подключения</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>w</code> (http.ResponseWriter) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>r</code> (*http.Request) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:53</div>
+        </div>
+        
+        <div class="function">
+            <h4>registerClient</h4>
+            <p>registerClient регистрирует клиента</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>client</code> (*Client) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:74</div>
+        </div>
+        
+        <div class="function">
+            <h4>unregisterClient</h4>
+            <p>unregisterClient удаляет клиента</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>client</code> (*Client) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:85</div>
+        </div>
+        
+        <div class="function">
+            <h4>BroadcastToUser</h4>
+            <p>BroadcastToUser отправляет сообщение всем клиентам пользователя</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>messageType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>payload</code> (interface{}) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:112</div>
+        </div>
+        
+        <div class="function">
+            <h4>readPump</h4>
+            <p>readPump читает сообщения от клиента</p>
+
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:149</div>
+        </div>
+        
+        <div class="function">
+            <h4>writePump</h4>
+            <p>writePump отправляет сообщения клиенту</p>
+
+            
+
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:189</div>
+        </div>
+        
+        <div class="function">
+            <h4>generateClientID</h4>
+            <p>generateClientID генерирует уникальный ID для клиента</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>string</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:224</div>
+        </div>
+        
+        
+
+        
+        <h3>🏗️ Структуры</h3>
+        
+        <div class="struct">
+            <h4>Message</h4>
+            <p>Message структура для WebSocket сообщений</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Type</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Payload</code> (interface{}) - 
+            </div>
+            
+            <div class="param">
+                <code>UserID</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:15</div>
+        </div>
+        
+        <div class="struct">
+            <h4>Client</h4>
+            <p>Client представляет WebSocket клиента</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UserID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Conn</code> (*websocket.Conn) - 
+            </div>
+            
+            <div class="param">
+                <code>Send</code> (*ast.ChanType) - 
+            </div>
+            
+            <div class="param">
+                <code>Manager</code> (*Manager) - 
+            </div>
+            
+            <div class="param">
+                <code>mu</code> (sync.Mutex) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:22</div>
+        </div>
+        
+        <div class="struct">
+            <h4>Manager</h4>
+            <p>Manager управляет WebSocket подключениями</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>clients</code> (*ast.MapType) - 
+            </div>
+            
+            <div class="param">
+                <code>userClients</code> (*ast.MapType) - 
+            </div>
+            
+            <div class="param">
+                <code>mu</code> (sync.RWMutex) - 
+            </div>
+            
+            <div class="param">
+                <code>upgrader</code> (websocket.Upgrader) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 websocket/manager.go:32</div>
+        </div>
+        
+        
+
+        
+
+        
+
+        
+    </div>
+</body>
+</html>

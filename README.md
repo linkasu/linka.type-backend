@@ -8,12 +8,13 @@ This project implements a complete CRUD (Create, Read, Update, Delete) system fo
 - **Complete CRUD Operations**: Full CRUD support for Users, Categories, and Statements
 - **RESTful API**: Gin-based HTTP API with JWT authentication
 - **JWT Authentication**: Secure token-based authentication system
-- **WebSocket Support**: Real-time notifications for category updates
+- **WebSocket Support**: Real-time notifications for category and statement updates
 - **Firebase Migration System**: Robust migration system from Firebase to PostgreSQL
 - **Incremental Import**: Supports multiple runs without data duplication
 - **Migration Tracking**: Comprehensive logging and tracking of migration progress
 - **Docker Environment**: Configured with Docker Compose for easy deployment
 - **Environment Variables**: Uses Docker environment variables for database configuration
+- **Documentation Generator**: Automatic documentation generation from code comments
 
 ## Database Schema
 
@@ -277,6 +278,7 @@ The API server provides a complete RESTful interface:
 - **Base URL**: `http://localhost:8081/api`
 - **Authentication**: JWT tokens required for protected endpoints
 - **Documentation**: See `docs/api.md` for complete API documentation
+- **Auto-generated Docs**: Run `make docs` to generate documentation from code
 
 #### Quick Start with API
 
@@ -358,6 +360,32 @@ make test
 ```
 Runs all tests (unit + integration + e2e).
 
+## Documentation
+
+The project includes automatic documentation generation:
+
+### Generate Documentation
+```bash
+make docs
+```
+Generates documentation from code comments in multiple formats:
+- `docs/generated.md` - Markdown format
+- `docs/generated.html` - HTML format with styling
+- `docs/generated.json` - JSON format for programmatic use
+
+### View Documentation
+```bash
+make docs-serve
+```
+Starts a local server to view HTML documentation at http://localhost:8080
+
+### Documentation Features
+- **Auto-extraction**: Extracts comments, function signatures, and structures
+- **API Documentation**: Complete API endpoints with parameters and responses
+- **Code Documentation**: Functions, structs, and packages with descriptions
+- **Multiple Formats**: Markdown, HTML, and JSON output
+- **Tag Support**: Special tags like `@example`, `@deprecated`, `@version`
+
 ### Manual Setup
 
 1. Install dependencies:
@@ -418,12 +446,16 @@ linka.type-backend/
 ├── fb/                         # Firebase integration
 ├── docs/
 │   ├── import_system.md        # Migration system documentation
-│   └── api.md                  # API documentation
+│   ├── api.md                  # API documentation
+│   ├── README.md               # Documentation guide
+│   ├── generated.md            # Auto-generated Markdown docs
+│   ├── generated.html          # Auto-generated HTML docs
+│   └── generated.json          # Auto-generated JSON docs
 ├── examples/
 │   └── websocket-demo.html     # WebSocket demo page
 ├── scripts/
 │   ├── migrate.sh              # Database migration script
-│   └── run-server.sh           # Server startup script
+│   └── generate-docs.sh        # Documentation generation script
 ├── docker-compose.yml          # Docker services configuration
 ├── Dockerfile.playground       # Docker build for playground
 ├── Dockerfile.server           # Docker build for API server

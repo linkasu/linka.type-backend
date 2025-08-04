@@ -1,4 +1,4 @@
-.PHONY: test test-e2e test-unit build clean run-server run-playground docker-build docker-run
+.PHONY: test test-e2e test-unit build clean run-server run-playground docker-build docker-run docs
 
 # Переменные
 BINARY_NAME=linka-type-backend
@@ -69,6 +69,15 @@ clean:
 	rm -rf bin/
 	go clean
 
+# Документация
+docs:
+	@echo "Generating documentation..."
+	go run ./cmd/docs
+
+docs-serve:
+	@echo "Serving documentation on http://localhost:8080"
+	python3 -m http.server 8080 --directory docs
+
 # Помощь
 help:
 	@echo "Available commands:"
@@ -84,5 +93,7 @@ help:
 	@echo "  docker-run        - Run with Docker Compose"
 	@echo "  docker-run-detached - Run with Docker Compose (detached)"
 	@echo "  docker-stop       - Stop Docker services"
+	@echo "  docs              - Generate documentation"
+	@echo "  docs-serve        - Serve documentation locally"
 	@echo "  clean             - Clean build artifacts"
 	@echo "  help              - Show this help" 

@@ -1,0 +1,3145 @@
+{
+  "generated_at": "2025-08-04T15:47:48.538830475+03:00",
+  "packages": {
+    "auth": {
+      "name": "auth",
+      "description": "",
+      "functions": [
+        {
+          "name": "GenerateToken",
+          "type": "function",
+          "description": "GenerateToken генерирует JWT токен для пользователя",
+          "file": "auth/jwt.go",
+          "line": 21,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string",
+            "error"
+          ]
+        },
+        {
+          "name": "ValidateToken",
+          "type": "function",
+          "description": "ValidateToken валидирует JWT токен и возвращает claims",
+          "file": "auth/jwt.go",
+          "line": 42,
+          "params": [
+            {
+              "name": "tokenString",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*Claims",
+            "error"
+          ]
+        },
+        {
+          "name": "SetJWTSecret",
+          "type": "function",
+          "description": "SetJWTSecret устанавливает секретный ключ для JWT (для конфигурации)",
+          "file": "auth/jwt.go",
+          "line": 62,
+          "params": [
+            {
+              "name": "secret",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestGenerateAndValidateToken",
+          "type": "function",
+          "description": "",
+          "file": "auth/jwt_test.go",
+          "line": 7,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestValidateInvalidToken",
+          "type": "function",
+          "description": "",
+          "file": "auth/jwt_test.go",
+          "line": 37,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestTokenExpiration",
+          "type": "function",
+          "description": "",
+          "file": "auth/jwt_test.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestSetJWTSecret",
+          "type": "function",
+          "description": "",
+          "file": "auth/jwt_test.go",
+          "line": 66,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "JWTAuthMiddleware",
+          "type": "function",
+          "description": "JWTAuthMiddleware middleware для проверки JWT токена",
+          "file": "auth/middleware.go",
+          "line": 11,
+          "returns": [
+            "gin.HandlerFunc"
+          ]
+        },
+        {
+          "name": "GetUserIDFromContext",
+          "type": "function",
+          "description": "GetUserIDFromContext получает user_id из контекста Gin",
+          "file": "auth/middleware.go",
+          "line": 44,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string"
+          ]
+        },
+        {
+          "name": "GetEmailFromContext",
+          "type": "function",
+          "description": "GetEmailFromContext получает email из контекста Gin",
+          "file": "auth/middleware.go",
+          "line": 52,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string"
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "Claims",
+          "type": "struct",
+          "description": "Claims структура для JWT claims",
+          "file": "auth/jwt.go",
+          "line": 14,
+          "params": [
+            {
+              "name": "UserID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "bl": {
+      "name": "bl",
+      "description": "",
+      "functions": [
+        {
+          "name": "ImportCategories",
+          "type": "function",
+          "description": "ImportCategories импортирует категории пользователя из Firebase в PostgreSQL Поддерживает многократные запуски с инкрементальным обновлением",
+          "file": "bl/importCategories.go",
+          "line": 33,
+          "params": [
+            {
+              "name": "login",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ImportCategoriesResult",
+            "error"
+          ]
+        },
+        {
+          "name": "determineAction",
+          "type": "function",
+          "description": "determineAction определяет действие на основе статуса миграции и существования категории",
+          "file": "bl/importCategories.go",
+          "line": 153,
+          "params": [
+            {
+              "name": "lastMigration",
+              "type": "*db.MigrationLog",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "existsInPostgres",
+              "type": "bool",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string"
+          ]
+        },
+        {
+          "name": "importNewCategory",
+          "type": "function",
+          "description": "importNewCategory импортирует новую категорию",
+          "file": "bl/importCategories.go",
+          "line": 183,
+          "params": [
+            {
+              "name": "fbCategory",
+              "type": "*fb.FBCategory",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "categoryCRUD",
+              "type": "*db.CategoryCRUD",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "migrationTracker",
+              "type": "*db.MigrationTracker",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "updateExistingCategory",
+          "type": "function",
+          "description": "updateExistingCategory обновляет существующую категорию",
+          "file": "bl/importCategories.go",
+          "line": 203,
+          "params": [
+            {
+              "name": "fbCategory",
+              "type": "*fb.FBCategory",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "categoryCRUD",
+              "type": "*db.CategoryCRUD",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "migrationTracker",
+              "type": "*db.MigrationTracker",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "ImportCategoriesForAllUsers",
+          "type": "function",
+          "description": "ImportCategoriesForAllUsers импортирует категории для всех пользователей Полезно для массовой миграции",
+          "file": "bl/importCategories.go",
+          "line": 224,
+          "returns": [
+            "*ImportCategoriesResult",
+            "error"
+          ]
+        },
+        {
+          "name": "GetImportStatus",
+          "type": "function",
+          "description": "GetImportStatus получает статус импорта для пользователя",
+          "file": "bl/importCategories.go",
+          "line": 231,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ast.MapType",
+            "error"
+          ]
+        },
+        {
+          "name": "ImportStatements",
+          "type": "function",
+          "description": "ImportStatements импортирует statements пользователя из Firebase в PostgreSQL Поддерживает многократные запуски с инкрементальным обновлением",
+          "file": "bl/importStatements.go",
+          "line": 26,
+          "params": [
+            {
+              "name": "login",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ImportStatementsResult",
+            "error"
+          ]
+        },
+        {
+          "name": "importNewStatement",
+          "type": "function",
+          "description": "importNewStatement импортирует новое statement",
+          "file": "bl/importStatements.go",
+          "line": 160,
+          "params": [
+            {
+              "name": "fbStatement",
+              "type": "*fb.FBStatement",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statementCRUD",
+              "type": "*db.StatementCRUD",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "migrationTracker",
+              "type": "*db.MigrationTracker",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "updateExistingStatement",
+          "type": "function",
+          "description": "updateExistingStatement обновляет существующее statement",
+          "file": "bl/importStatements.go",
+          "line": 181,
+          "params": [
+            {
+              "name": "fbStatement",
+              "type": "*fb.FBStatement",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statementCRUD",
+              "type": "*db.StatementCRUD",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "migrationTracker",
+              "type": "*db.MigrationTracker",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "ImportAllData",
+          "type": "function",
+          "description": "ImportAllData импортирует пользователя, категории и statements",
+          "file": "bl/importStatements.go",
+          "line": 202,
+          "params": [
+            {
+              "name": "login",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ImportAllDataResult",
+            "error"
+          ]
+        },
+        {
+          "name": "ImportUser",
+          "type": "function",
+          "description": "ImportUser импортирует пользователя и его категории из Firebase в PostgreSQL",
+          "file": "bl/importUser.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "login",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetUser",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 22,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*MockUser",
+            "error"
+          ]
+        },
+        {
+          "name": "CheckPassword",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 29,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "bool",
+            "error"
+          ]
+        },
+        {
+          "name": "GetCategories",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 37,
+          "params": [
+            {
+              "name": "user",
+              "type": "*MockUser",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "[]*fb.FBCategory",
+            "error"
+          ]
+        },
+        {
+          "name": "TestImportCategories",
+          "type": "function",
+          "description": "TestImportCategories тестирует основную логику импорта",
+          "file": "bl/import_test.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestMigrationTracker",
+          "type": "function",
+          "description": "TestMigrationTracker тестирует трекер миграций",
+          "file": "bl/import_test.go",
+          "line": 128,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestDetermineAction",
+          "type": "function",
+          "description": "TestDetermineAction тестирует логику определения действия",
+          "file": "bl/import_test.go",
+          "line": 171,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "clearTestData",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 230,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "importCategoriesWithMock",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 245,
+          "params": [
+            {
+              "name": "mockClient",
+              "type": "*MockFirebaseClient",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ImportCategoriesResult",
+            "error"
+          ]
+        },
+        {
+          "name": "BenchmarkImportCategories",
+          "type": "function",
+          "description": "BenchmarkImportCategories тестирует производительность импорта",
+          "file": "bl/import_test.go",
+          "line": 253,
+          "params": [
+            {
+              "name": "b",
+              "type": "*testing.B",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "clearTestDataForBenchmark",
+          "type": "function",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 269,
+          "params": [
+            {
+              "name": "b",
+              "type": "*testing.B",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "ImportCategoriesResult",
+          "type": "struct",
+          "description": "ImportCategoriesResult содержит результат импорта категорий",
+          "file": "bl/importCategories.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "TotalProcessed",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Imported",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Updated",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Skipped",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Failed",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Errors",
+              "type": "[]ImportError",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Stats",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Duration",
+              "type": "time.Duration",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ImportError",
+          "type": "struct",
+          "description": "ImportError содержит информацию об ошибке импорта",
+          "file": "bl/importCategories.go",
+          "line": 25,
+          "params": [
+            {
+              "name": "CategoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Error",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ImportStatementsResult",
+          "type": "struct",
+          "description": "ImportStatementsResult содержит результат импорта statements",
+          "file": "bl/importStatements.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "TotalProcessed",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Imported",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Updated",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Skipped",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Failed",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Errors",
+              "type": "[]ImportError",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Stats",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Duration",
+              "type": "time.Duration",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ImportAllDataResult",
+          "type": "struct",
+          "description": "ImportAllDataResult содержит результат полного импорта данных",
+          "file": "bl/importStatements.go",
+          "line": 249,
+          "params": [
+            {
+              "name": "StatementsResult",
+              "type": "*ImportStatementsResult",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Duration",
+              "type": "time.Duration",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "StartTime",
+              "type": "time.Time",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "EndTime",
+              "type": "time.Time",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "MockFirebaseClient",
+          "type": "struct",
+          "description": "MockFirebaseClient для тестирования",
+          "file": "bl/import_test.go",
+          "line": 12,
+          "params": [
+            {
+              "name": "users",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "categories",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "MockUser",
+          "type": "struct",
+          "description": "",
+          "file": "bl/import_test.go",
+          "line": 17,
+          "params": [
+            {
+              "name": "UID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "db": {
+      "name": "db",
+      "description": "",
+      "functions": [
+        {
+          "name": "CreateCategory",
+          "type": "function",
+          "description": "CreateCategory creates a new category",
+          "file": "db/category_crud.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "category",
+              "type": "*Category",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetCategoryByID",
+          "type": "function",
+          "description": "GetCategoryByID retrieves a category by ID",
+          "file": "db/category_crud.go",
+          "line": 29,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*Category",
+            "error"
+          ]
+        },
+        {
+          "name": "GetCategoriesByUserID",
+          "type": "function",
+          "description": "GetCategoriesByUserID retrieves all categories for a specific user",
+          "file": "db/category_crud.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "[]*Category",
+            "error"
+          ]
+        },
+        {
+          "name": "GetAllCategories",
+          "type": "function",
+          "description": "GetAllCategories retrieves all categories",
+          "file": "db/category_crud.go",
+          "line": 71,
+          "returns": [
+            "[]*Category",
+            "error"
+          ]
+        },
+        {
+          "name": "UpdateCategory",
+          "type": "function",
+          "description": "UpdateCategory updates an existing category",
+          "file": "db/category_crud.go",
+          "line": 97,
+          "params": [
+            {
+              "name": "category",
+              "type": "*Category",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteCategory",
+          "type": "function",
+          "description": "DeleteCategory deletes a category by ID",
+          "file": "db/category_crud.go",
+          "line": 123,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteCategoriesByUserID",
+          "type": "function",
+          "description": "DeleteCategoriesByUserID deletes all categories for a specific user",
+          "file": "db/category_crud.go",
+          "line": 144,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "CategoryExists",
+          "type": "function",
+          "description": "CategoryExists checks if a category exists by ID",
+          "file": "db/category_crud.go",
+          "line": 165,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "bool",
+            "error"
+          ]
+        },
+        {
+          "name": "InitDB",
+          "type": "function",
+          "description": "InitDB initializes the database connection",
+          "file": "db/connection.go",
+          "line": 16,
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "CloseDB",
+          "type": "function",
+          "description": "CloseDB closes the database connection",
+          "file": "db/connection.go",
+          "line": 59,
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "createTables",
+          "type": "function",
+          "description": "createTables creates the necessary tables if they don't exist",
+          "file": "db/connection.go",
+          "line": 67,
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "getEnv",
+          "type": "function",
+          "description": "getEnv gets an environment variable or returns a default value",
+          "file": "db/connection.go",
+          "line": 131,
+          "params": [
+            {
+              "name": "key",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "defaultValue",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string"
+          ]
+        },
+        {
+          "name": "ExampleCRUDOperations",
+          "type": "function",
+          "description": "ExampleCRUDOperations demonstrates all CRUD operations",
+          "file": "db/examples.go",
+          "line": 11
+        },
+        {
+          "name": "CreateMigrationLogsTable",
+          "type": "function",
+          "description": "CreateMigrationLogsTable создает таблицу для отслеживания миграций",
+          "file": "db/migration_tracker.go",
+          "line": 26,
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "LogMigration",
+          "type": "function",
+          "description": "LogMigration записывает информацию о миграции",
+          "file": "db/migration_tracker.go",
+          "line": 50,
+          "params": [
+            {
+              "name": "entityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "entityID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "action",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "status",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "errorMsg",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetLastMigrationStatus",
+          "type": "function",
+          "description": "GetLastMigrationStatus получает статус последней миграции для сущности",
+          "file": "db/migration_tracker.go",
+          "line": 72,
+          "params": [
+            {
+              "name": "entityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "entityID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*MigrationLog",
+            "error"
+          ]
+        },
+        {
+          "name": "GetMigrationStats",
+          "type": "function",
+          "description": "GetMigrationStats получает статистику миграций",
+          "file": "db/migration_tracker.go",
+          "line": 97,
+          "params": [
+            {
+              "name": "entityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*ast.MapType",
+            "error"
+          ]
+        },
+        {
+          "name": "ClearMigrationLogs",
+          "type": "function",
+          "description": "ClearMigrationLogs очищает логи миграций (для тестирования)",
+          "file": "db/migration_tracker.go",
+          "line": 125,
+          "params": [
+            {
+              "name": "entityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "CreateStatement",
+          "type": "function",
+          "description": "CreateStatement creates a new statement",
+          "file": "db/statement_crud.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "statement",
+              "type": "*Statement",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetStatementByID",
+          "type": "function",
+          "description": "GetStatementByID retrieves a statement by ID",
+          "file": "db/statement_crud.go",
+          "line": 29,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*Statement",
+            "error"
+          ]
+        },
+        {
+          "name": "GetStatementsByUserID",
+          "type": "function",
+          "description": "GetStatementsByUserID retrieves all statements for a specific user",
+          "file": "db/statement_crud.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "[]*Statement",
+            "error"
+          ]
+        },
+        {
+          "name": "GetStatementsByCategoryID",
+          "type": "function",
+          "description": "GetStatementsByCategoryID retrieves all statements for a specific category",
+          "file": "db/statement_crud.go",
+          "line": 71,
+          "params": [
+            {
+              "name": "categoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "[]*Statement",
+            "error"
+          ]
+        },
+        {
+          "name": "GetAllStatements",
+          "type": "function",
+          "description": "GetAllStatements retrieves all statements",
+          "file": "db/statement_crud.go",
+          "line": 97,
+          "returns": [
+            "[]*Statement",
+            "error"
+          ]
+        },
+        {
+          "name": "UpdateStatement",
+          "type": "function",
+          "description": "UpdateStatement updates an existing statement",
+          "file": "db/statement_crud.go",
+          "line": 123,
+          "params": [
+            {
+              "name": "statement",
+              "type": "*Statement",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteStatement",
+          "type": "function",
+          "description": "DeleteStatement deletes a statement by ID",
+          "file": "db/statement_crud.go",
+          "line": 149,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteStatementsByUserID",
+          "type": "function",
+          "description": "DeleteStatementsByUserID deletes all statements for a specific user",
+          "file": "db/statement_crud.go",
+          "line": 170,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteStatementsByCategoryID",
+          "type": "function",
+          "description": "DeleteStatementsByCategoryID deletes all statements for a specific category",
+          "file": "db/statement_crud.go",
+          "line": 191,
+          "params": [
+            {
+              "name": "categoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "StatementExists",
+          "type": "function",
+          "description": "StatementExists checks if a statement exists by ID",
+          "file": "db/statement_crud.go",
+          "line": 212,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "bool",
+            "error"
+          ]
+        },
+        {
+          "name": "CreateUser",
+          "type": "function",
+          "description": "CreateUser creates a new user",
+          "file": "db/user_crud.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "user",
+              "type": "*User",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetUserByID",
+          "type": "function",
+          "description": "GetUserByID retrieves a user by ID",
+          "file": "db/user_crud.go",
+          "line": 29,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*User",
+            "error"
+          ]
+        },
+        {
+          "name": "GetUserByEmail",
+          "type": "function",
+          "description": "GetUserByEmail retrieves a user by email",
+          "file": "db/user_crud.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*User",
+            "error"
+          ]
+        },
+        {
+          "name": "GetAllUsers",
+          "type": "function",
+          "description": "GetAllUsers retrieves all users",
+          "file": "db/user_crud.go",
+          "line": 61,
+          "returns": [
+            "[]*User",
+            "error"
+          ]
+        },
+        {
+          "name": "UpdateUser",
+          "type": "function",
+          "description": "UpdateUser updates an existing user",
+          "file": "db/user_crud.go",
+          "line": 87,
+          "params": [
+            {
+              "name": "user",
+              "type": "*User",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteUser",
+          "type": "function",
+          "description": "DeleteUser deletes a user by ID",
+          "file": "db/user_crud.go",
+          "line": 113,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "UserExists",
+          "type": "function",
+          "description": "UserExists checks if a user exists by email",
+          "file": "db/user_crud.go",
+          "line": 134,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "bool",
+            "error"
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "CategoryCRUD",
+          "type": "struct",
+          "description": "CategoryCRUD provides CRUD operations for Category entity",
+          "file": "db/category_crud.go",
+          "line": 10
+        },
+        {
+          "name": "MigrationLog",
+          "type": "struct",
+          "description": "MigrationLog представляет запись о миграции",
+          "file": "db/migration_tracker.go",
+          "line": 10,
+          "params": [
+            {
+              "name": "ID",
+              "type": "int",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "EntityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "EntityID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Action",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Status",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Error",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CreatedAt",
+              "type": "time.Time",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UpdatedAt",
+              "type": "time.Time",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "MigrationTracker",
+          "type": "struct",
+          "description": "MigrationTracker предоставляет методы для отслеживания миграций",
+          "file": "db/migration_tracker.go",
+          "line": 23
+        },
+        {
+          "name": "StatementCRUD",
+          "type": "struct",
+          "description": "StatementCRUD provides CRUD operations for Statement entity",
+          "file": "db/statement_crud.go",
+          "line": 10
+        },
+        {
+          "name": "Statement",
+          "type": "struct",
+          "description": "",
+          "file": "db/types.go",
+          "line": 3,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserId",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CategoryId",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "Category",
+          "type": "struct",
+          "description": "",
+          "file": "db/types.go",
+          "line": 10,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserId",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "User",
+          "type": "struct",
+          "description": "",
+          "file": "db/types.go",
+          "line": 16,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "UserCRUD",
+          "type": "struct",
+          "description": "UserCRUD provides CRUD operations for User entity",
+          "file": "db/user_crud.go",
+          "line": 10
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "fb": {
+      "name": "fb",
+      "description": "",
+      "functions": [
+        {
+          "name": "CheckPassword",
+          "type": "function",
+          "description": "",
+          "file": "fb/CheckPassword.go",
+          "line": 29,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*FirebaseAuthResponse",
+            "error"
+          ]
+        },
+        {
+          "name": "GetCategories",
+          "type": "function",
+          "description": "",
+          "file": "fb/GetCategories.go",
+          "line": 15,
+          "params": [
+            {
+              "name": "user",
+              "type": "*auth.UserRecord",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "[]*FBCategory",
+            "error"
+          ]
+        },
+        {
+          "name": "GetStatements",
+          "type": "function",
+          "description": "",
+          "file": "fb/GetStatements.go",
+          "line": 21,
+          "returns": [
+            "[]*FBStatement",
+            "error"
+          ]
+        },
+        {
+          "name": "GetUser",
+          "type": "function",
+          "description": "",
+          "file": "fb/GetUser.go",
+          "line": 9,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*auth.UserRecord",
+            "error"
+          ]
+        },
+        {
+          "name": "init",
+          "type": "function",
+          "description": "",
+          "file": "fb/fb.go",
+          "line": 14
+        }
+      ],
+      "structs": [
+        {
+          "name": "FirebaseAuthResponse",
+          "type": "struct",
+          "description": "FirebaseAuthResponse represents the response from Firebase Authentication API",
+          "file": "fb/CheckPassword.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "IDToken",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "RefreshToken",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "ExpiresIn",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "LocalID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Registered",
+              "type": "bool",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "FirebaseAuthRequest",
+          "type": "struct",
+          "description": "FirebaseAuthRequest represents the request to Firebase Authentication API",
+          "file": "fb/CheckPassword.go",
+          "line": 23,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "ReturnSecureToken",
+              "type": "bool",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "FBCategory",
+          "type": "struct",
+          "description": "",
+          "file": "fb/GetCategories.go",
+          "line": 9,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Label",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserId",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "FBStatement",
+          "type": "struct",
+          "description": "",
+          "file": "fb/GetStatements.go",
+          "line": 8,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CreatedAt",
+              "type": "time.Time",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Text",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserId",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CategoryId",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "fbStatementRaw",
+          "type": "struct",
+          "description": "",
+          "file": "fb/GetStatements.go",
+          "line": 16,
+          "params": [
+            {
+              "name": "CreatedAt",
+              "type": "int64",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "handlers": {
+      "name": "handlers",
+      "description": "",
+      "functions": [
+        {
+          "name": "Register",
+          "type": "function",
+          "description": "Register обрабатывает регистрацию пользователя",
+          "file": "handlers/auth.go",
+          "line": 37,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "type": "function",
+          "description": "Login обрабатывает логин пользователя",
+          "file": "handlers/auth.go",
+          "line": 94,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "GetStatements",
+          "type": "function",
+          "description": "GetStatements получает все statements пользователя",
+          "file": "handlers/data.go",
+          "line": 36,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "GetStatement",
+          "type": "function",
+          "description": "GetStatement получает конкретный statement",
+          "file": "handlers/data.go",
+          "line": 54,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "CreateStatement",
+          "type": "function",
+          "description": "CreateStatement создает новый statement",
+          "file": "handlers/data.go",
+          "line": 75,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "UpdateStatement",
+          "type": "function",
+          "description": "UpdateStatement обновляет statement",
+          "file": "handlers/data.go",
+          "line": 116,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "DeleteStatement",
+          "type": "function",
+          "description": "DeleteStatement удаляет statement",
+          "file": "handlers/data.go",
+          "line": 161,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "GetCategories",
+          "type": "function",
+          "description": "GetCategories получает все категории пользователя",
+          "file": "handlers/data.go",
+          "line": 185,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "GetCategory",
+          "type": "function",
+          "description": "GetCategory получает конкретную категорию",
+          "file": "handlers/data.go",
+          "line": 203,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "CreateCategory",
+          "type": "function",
+          "description": "CreateCategory создает новую категорию",
+          "file": "handlers/data.go",
+          "line": 224,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "UpdateCategory",
+          "type": "function",
+          "description": "UpdateCategory обновляет категорию",
+          "file": "handlers/data.go",
+          "line": 256,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "DeleteCategory",
+          "type": "function",
+          "description": "DeleteCategory удаляет категорию",
+          "file": "handlers/data.go",
+          "line": 292,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "InitWebSocketManager",
+          "type": "function",
+          "description": "InitWebSocketManager инициализирует WebSocket менеджер",
+          "file": "handlers/websocket.go",
+          "line": 16
+        },
+        {
+          "name": "HandleWebSocket",
+          "type": "function",
+          "description": "HandleWebSocket обрабатывает WebSocket подключения",
+          "file": "handlers/websocket.go",
+          "line": 21,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyCategoryUpdate",
+          "type": "function",
+          "description": "NotifyCategoryUpdate отправляет уведомление об обновлении категории",
+          "file": "handlers/websocket.go",
+          "line": 33,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "category",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "action",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyCategoryCreated",
+          "type": "function",
+          "description": "NotifyCategoryCreated отправляет уведомление о создании категории",
+          "file": "handlers/websocket.go",
+          "line": 44,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "category",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyCategoryUpdated",
+          "type": "function",
+          "description": "NotifyCategoryUpdated отправляет уведомление об обновлении категории",
+          "file": "handlers/websocket.go",
+          "line": 49,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "category",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyCategoryDeleted",
+          "type": "function",
+          "description": "NotifyCategoryDeleted отправляет уведомление об удалении категории",
+          "file": "handlers/websocket.go",
+          "line": 54,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "categoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyStatementUpdate",
+          "type": "function",
+          "description": "NotifyStatementUpdate отправляет уведомление об обновлении statement",
+          "file": "handlers/websocket.go",
+          "line": 65,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statement",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "action",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyStatementCreated",
+          "type": "function",
+          "description": "NotifyStatementCreated отправляет уведомление о создании statement",
+          "file": "handlers/websocket.go",
+          "line": 76,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statement",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyStatementUpdated",
+          "type": "function",
+          "description": "NotifyStatementUpdated отправляет уведомление об обновлении statement",
+          "file": "handlers/websocket.go",
+          "line": 81,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statement",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "NotifyStatementDeleted",
+          "type": "function",
+          "description": "NotifyStatementDeleted отправляет уведомление об удалении statement",
+          "file": "handlers/websocket.go",
+          "line": 86,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "statementID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "LoginRequest",
+          "type": "struct",
+          "description": "LoginRequest структура для запроса логина",
+          "file": "handlers/auth.go",
+          "line": 16,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "RegisterRequest",
+          "type": "struct",
+          "description": "RegisterRequest структура для запроса регистрации",
+          "file": "handlers/auth.go",
+          "line": 22,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "LoginResponse",
+          "type": "struct",
+          "description": "LoginResponse структура для ответа при логине",
+          "file": "handlers/auth.go",
+          "line": 28,
+          "params": [
+            {
+              "name": "Token",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "User",
+              "type": "*ast.StructType",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "CreateStatementRequest",
+          "type": "struct",
+          "description": "CreateStatementRequest структура для создания statement",
+          "file": "handlers/data.go",
+          "line": 14,
+          "params": [
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CategoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "UpdateStatementRequest",
+          "type": "struct",
+          "description": "UpdateStatementRequest структура для обновления statement",
+          "file": "handlers/data.go",
+          "line": 20,
+          "params": [
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CategoryID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "CreateCategoryRequest",
+          "type": "struct",
+          "description": "CreateCategoryRequest структура для создания категории",
+          "file": "handlers/data.go",
+          "line": 26,
+          "params": [
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "UpdateCategoryRequest",
+          "type": "struct",
+          "description": "UpdateCategoryRequest структура для обновления категории",
+          "file": "handlers/data.go",
+          "line": 31,
+          "params": [
+            {
+              "name": "Title",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "utils": {
+      "name": "utils",
+      "description": "",
+      "functions": [
+        {
+          "name": "GenerateID",
+          "type": "function",
+          "description": "GenerateID генерирует простой уникальный ID",
+          "file": "utils/id.go",
+          "line": 9,
+          "returns": [
+            "string"
+          ]
+        },
+        {
+          "name": "NewPasswordHasher",
+          "type": "function",
+          "description": "NewPasswordHasher создает новый экземпляр PasswordHasher",
+          "file": "utils/password.go",
+          "line": 14,
+          "returns": [
+            "*PasswordHasher"
+          ]
+        },
+        {
+          "name": "HashPassword",
+          "type": "function",
+          "description": "HashPassword хеширует пароль с использованием bcrypt",
+          "file": "utils/password.go",
+          "line": 19,
+          "params": [
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string",
+            "error"
+          ]
+        },
+        {
+          "name": "CheckPassword",
+          "type": "function",
+          "description": "CheckPassword проверяет пароль против хеша",
+          "file": "utils/password.go",
+          "line": 30,
+          "params": [
+            {
+              "name": "hashedPassword",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GenerateRandomPassword",
+          "type": "function",
+          "description": "GenerateRandomPassword генерирует случайный пароль заданной длины",
+          "file": "utils/password.go",
+          "line": 40,
+          "params": [
+            {
+              "name": "length",
+              "type": "int",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string",
+            "error"
+          ]
+        },
+        {
+          "name": "ValidatePasswordStrength",
+          "type": "function",
+          "description": "ValidatePasswordStrength проверяет сложность пароля",
+          "file": "utils/password.go",
+          "line": 65,
+          "params": [
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "bool",
+            "[]string"
+          ]
+        },
+        {
+          "name": "GetPasswordStrength",
+          "type": "function",
+          "description": "GetPasswordStrength возвращает оценку сложности пароля (0-100)",
+          "file": "utils/password.go",
+          "line": 119,
+          "params": [
+            {
+              "name": "password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "int"
+          ]
+        },
+        {
+          "name": "GetPasswordStrengthText",
+          "type": "function",
+          "description": "GetPasswordStrengthText возвращает текстовое описание сложности пароля",
+          "file": "utils/password.go",
+          "line": 173,
+          "params": [
+            {
+              "name": "strength",
+              "type": "int",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "string"
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_HashPassword",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 8,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_CheckPassword",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 53,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_GenerateRandomPassword",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 105,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_ValidatePasswordStrength",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 184,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_GetPasswordStrength",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 264,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "TestPasswordHasher_GetPasswordStrengthText",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 316,
+          "params": [
+            {
+              "name": "t",
+              "type": "*testing.T",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "BenchmarkPasswordHasher_HashPassword",
+          "type": "function",
+          "description": "Benchmark тесты для производительности",
+          "file": "utils/password_test.go",
+          "line": 362,
+          "params": [
+            {
+              "name": "b",
+              "type": "*testing.B",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "BenchmarkPasswordHasher_CheckPassword",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 375,
+          "params": [
+            {
+              "name": "b",
+              "type": "*testing.B",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "BenchmarkPasswordHasher_GenerateRandomPassword",
+          "type": "function",
+          "description": "",
+          "file": "utils/password_test.go",
+          "line": 392,
+          "params": [
+            {
+              "name": "b",
+              "type": "*testing.B",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "PasswordHasher",
+          "type": "struct",
+          "description": "PasswordHasher предоставляет методы для работы с паролями",
+          "file": "utils/password.go",
+          "line": 11
+        }
+      ],
+      "constants": [],
+      "variables": []
+    },
+    "websocket": {
+      "name": "websocket",
+      "description": "",
+      "functions": [
+        {
+          "name": "NewManager",
+          "type": "function",
+          "description": "NewManager создает новый WebSocket менеджер",
+          "file": "websocket/manager.go",
+          "line": 40,
+          "returns": [
+            "*Manager"
+          ]
+        },
+        {
+          "name": "HandleWebSocket",
+          "type": "function",
+          "description": "HandleWebSocket обрабатывает WebSocket подключения",
+          "file": "websocket/manager.go",
+          "line": 53,
+          "params": [
+            {
+              "name": "w",
+              "type": "http.ResponseWriter",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "r",
+              "type": "*http.Request",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "registerClient",
+          "type": "function",
+          "description": "registerClient регистрирует клиента",
+          "file": "websocket/manager.go",
+          "line": 74,
+          "params": [
+            {
+              "name": "client",
+              "type": "*Client",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "unregisterClient",
+          "type": "function",
+          "description": "unregisterClient удаляет клиента",
+          "file": "websocket/manager.go",
+          "line": 85,
+          "params": [
+            {
+              "name": "client",
+              "type": "*Client",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "BroadcastToUser",
+          "type": "function",
+          "description": "BroadcastToUser отправляет сообщение всем клиентам пользователя",
+          "file": "websocket/manager.go",
+          "line": 112,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "messageType",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "payload",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "readPump",
+          "type": "function",
+          "description": "readPump читает сообщения от клиента",
+          "file": "websocket/manager.go",
+          "line": 149
+        },
+        {
+          "name": "writePump",
+          "type": "function",
+          "description": "writePump отправляет сообщения клиенту",
+          "file": "websocket/manager.go",
+          "line": 189
+        },
+        {
+          "name": "generateClientID",
+          "type": "function",
+          "description": "generateClientID генерирует уникальный ID для клиента",
+          "file": "websocket/manager.go",
+          "line": 224,
+          "returns": [
+            "string"
+          ]
+        }
+      ],
+      "structs": [
+        {
+          "name": "Message",
+          "type": "struct",
+          "description": "Message структура для WebSocket сообщений",
+          "file": "websocket/manager.go",
+          "line": 15,
+          "params": [
+            {
+              "name": "Type",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Payload",
+              "type": "interface{}",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "Client",
+          "type": "struct",
+          "description": "Client представляет WebSocket клиента",
+          "file": "websocket/manager.go",
+          "line": 22,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UserID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Conn",
+              "type": "*websocket.Conn",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Send",
+              "type": "*ast.ChanType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Manager",
+              "type": "*Manager",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "mu",
+              "type": "sync.Mutex",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "Manager",
+          "type": "struct",
+          "description": "Manager управляет WebSocket подключениями",
+          "file": "websocket/manager.go",
+          "line": 32,
+          "params": [
+            {
+              "name": "clients",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "userClients",
+              "type": "*ast.MapType",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "mu",
+              "type": "sync.RWMutex",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "upgrader",
+              "type": "websocket.Upgrader",
+              "description": "",
+              "required": true
+            }
+          ]
+        }
+      ],
+      "constants": [],
+      "variables": []
+    }
+  },
+  "api": {
+    "endpoints": [
+      {
+        "method": "POST",
+        "path": "/api/register",
+        "description": "Регистрация нового пользователя",
+        "handler": "handlers.Register",
+        "auth": false,
+        "params": [
+          {
+            "name": "email",
+            "type": "string",
+            "description": "Email пользователя",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "string",
+            "description": "Пароль пользователя",
+            "required": true
+          }
+        ],
+        "response": {
+          "200": "Успешная регистрация",
+          "400": "Ошибка валидации",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/login",
+        "description": "Авторизация пользователя",
+        "handler": "handlers.Login",
+        "auth": false,
+        "params": [
+          {
+            "name": "email",
+            "type": "string",
+            "description": "Email пользователя",
+            "required": true
+          },
+          {
+            "name": "password",
+            "type": "string",
+            "description": "Пароль пользователя",
+            "required": true
+          }
+        ],
+        "response": {
+          "200": "Успешная авторизация",
+          "401": "Неверные учетные данные",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/statements",
+        "description": "Получение списка statements",
+        "handler": "handlers.GetStatements",
+        "auth": true,
+        "params": [],
+        "response": {
+          "200": "Список statements",
+          "401": "Не авторизован",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/statements",
+        "description": "Создание нового statement",
+        "handler": "handlers.CreateStatement",
+        "auth": true,
+        "params": [
+          {
+            "name": "title",
+            "type": "string",
+            "description": "Заголовок statement",
+            "required": true
+          },
+          {
+            "name": "content",
+            "type": "string",
+            "description": "Содержание statement",
+            "required": true
+          },
+          {
+            "name": "category_id",
+            "type": "string",
+            "description": "ID категории",
+            "required": true
+          }
+        ],
+        "response": {
+          "201": "Statement создан",
+          "400": "Ошибка валидации",
+          "401": "Не авторизован",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/categories",
+        "description": "Получение списка категорий",
+        "handler": "handlers.GetCategories",
+        "auth": true,
+        "params": [],
+        "response": {
+          "200": "Список категорий",
+          "401": "Не авторизован",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/api/categories",
+        "description": "Создание новой категории",
+        "handler": "handlers.CreateCategory",
+        "auth": true,
+        "params": [
+          {
+            "name": "name",
+            "type": "string",
+            "description": "Название категории",
+            "required": true
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "description": "Описание категории",
+            "required": false
+          }
+        ],
+        "response": {
+          "201": "Категория создана",
+          "400": "Ошибка валидации",
+          "401": "Не авторизован",
+          "500": "Внутренняя ошибка сервера"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/api/ws",
+        "description": "WebSocket подключение для real-time уведомлений",
+        "handler": "handlers.HandleWebSocket",
+        "auth": true,
+        "params": [],
+        "response": {
+          "101": "WebSocket upgrade успешен",
+          "401": "Не авторизован"
+        }
+      }
+    ]
+  }
+}
