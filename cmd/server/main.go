@@ -45,6 +45,11 @@ func main() {
 	// API маршруты
 	api := r.Group("/api")
 	{
+		// Health check
+		api.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{"status": "ok"})
+		})
+
 		// Аутентификация (без верификации)
 		authGroup := api.Group("/auth")
 		{

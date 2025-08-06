@@ -2,6 +2,7 @@ package mail
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 
@@ -20,16 +21,19 @@ type MailConfig struct {
 func GetMailConfig() (*MailConfig, error) {
 	server := os.Getenv("MAIL_SERVER")
 	if server == "" {
+		log.Printf("[SMTP ERROR] MAIL_SERVER environment variable is required")
 		return nil, fmt.Errorf("MAIL_SERVER environment variable is required")
 	}
 
 	address := os.Getenv("MAIL_ADRESS")
 	if address == "" {
+		log.Printf("[SMTP ERROR] MAIL_ADRESS environment variable is required")
 		return nil, fmt.Errorf("MAIL_ADRESS environment variable is required")
 	}
 
 	password := os.Getenv("MAIL_PASSWORD")
 	if password == "" {
+		log.Printf("[SMTP ERROR] MAIL_PASSWORD environment variable is required")
 		return nil, fmt.Errorf("MAIL_PASSWORD environment variable is required")
 	}
 
@@ -41,6 +45,7 @@ func GetMailConfig() (*MailConfig, error) {
 		}
 	}
 
+	log.Printf("[SMTP INFO] Mail config loaded: Server=%s, Port=%d, Address=%s", server, port, address)
 	return &MailConfig{
 		Server:   server,
 		Port:     port,
@@ -51,8 +56,11 @@ func GetMailConfig() (*MailConfig, error) {
 
 // SendOTPEmail отправляет email с OTP кодом
 func SendOTPEmail(to, otpCode, otpType string) error {
+	log.Printf("[SMTP INFO] Attempting to send OTP email to: %s, type: %s", to, otpType)
+
 	config, err := GetMailConfig()
 	if err != nil {
+		log.Printf("[SMTP ERROR] Failed to get mail config: %v", err)
 		return fmt.Errorf("failed to get mail config: %v", err)
 	}
 
@@ -78,6 +86,7 @@ func SendOTPEmail(to, otpCode, otpType string) error {
 			<p>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
 		`, otpCode)
 	default:
+		log.Printf("[SMTP ERROR] Unknown OTP type: %s", otpType)
 		return fmt.Errorf("unknown OTP type: %s", otpType)
 	}
 
@@ -90,19 +99,26 @@ func SendOTPEmail(to, otpCode, otpType string) error {
 
 	// Настраиваем SMTP
 	d := gomail.NewDialer(config.Server, config.Port, config.Address, config.Password)
+	log.Printf("[SMTP INFO] Attempting to connect to SMTP server: %s:%d", config.Server, config.Port)
 
 	// Отправляем email
 	if err := d.DialAndSend(m); err != nil {
+		log.Printf("[SMTP ERROR] Failed to send email to %s: %v", to, err)
+		log.Printf("[SMTP ERROR] SMTP Details: Server=%s, Port=%d, Address=%s", config.Server, config.Port, config.Address)
 		return fmt.Errorf("failed to send email: %v", err)
 	}
 
+	log.Printf("[SMTP SUCCESS] Email sent successfully to: %s", to)
 	return nil
 }
 
 // SendWelcomeEmail отправляет приветственное письмо после подтверждения email
 func SendWelcomeEmail(to string) error {
+	log.Printf("[SMTP INFO] Attempting to send welcome email to: %s", to)
+
 	config, err := GetMailConfig()
 	if err != nil {
+		log.Printf("[SMTP ERROR] Failed to get mail config: %v", err)
 		return fmt.Errorf("failed to get mail config: %v", err)
 	}
 
@@ -126,10 +142,14 @@ func SendWelcomeEmail(to string) error {
 	m.SetBody("text/html", body)
 
 	d := gomail.NewDialer(config.Server, config.Port, config.Address, config.Password)
+	log.Printf("[SMTP INFO] Attempting to connect to SMTP server: %s:%d", config.Server, config.Port)
 
 	if err := d.DialAndSend(m); err != nil {
+		log.Printf("[SMTP ERROR] Failed to send welcome email to %s: %v", to, err)
+		log.Printf("[SMTP ERROR] SMTP Details: Server=%s, Port=%d, Address=%s", config.Server, config.Port, config.Address)
 		return fmt.Errorf("failed to send welcome email: %v", err)
 	}
 
+	log.Printf("[SMTP SUCCESS] Welcome email sent successfully to: %s", to)
 	return nil
 }
