@@ -4,15 +4,17 @@ import (
 	"net/http"
 	"strings"
 
+	"linka.type-backend/db"
+
 	"github.com/gin-gonic/gin"
 )
 
-// JWTAuthMiddleware middleware для проверки JWT токена
-func JWTAuthMiddleware() gin.HandlerFunc {
+// AuthMiddleware проверяет JWT токен
+func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
 			c.Abort()
 			return
 		}
@@ -25,17 +27,47 @@ func JWTAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		tokenString := parts[1]
-		claims, err := ValidateToken(tokenString)
+		token := parts[1]
+		claims, err := ValidateToken(token)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
 			c.Abort()
 			return
 		}
 
-		// Добавляем claims в контекст для использования в handlers
+		// Добавляем информацию о пользователе в контекст
 		c.Set("user_id", claims.UserID)
-		c.Set("email", claims.Email)
+		c.Set("user_email", claims.Email)
+		c.Next()
+	}
+}
+
+// EmailVerifiedMiddleware проверяет, что email пользователя верифицирован
+func EmailVerifiedMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, exists := c.Get("user_id")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+			c.Abort()
+			return
+		}
+
+		// Получаем пользователя из базы данных
+		userCRUD := &db.UserCRUD{}
+		user, err := userCRUD.GetUserByID(userID.(string))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+			c.Abort()
+			return
+		}
+
+		// Проверяем верификацию email
+		if !user.EmailVerified {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Email not verified"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }
