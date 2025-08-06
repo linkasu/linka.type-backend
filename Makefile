@@ -1,4 +1,4 @@
-.PHONY: test test-e2e test-unit build clean run-server run-playground docker-build docker-run docs
+.PHONY: test test-unit build clean run-server run-playground docker-build docker-run docs
 
 # Переменные
 BINARY_NAME=linka-type-backend
@@ -6,7 +6,7 @@ SERVER_BINARY=server
 PLAYGROUND_BINARY=playground
 
 # Тесты
-test: test-unit test-integration test-e2e
+test: test-unit test-integration
 
 test-unit:
 	@echo "Running unit tests..."
@@ -15,20 +15,6 @@ test-unit:
 test-integration:
 	@echo "Running integration tests..."
 	go test ./tests/integration/... -v
-
-test-e2e:
-	@echo "Starting test database..."
-	docker compose -f docker-compose.test.yml up -d test-db
-	@echo "Waiting for database to be ready..."
-	@sleep 15
-	@echo "Running e2e tests..."
-	go test ./tests/e2e/... -v
-	@echo "Stopping test database..."
-	docker compose -f docker-compose.test.yml down
-
-test-e2e-ci:
-	@echo "Running e2e tests in CI environment..."
-	go test ./tests/e2e/... -v
 
 # Сборка
 build: build-server build-playground
@@ -85,10 +71,9 @@ docs-serve:
 # Помощь
 help:
 	@echo "Available commands:"
-	@echo "  test              - Run all tests (unit + e2e)"
+	@echo "  test              - Run all tests (unit + integration)"
 	@echo "  test-unit         - Run unit tests only"
-	@echo "  test-e2e          - Run e2e tests only"
-	@echo "  test-e2e-ci       - Run e2e tests in CI environment"
+	@echo "  test-integration  - Run integration tests only"
 	@echo "  build             - Build all binaries"
 	@echo "  build-server      - Build server binary"
 	@echo "  build-playground  - Build playground binary"

@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"bytes"
@@ -30,7 +30,7 @@ type TestData struct {
 func setupTestServer() *gin.Engine {
 	// Устанавливаем переменные окружения для тестов
 	setupTestEnvironmentNoT()
-	
+
 	// Инициализируем базу данных
 	if err := db.InitDB(); err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))

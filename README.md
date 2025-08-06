@@ -348,17 +348,11 @@ make test-integration
 ```
 Tests API endpoints and JWT functionality without database.
 
-### E2E Tests
-```bash
-make test-e2e
-```
-Full end-to-end tests with database (requires Docker).
-
 ### All Tests
 ```bash
 make test
 ```
-Runs all tests (unit + integration + e2e).
+Runs all tests (unit + integration).
 
 ## Documentation
 

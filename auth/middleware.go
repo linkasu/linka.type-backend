@@ -82,8 +82,13 @@ func GetUserIDFromContext(c *gin.Context) string {
 
 // GetEmailFromContext получает email из контекста Gin
 func GetEmailFromContext(c *gin.Context) string {
-	if email, exists := c.Get("email"); exists {
+	if email, exists := c.Get("user_email"); exists {
 		return email.(string)
 	}
 	return ""
+}
+
+// JWTAuthMiddleware является алиасом для AuthMiddleware
+func JWTAuthMiddleware() gin.HandlerFunc {
+	return AuthMiddleware()
 }

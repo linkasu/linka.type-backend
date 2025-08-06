@@ -130,3 +130,15 @@ func (otp *OTPCRUD) GetOTPByCode(code, email, otpType string) (*OTPCode, error) 
 
 	return &otpCode, nil
 }
+
+// UpdateOTPExpiration обновляет время истечения OTP кода
+func (otp *OTPCRUD) UpdateOTPExpiration(id, expiresAt string) error {
+	query := `UPDATE otp_codes SET expires_at = $1 WHERE id = $2`
+
+	_, err := DB.Exec(query, expiresAt, id)
+	if err != nil {
+		return fmt.Errorf("failed to update OTP expiration: %v", err)
+	}
+
+	return nil
+}

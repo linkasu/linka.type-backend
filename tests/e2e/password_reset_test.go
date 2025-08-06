@@ -1,4 +1,4 @@
-package main
+package e2e
 
 import (
 	"bytes"
@@ -75,13 +75,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/register", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusCreated, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 		assert.Contains(t, response, "user_id")
 	})
@@ -92,7 +92,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "registration")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
-		
+
 		// Сохраняем код для использования в следующих тестах
 		suite.otpCode = otpRecord.Code
 	})
@@ -105,13 +105,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/verify-email", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 		assert.Contains(t, response, "token")
 		assert.Contains(t, response, "user")
@@ -124,13 +124,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 	})
 
@@ -140,7 +140,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "reset_password")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
-		
+
 		// Сохраняем код для сброса пароля
 		suite.resetOTPCode = otpRecord.Code
 	})
@@ -153,13 +153,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 		assert.Contains(t, response, "otp_id")
 	})
@@ -173,13 +173,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 	})
 
@@ -191,13 +191,13 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/login", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "token")
 		assert.Contains(t, response, "user")
 	})
@@ -210,7 +210,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/login", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
 }
@@ -225,14 +225,14 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
-		
+
 		// Должен вернуть 200, но не отправлять email
 		assert.Equal(t, http.StatusOK, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "message")
 	})
 
@@ -243,13 +243,13 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "error")
 	})
 
@@ -261,13 +261,13 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "error")
 	})
 
@@ -279,13 +279,13 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "error")
 	})
 }
@@ -359,13 +359,13 @@ func TestOTPExpiration(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "error")
 		assert.Contains(t, response["error"], "expired")
 	})
@@ -435,13 +435,13 @@ func TestOTPReuse(t *testing.T) {
 		}
 
 		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
-		
+
 		assert.Equal(t, http.StatusBadRequest, w.Code)
-		
+
 		var response map[string]interface{}
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
-		
+
 		assert.Contains(t, response, "error")
 	})
 }
@@ -472,5 +472,3 @@ func (suite *PasswordResetTestSuite) makeRequest(method, url string, body interf
 	suite.router.ServeHTTP(w, req)
 	return w
 }
-
- 
