@@ -12,7 +12,9 @@ import (
 var fb *firebase.App
 
 func init() {
-	dotenv.Load()
+	if err := dotenv.Load(); err != nil {
+		log.Printf("Failed to load .env file: %v", err)
+	}
 	var err error
 	conf := &firebase.Config{
 		DatabaseURL: "https://distypepro-android.firebaseio.com",

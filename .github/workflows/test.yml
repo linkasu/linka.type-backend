@@ -44,6 +44,18 @@ jobs:
     - name: Run integration tests
       run: make test-integration
 
+    - name: Run e2e tests
+      run: make test-e2e
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+
+    - name: Build binaries
+      run: make build
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
@@ -52,4 +64,31 @@ jobs:
         path: |
           test-results/
           coverage.out
-        retention-days: 30 
+        retention-days: 30
+
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: binaries-linux-amd64
+        path: bin/
+        retention-days: 30
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: latest
+        args: --fix 

@@ -19,8 +19,8 @@ type OTPCode struct {
 // GenerateOTP генерирует 6-значный OTP код
 func GenerateOTP() (string, error) {
 	// Генерируем случайное число от 100000 до 999999
-	max := big.NewInt(900000)
-	n, err := rand.Int(rand.Reader, max)
+	maxRange := big.NewInt(900000)
+	n, err := rand.Int(rand.Reader, maxRange)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate random number: %v", err)
 	}

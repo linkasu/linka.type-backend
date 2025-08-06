@@ -6,7 +6,7 @@ SERVER_BINARY=server
 PLAYGROUND_BINARY=playground
 
 # Тесты
-test: test-unit test-integration
+test: test-unit test-integration test-e2e
 
 test-unit:
 	@echo "Running unit tests..."
@@ -15,6 +15,10 @@ test-unit:
 test-integration:
 	@echo "Running integration tests..."
 	go test ./tests/integration/... -v
+
+test-e2e:
+	@echo "Running e2e tests..."
+	go test ./tests/e2e/... -v
 
 # Сборка
 build: build-server build-playground

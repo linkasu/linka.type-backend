@@ -380,7 +380,8 @@ func TestDataValidation(t *testing.T) {
 
 	w := makeRequest(router, "POST", "/api/register", registerBody, "")
 	var response map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &response)
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
 	token := response["token"].(string)
 
 	t.Run("Create category without title", func(t *testing.T) {

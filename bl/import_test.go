@@ -47,7 +47,11 @@ func TestImportCategories(t *testing.T) {
 	if err := db.InitDB(); err != nil {
 		t.Fatalf("Failed to initialize test database: %v", err)
 	}
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	// Очищаем таблицы перед тестом
 	clearTestData(t)
@@ -129,7 +133,11 @@ func TestMigrationTracker(t *testing.T) {
 	if err := db.InitDB(); err != nil {
 		t.Fatalf("Failed to initialize test database: %v", err)
 	}
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	tracker := &db.MigrationTracker{}
 

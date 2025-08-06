@@ -9,10 +9,10 @@ import (
 func setupTestEnvironment(t *testing.T) {
 	// Устанавливаем переменные окружения для тестов
 	os.Setenv("POSTGRES_HOST", "localhost")
-	os.Setenv("POSTGRES_PORT", "5433") // Используем порт тестовой БД
+	os.Setenv("POSTGRES_PORT", "5432") // Используем порт тестовой БД
 	os.Setenv("POSTGRES_USER", "postgres")
 	os.Setenv("POSTGRES_PASSWORD", "postgres")
-	os.Setenv("POSTGRES_DB", "linkatype_test")
+	os.Setenv("POSTGRES_DB", "test_db")
 }
 
 // setupTestEnvironmentNoT настраивает тестовую среду без параметра testing.T
@@ -23,7 +23,7 @@ func setupTestEnvironmentNoT() {
 		os.Setenv("POSTGRES_HOST", "localhost")
 	}
 	if os.Getenv("POSTGRES_PORT") == "" {
-		os.Setenv("POSTGRES_PORT", "5433") // Используем порт тестовой БД для локальной разработки
+		os.Setenv("POSTGRES_PORT", "5432") // Используем порт тестовой БД для CI/CD
 	}
 	if os.Getenv("POSTGRES_USER") == "" {
 		os.Setenv("POSTGRES_USER", "postgres")
@@ -32,7 +32,7 @@ func setupTestEnvironmentNoT() {
 		os.Setenv("POSTGRES_PASSWORD", "postgres")
 	}
 	if os.Getenv("POSTGRES_DB") == "" {
-		os.Setenv("POSTGRES_DB", "linkatype_test")
+		os.Setenv("POSTGRES_DB", "test_db")
 	}
 }
 

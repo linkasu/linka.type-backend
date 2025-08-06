@@ -169,7 +169,10 @@ func importNewStatement(fbStatement *fb.FBStatement, statementCRUD *db.Statement
 	err := statementCRUD.CreateStatement(pgStatement)
 	if err != nil {
 		// Логируем неудачную попытку
-		migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "import", "failed", err.Error())
+		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "import", "failed", err.Error()); logErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Failed to log migration: %v", logErr)
+		}
 		return fmt.Errorf("failed to create statement: %v", err)
 	}
 
@@ -190,7 +193,10 @@ func updateExistingStatement(fbStatement *fb.FBStatement, statementCRUD *db.Stat
 	err := statementCRUD.UpdateStatement(pgStatement)
 	if err != nil {
 		// Логируем неудачную попытку
-		migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "update", "failed", err.Error())
+		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "update", "failed", err.Error()); logErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Failed to log migration: %v", logErr)
+		}
 		return fmt.Errorf("failed to update statement: %v", err)
 	}
 

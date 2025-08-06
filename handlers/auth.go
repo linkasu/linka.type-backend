@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/md5"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -243,7 +244,11 @@ func VerifyEmail(c *gin.Context) {
 	}
 
 	// Отправляем приветственное письмо
-	go mail.SendWelcomeEmail(req.Email)
+	go func() {
+		if err := mail.SendWelcomeEmail(req.Email); err != nil {
+			log.Printf("Failed to send welcome email: %v", err)
+		}
+	}()
 
 	// Генерируем JWT токен
 	token, err := auth.GenerateToken(user.ID, user.Email)
@@ -296,7 +301,9 @@ func RequestPasswordReset(c *gin.Context) {
 
 	// Удаляем старые OTP коды для этого email
 	otpCRUD := &db.OTPCRUD{}
-	otpCRUD.DeleteOTPByEmail(req.Email)
+	if err := otpCRUD.DeleteOTPByEmail(req.Email); err != nil {
+		log.Printf("Failed to delete old OTP codes: %v", err)
+	}
 
 	// Сохраняем новый OTP в базу данных
 	otpRecord := &db.OTPCode{

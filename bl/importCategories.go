@@ -191,7 +191,10 @@ func importNewCategory(fbCategory *fb.FBCategory, categoryCRUD *db.CategoryCRUD,
 	err := categoryCRUD.CreateCategory(pgCategory)
 	if err != nil {
 		// Логируем неудачную попытку
-		migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "import", "failed", err.Error())
+		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "import", "failed", err.Error()); logErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Failed to log migration: %v", logErr)
+		}
 		return fmt.Errorf("failed to create category: %v", err)
 	}
 
@@ -211,7 +214,10 @@ func updateExistingCategory(fbCategory *fb.FBCategory, categoryCRUD *db.Category
 	err := categoryCRUD.UpdateCategory(pgCategory)
 	if err != nil {
 		// Логируем неудачную попытку
-		migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "update", "failed", err.Error())
+		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "update", "failed", err.Error()); logErr != nil {
+			// Log the error but don't fail the operation
+			fmt.Printf("Failed to log migration: %v", logErr)
+		}
 		return fmt.Errorf("failed to update category: %v", err)
 	}
 

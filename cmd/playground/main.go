@@ -13,7 +13,11 @@ func main() {
 	if err := db.InitDB(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		}
+	}()
 
 	log.Println("Starting complete data import...")
 
