@@ -34,6 +34,23 @@ func setupTestEnvironmentNoT() {
 	if os.Getenv("POSTGRES_DB") == "" {
 		os.Setenv("POSTGRES_DB", "test_db")
 	}
+	
+	// Настройка mail для тестов (используем mock значения)
+	if os.Getenv("MAIL_SERVER") == "" {
+		os.Setenv("MAIL_SERVER", "smtp.test.com")
+	}
+	if os.Getenv("MAIL_PORT") == "" {
+		os.Setenv("MAIL_PORT", "587")
+	}
+	if os.Getenv("MAIL_ADRESS") == "" {
+		os.Setenv("MAIL_ADRESS", "test@example.com")
+	}
+	if os.Getenv("MAIL_PASSWORD") == "" {
+		os.Setenv("MAIL_PASSWORD", "test_password")
+	}
+	
+	// Включаем режим тестирования для мокирования email
+	os.Setenv("TEST_MODE", "true")
 }
 
 // TestMain настраивает тестовую среду перед запуском тестов

@@ -58,6 +58,12 @@ func GetMailConfig() (*MailConfig, error) {
 func SendOTPEmail(to, otpCode, otpType string) error {
 	log.Printf("[SMTP INFO] Attempting to send OTP email to: %s, type: %s", to, otpType)
 
+	// Check if we're in test mode
+	if os.Getenv("TEST_MODE") == "true" {
+		log.Printf("[SMTP TEST] Mocking OTP email to: %s, code: %s, type: %s", to, otpCode, otpType)
+		return nil
+	}
+
 	config, err := GetMailConfig()
 	if err != nil {
 		log.Printf("[SMTP ERROR] Failed to get mail config: %v", err)
@@ -115,6 +121,12 @@ func SendOTPEmail(to, otpCode, otpType string) error {
 // SendWelcomeEmail отправляет приветственное письмо после подтверждения email
 func SendWelcomeEmail(to string) error {
 	log.Printf("[SMTP INFO] Attempting to send welcome email to: %s", to)
+
+	// Check if we're in test mode
+	if os.Getenv("TEST_MODE") == "true" {
+		log.Printf("[SMTP TEST] Mocking welcome email to: %s", to)
+		return nil
+	}
 
 	config, err := GetMailConfig()
 	if err != nil {
