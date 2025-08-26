@@ -356,9 +356,9 @@ func VerifyPasswordResetOTP(c *gin.Context) {
 		return
 	}
 
-	// Получаем OTP из базы данных
+	// Получаем OTP из базы данных (включая уже использованный, чтобы корректно отработать повтор)
 	otpCRUD := &db.OTPCRUD{}
-	otpRecord, err := otpCRUD.GetOTPByCode(req.Code, req.Email, "reset_password")
+	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
@@ -378,6 +378,17 @@ func VerifyPasswordResetOTP(c *gin.Context) {
 
 	if otp.IsOTPExpired(expiresAt) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP code has expired"})
+		return
+	}
+
+	// Если код ещё не использован — помечаем использованным, чтобы сделать одноразовым
+	if !otpRecord.Used {
+		if err := otpCRUD.MarkOTPAsUsed(otpRecord.ID); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark OTP as used"})
+			return
+		}
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "OTP code has already been used"})
 		return
 	}
 
@@ -401,9 +412,10 @@ func ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	// Получаем OTP из базы данных
+	// Получаем OTP из базы данных независимо от статуса used,
+	// так как мы допускаем, что код мог быть отмечен использованным на этапе verify
 	otpCRUD := &db.OTPCRUD{}
-	otpRecord, err := otpCRUD.GetOTPByCode(req.Code, req.Email, "reset_password")
+	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
@@ -426,6 +438,8 @@ func ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
+	// На шаге confirm повторная проверка used не блокирует, т.к. verify уже мог отметить код
+
 	// Получаем пользователя
 	userCRUD := &db.UserCRUD{}
 	user, err := userCRUD.GetUserByEmail(req.Email)
@@ -443,11 +457,7 @@ func ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	// Помечаем OTP как использованный
-	if err := otpCRUD.MarkOTPAsUsed(otpRecord.ID); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to mark OTP as used"})
-		return
-	}
+	// Повторно отмечать не нужно; если verify не вызывали, код уже отмечен выше. Если вызывали — уже used.
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Password reset successfully",

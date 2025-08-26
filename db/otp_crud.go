@@ -131,6 +131,37 @@ func (otp *OTPCRUD) GetOTPByCode(code, email, otpType string) (*OTPCode, error) 
 	return &otpCode, nil
 }
 
+// GetOTPByCodeAnyStatus получает OTP код по коду независимо от статуса used/expired
+func (otp *OTPCRUD) GetOTPByCodeAnyStatus(code, email, otpType string) (*OTPCode, error) {
+    query := `
+        SELECT id, email, code, type, expires_at, used, created_at
+        FROM otp_codes
+        WHERE code = $1 AND email = $2 AND type = $3
+        ORDER BY created_at DESC
+        LIMIT 1
+    `
+
+    var otpCode OTPCode
+    err := DB.QueryRow(query, code, email, otpType).Scan(
+        &otpCode.ID,
+        &otpCode.Email,
+        &otpCode.Code,
+        &otpCode.Type,
+        &otpCode.ExpiresAt,
+        &otpCode.Used,
+        &otpCode.CreatedAt,
+    )
+
+    if err != nil {
+        if err == sql.ErrNoRows {
+            return nil, nil
+        }
+        return nil, fmt.Errorf("failed to get OTP by code (any status): %v", err)
+    }
+
+    return &otpCode, nil
+}
+
 // UpdateOTPExpiration обновляет время истечения OTP кода
 func (otp *OTPCRUD) UpdateOTPExpiration(id, expiresAt string) error {
 	query := `UPDATE otp_codes SET expires_at = $1 WHERE id = $2`
