@@ -38,17 +38,17 @@ type Param struct {
 
 // PackageInfo представляет информацию о пакете
 type PackageInfo struct {
-	Name        string     `json:"name"`
-	Description string     `json:"description"`
-	Functions   []DocItem  `json:"functions"`
-	Structs     []DocItem  `json:"structs"`
-	Constants   []DocItem  `json:"constants"`
-	Variables   []DocItem  `json:"variables"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Functions   []DocItem `json:"functions"`
+	Structs     []DocItem `json:"structs"`
+	Constants   []DocItem `json:"constants"`
+	Variables   []DocItem `json:"variables"`
 }
 
 // ProjectDocs представляет всю документацию проекта
 type ProjectDocs struct {
-	GeneratedAt time.Time                `json:"generated_at"`
+	GeneratedAt time.Time               `json:"generated_at"`
 	Packages    map[string]*PackageInfo `json:"packages"`
 	API         *APIInfo                `json:"api"`
 }
@@ -896,4 +896,4 @@ func generateJSON(docs *ProjectDocs) {
 	}
 
 	log.Println("JSON documentation generated: docs/generated.json")
-} 
+}

@@ -10,7 +10,7 @@ import (
 )
 
 // MailConfig содержит конфигурацию SMTP
-type MailConfig struct {
+type Config struct {
 	Server   string
 	Port     int
 	Address  string
@@ -18,17 +18,17 @@ type MailConfig struct {
 }
 
 // GetMailConfig получает конфигурацию из переменных окружения
-func GetMailConfig() (*MailConfig, error) {
+func GetMailConfig() (*Config, error) {
 	server := os.Getenv("MAIL_SERVER")
 	if server == "" {
 		log.Printf("[SMTP ERROR] MAIL_SERVER environment variable is required")
 		return nil, fmt.Errorf("MAIL_SERVER environment variable is required")
 	}
 
-	address := os.Getenv("MAIL_ADRESS")
+	address := os.Getenv("MAIL_ADDRESS")
 	if address == "" {
-		log.Printf("[SMTP ERROR] MAIL_ADRESS environment variable is required")
-		return nil, fmt.Errorf("MAIL_ADRESS environment variable is required")
+		log.Printf("[SMTP ERROR] MAIL_ADDRESS environment variable is required")
+		return nil, fmt.Errorf("MAIL_ADDRESS environment variable is required")
 	}
 
 	password := os.Getenv("MAIL_PASSWORD")
@@ -46,7 +46,7 @@ func GetMailConfig() (*MailConfig, error) {
 	}
 
 	log.Printf("[SMTP INFO] Mail config loaded: Server=%s, Port=%d, Address=%s", server, port, address)
-	return &MailConfig{
+	return &Config{
 		Server:   server,
 		Port:     port,
 		Address:  address,

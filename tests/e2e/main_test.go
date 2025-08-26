@@ -16,6 +16,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// clearTestDatabase очищает тестовую базу данных
+func clearTestDatabase() error {
+	// Очищаем таблицы в правильном порядке (из-за внешних ключей)
+	tables := []string{"statements", "categories", "users"}
+	for _, table := range tables {
+		_, err := db.DB.Exec(fmt.Sprintf("DELETE FROM %s", table))
+		if err != nil {
+			return fmt.Errorf("failed to clear table %s: %v", table, err)
+		}
+	}
+
+	return nil
+}
+
 // TestData структура для тестовых данных
 type TestData struct {
 	UserID      string
@@ -34,6 +48,16 @@ func setupTestServer() *gin.Engine {
 	// Инициализируем базу данных
 	if err := db.InitDB(); err != nil {
 		panic(fmt.Sprintf("Failed to initialize database: %v", err))
+	}
+
+	// Очищаем базу данных перед тестами
+	if err := clearTestDatabase(); err != nil {
+		panic(fmt.Sprintf("Failed to clear test database: %v", err))
+	}
+
+	// Проверяем, что база данных доступна
+	if err := db.DB.Ping(); err != nil {
+		panic(fmt.Sprintf("Database is not accessible: %v", err))
 	}
 
 	// Создаем Gin роутер
@@ -123,7 +147,11 @@ func makeRequest(router *gin.Engine, method, url string, body interface{}, token
 // TestE2EFlow полный e2e тест
 func TestE2EFlow(t *testing.T) {
 	router := setupTestServer()
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	testData := &TestData{
 		Email:    "test@example.com",
@@ -321,7 +349,11 @@ func TestE2EFlow(t *testing.T) {
 // TestAuthenticationErrors тесты ошибок аутентификации
 func TestAuthenticationErrors(t *testing.T) {
 	router := setupTestServer()
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	t.Run("Register with invalid email", func(t *testing.T) {
 		registerBody := map[string]interface{}{
@@ -370,7 +402,11 @@ func TestAuthenticationErrors(t *testing.T) {
 // TestDataValidation тесты валидации данных
 func TestDataValidation(t *testing.T) {
 	router := setupTestServer()
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	// Регистрируем пользователя для тестов
 	registerBody := map[string]interface{}{
@@ -419,7 +455,11 @@ func TestDataValidation(t *testing.T) {
 // TestHealthCheck тест health check endpoint
 func TestHealthCheck(t *testing.T) {
 	router := setupTestServer()
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
 
 	w := makeRequest(router, "GET", "/api/health", nil, "")
 

@@ -54,7 +54,7 @@ jobs:
         POSTGRES_DB: test_db
         MAIL_SERVER: smtp.gmail.com
         MAIL_PORT: 587
-        MAIL_ADRESS: test@example.com
+        MAIL_ADDRESS: test@example.com
         MAIL_PASSWORD: test_password
         TEST_MODE: true
 

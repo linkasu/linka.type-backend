@@ -77,7 +77,7 @@ func TestWebSocketNotifications(t *testing.T) {
 	userID := "test_user_123"
 
 	// Тест уведомления о создании категории
-	t.Run("Notify category created", func(t *testing.T) {
+	t.Run("Notify category created", func(_ *testing.T) {
 		category := map[string]interface{}{
 			"id":     "category_123",
 			"title":  "Test Category",
@@ -89,7 +89,7 @@ func TestWebSocketNotifications(t *testing.T) {
 	})
 
 	// Тест уведомления об обновлении категории
-	t.Run("Notify category updated", func(t *testing.T) {
+	t.Run("Notify category updated", func(_ *testing.T) {
 		category := map[string]interface{}{
 			"id":     "category_123",
 			"title":  "Updated Category",
@@ -101,14 +101,14 @@ func TestWebSocketNotifications(t *testing.T) {
 	})
 
 	// Тест уведомления об удалении категории
-	t.Run("Notify category deleted", func(t *testing.T) {
+	t.Run("Notify category deleted", func(_ *testing.T) {
 		categoryID := "category_123"
 		handlers.NotifyCategoryDeleted(userID, categoryID)
 		// Не должно вызывать ошибок
 	})
 
 	// Тест уведомления о создании statement
-	t.Run("Notify statement created", func(t *testing.T) {
+	t.Run("Notify statement created", func(_ *testing.T) {
 		statement := map[string]interface{}{
 			"id":         "statement_123",
 			"text":       "Test Statement",
@@ -121,7 +121,7 @@ func TestWebSocketNotifications(t *testing.T) {
 	})
 
 	// Тест уведомления об обновлении statement
-	t.Run("Notify statement updated", func(t *testing.T) {
+	t.Run("Notify statement updated", func(_ *testing.T) {
 		statement := map[string]interface{}{
 			"id":         "statement_123",
 			"text":       "Updated Statement",
@@ -134,7 +134,7 @@ func TestWebSocketNotifications(t *testing.T) {
 	})
 
 	// Тест уведомления об удалении statement
-	t.Run("Notify statement deleted", func(t *testing.T) {
+	t.Run("Notify statement deleted", func(_ *testing.T) {
 		statementID := "statement_123"
 		handlers.NotifyStatementDeleted(userID, statementID)
 		// Не должно вызывать ошибок

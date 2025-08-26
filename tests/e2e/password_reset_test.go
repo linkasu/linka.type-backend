@@ -28,6 +28,19 @@ type PasswordResetTestSuite struct {
 
 // NewPasswordResetTestSuite создает новый набор тестов для сброса пароля
 func NewPasswordResetTestSuite() *PasswordResetTestSuite {
+	// Устанавливаем переменные окружения для тестов
+	setupTestEnvironmentNoT()
+
+	// Инициализируем базу данных
+	if err := db.InitDB(); err != nil {
+		panic("Failed to initialize database")
+	}
+
+	// Очищаем базу данных перед тестами
+	if err := clearTestDatabase(); err != nil {
+		panic("Failed to clear test database")
+	}
+
 	gin.SetMode(gin.TestMode)
 	router := gin.Default()
 
@@ -46,7 +59,7 @@ func NewPasswordResetTestSuite() *PasswordResetTestSuite {
 	})
 
 	// Группа для публичных маршрутов
-	public := router.Group("/api/auth")
+	public := router.Group("/api")
 	{
 		public.POST("/register", handlers.Register)
 		public.POST("/login", handlers.Login)
@@ -74,7 +87,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Password: "oldpassword123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/register", reqBody, "")
+		w := suite.makeRequest("POST", "/api/register", reqBody, "")
 
 		assert.Equal(t, http.StatusCreated, w.Code)
 
@@ -82,8 +95,8 @@ func TestPasswordResetFlow(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		require.NoError(t, err)
 
-		assert.Contains(t, response, "message")
-		assert.Contains(t, response, "user_id")
+		assert.Contains(t, response, "token")
+		assert.Contains(t, response, "user")
 	})
 
 	// Шаг 2: Получение OTP кода из базы данных (имитация получения email)
@@ -104,7 +117,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Code:  suite.otpCode,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/verify-email", reqBody, "")
+		w := suite.makeRequest("POST", "/api/verify-email", reqBody, "")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -123,7 +136,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Email: suite.email,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password", reqBody, "")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -152,7 +165,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Code:  suite.resetOTPCode,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/verify", reqBody, "")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -172,7 +185,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Password: "newpassword123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/confirm", reqBody, "")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -190,7 +203,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Password: "newpassword123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/login", reqBody, "")
+		w := suite.makeRequest("POST", "/api/login", reqBody, "")
 
 		assert.Equal(t, http.StatusOK, w.Code)
 
@@ -209,7 +222,7 @@ func TestPasswordResetFlow(t *testing.T) {
 			Password: "oldpassword123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/login", reqBody, "")
+		w := suite.makeRequest("POST", "/api/login", reqBody, "")
 
 		assert.Equal(t, http.StatusUnauthorized, w.Code)
 	})
@@ -224,7 +237,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 			Email: "nonexistent@example.com",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password", reqBody, "")
 
 		// Должен вернуть 200, но не отправлять email
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -242,7 +255,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 			Code:  "000000",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/verify", reqBody, "")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -260,7 +273,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 			Password: "newpassword123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/confirm", reqBody, "")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -278,7 +291,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 			Password: "123", // Слишком короткий пароль
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/confirm", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/confirm", reqBody, "")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -301,7 +314,7 @@ func TestOTPExpiration(t *testing.T) {
 			Password: "password123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/register", reqBody, "")
+		w := suite.makeRequest("POST", "/api/register", reqBody, "")
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		// Получаем OTP код
@@ -316,7 +329,7 @@ func TestOTPExpiration(t *testing.T) {
 			Email: suite.email,
 			Code:  suite.otpCode,
 		}
-		w = suite.makeRequest("POST", "/api/auth/verify-email", verifyReq, "")
+		w = suite.makeRequest("POST", "/api/verify-email", verifyReq, "")
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -326,7 +339,7 @@ func TestOTPExpiration(t *testing.T) {
 			Email: suite.email,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password", reqBody, "")
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// Получаем OTP код
@@ -358,7 +371,7 @@ func TestOTPExpiration(t *testing.T) {
 			Code:  suite.resetOTPCode,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/verify", reqBody, "")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
@@ -382,7 +395,7 @@ func TestOTPReuse(t *testing.T) {
 			Password: "password123",
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/register", reqBody, "")
+		w := suite.makeRequest("POST", "/api/register", reqBody, "")
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		// Получаем и используем OTP для верификации
@@ -395,7 +408,7 @@ func TestOTPReuse(t *testing.T) {
 			Email: suite.email,
 			Code:  otpRecord.Code,
 		}
-		w = suite.makeRequest("POST", "/api/auth/verify-email", verifyReq, "")
+		w = suite.makeRequest("POST", "/api/verify-email", verifyReq, "")
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -405,7 +418,7 @@ func TestOTPReuse(t *testing.T) {
 			Email: suite.email,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password", reqBody, "")
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// Получаем OTP код
@@ -423,7 +436,7 @@ func TestOTPReuse(t *testing.T) {
 			Code:  suite.resetOTPCode,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/verify", reqBody, "")
 		assert.Equal(t, http.StatusOK, w.Code)
 	})
 
@@ -434,7 +447,7 @@ func TestOTPReuse(t *testing.T) {
 			Code:  suite.resetOTPCode,
 		}
 
-		w := suite.makeRequest("POST", "/api/auth/reset-password/verify", reqBody, "")
+		w := suite.makeRequest("POST", "/api/reset-password/verify", reqBody, "")
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 

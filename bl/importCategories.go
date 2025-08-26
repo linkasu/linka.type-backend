@@ -30,7 +30,7 @@ type ImportError struct {
 
 // ImportCategories импортирует категории пользователя из Firebase в PostgreSQL
 // Поддерживает многократные запуски с инкрементальным обновлением
-func ImportCategories(login string, password string) (*ImportCategoriesResult, error) {
+func ImportCategories(login, password string) (*ImportCategoriesResult, error) {
 	startTime := time.Now()
 	result := &ImportCategoriesResult{
 		Errors: []ImportError{},
@@ -160,19 +160,17 @@ func determineAction(lastMigration *db.MigrationLog, existsInPostgres bool) stri
 		if existsInPostgres {
 			// Категория уже импортирована и существует - пропускаем
 			return "skip"
-		} else {
-			// Категория была импортирована, но не существует - импортируем заново
-			return "import"
 		}
+		// Категория была импортирована, но не существует - импортируем заново
+		return "import"
 	}
 
 	if lastMigration.Status == "failed" {
 		// Последняя попытка миграции не удалась - пробуем снова
 		if existsInPostgres {
 			return "update"
-		} else {
-			return "import"
 		}
+		return "import"
 	}
 
 	// По умолчанию импортируем
@@ -180,18 +178,18 @@ func determineAction(lastMigration *db.MigrationLog, existsInPostgres bool) stri
 }
 
 // importNewCategory импортирует новую категорию
-func importNewCategory(fbCategory *fb.FBCategory, categoryCRUD *db.CategoryCRUD, migrationTracker *db.MigrationTracker) error {
+func importNewCategory(fbCategory *fb.Category, categoryCRUD *db.CategoryCRUD, migrationTracker *db.MigrationTracker) error {
 	// Создаем категорию в PostgreSQL
 	pgCategory := &db.Category{
 		ID:     fbCategory.ID,
 		Title:  fbCategory.Label,
-		UserId: fbCategory.UserId,
+		UserID: fbCategory.UserID,
 	}
 
 	err := categoryCRUD.CreateCategory(pgCategory)
 	if err != nil {
 		// Логируем неудачную попытку
-		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "import", "failed", err.Error()); logErr != nil {
+		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserID, "import", "failed", err.Error()); logErr != nil {
 			// Log the error but don't fail the operation
 			fmt.Printf("Failed to log migration: %v", logErr)
 		}
@@ -199,22 +197,22 @@ func importNewCategory(fbCategory *fb.FBCategory, categoryCRUD *db.CategoryCRUD,
 	}
 
 	// Логируем успешную миграцию
-	return migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "import", "success", "")
+	return migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserID, "import", "success", "")
 }
 
 // updateExistingCategory обновляет существующую категорию
-func updateExistingCategory(fbCategory *fb.FBCategory, categoryCRUD *db.CategoryCRUD, migrationTracker *db.MigrationTracker) error {
+func updateExistingCategory(fbCategory *fb.Category, categoryCRUD *db.CategoryCRUD, migrationTracker *db.MigrationTracker) error {
 	// Обновляем категорию в PostgreSQL
 	pgCategory := &db.Category{
 		ID:     fbCategory.ID,
 		Title:  fbCategory.Label,
-		UserId: fbCategory.UserId,
+		UserID: fbCategory.UserID,
 	}
 
 	err := categoryCRUD.UpdateCategory(pgCategory)
 	if err != nil {
 		// Логируем неудачную попытку
-		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "update", "failed", err.Error()); logErr != nil {
+		if logErr := migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserID, "update", "failed", err.Error()); logErr != nil {
 			// Log the error but don't fail the operation
 			fmt.Printf("Failed to log migration: %v", logErr)
 		}
@@ -222,7 +220,7 @@ func updateExistingCategory(fbCategory *fb.FBCategory, categoryCRUD *db.Category
 	}
 
 	// Логируем успешную миграцию
-	return migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserId, "update", "success", "")
+	return migrationTracker.LogMigration("category", fbCategory.ID, fbCategory.UserID, "update", "success", "")
 }
 
 // ImportCategoriesForAllUsers импортирует категории для всех пользователей

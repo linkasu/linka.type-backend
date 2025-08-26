@@ -26,7 +26,7 @@ type FirebaseAuthRequest struct {
 	ReturnSecureToken bool   `json:"returnSecureToken"`
 }
 
-func CheckPassword(email string, password string) (*FirebaseAuthResponse, error) {
+func CheckPassword(email, password string) (*FirebaseAuthResponse, error) {
 	// Get Firebase API key from environment variable
 	apiKey := os.Getenv("FIREBASE_API_KEY")
 	if apiKey == "" {

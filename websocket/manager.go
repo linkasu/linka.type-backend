@@ -25,7 +25,6 @@ type Client struct {
 	Conn    *websocket.Conn
 	Send    chan []byte
 	Manager *Manager
-	mu      sync.Mutex
 }
 
 // Manager управляет WebSocket подключениями
@@ -42,7 +41,7 @@ func NewManager() *Manager {
 		clients:     make(map[string]*Client),
 		userClients: make(map[string][]string),
 		upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
+			CheckOrigin: func(_ *http.Request) bool {
 				return true // В продакшене нужно настроить CORS
 			},
 		},
@@ -109,7 +108,7 @@ func (m *Manager) unregisterClient(client *Client) {
 }
 
 // BroadcastToUser отправляет сообщение всем клиентам пользователя
-func (m *Manager) BroadcastToUser(userID string, messageType string, payload interface{}) {
+func (m *Manager) BroadcastToUser(userID, messageType string, payload interface{}) {
 	m.mu.RLock()
 	clientIDs, exists := m.userClients[userID]
 	m.mu.RUnlock()

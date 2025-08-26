@@ -94,6 +94,7 @@ func Register(c *gin.Context) {
 	}
 
 	if err := userCRUD.CreateUser(user); err != nil {
+		log.Printf("Error creating user: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 		return
 	}
@@ -128,10 +129,25 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "Registration successful. Please check your email for verification code.",
-		"user_id": user.ID,
-	})
+	// Генерируем JWT токен
+	token, err := auth.GenerateToken(user.ID, user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	response := LoginResponse{
+		Token: token,
+		User: struct {
+			ID    string `json:"id"`
+			Email string `json:"email"`
+		}{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+	}
+
+	c.JSON(http.StatusCreated, response)
 }
 
 // Login обрабатывает логин пользователя
@@ -154,12 +170,6 @@ func Login(c *gin.Context) {
 	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
 	if user.Password != hashedPassword {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
-	}
-
-	// Проверяем, верифицирован ли email
-	if !user.EmailVerified {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Email not verified. Please check your email for verification code."})
 		return
 	}
 

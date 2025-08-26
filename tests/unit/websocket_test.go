@@ -35,7 +35,7 @@ func TestWebSocketManager(t *testing.T) {
 	assert.NotNil(t, manager)
 }
 
-func TestWebSocketManagerBroadcast(t *testing.T) {
+func TestWebSocketManagerBroadcast(_ *testing.T) {
 	manager := websocket.NewManager()
 
 	// Тест отправки сообщения несуществующему пользователю

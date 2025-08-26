@@ -74,17 +74,17 @@ func ExampleCRUDOperations() {
 	category1 := &Category{
 		ID:     uuid.New().String(),
 		Title:  "Work",
-		UserId: user1.ID,
+		UserID: user1.ID,
 	}
 	category2 := &Category{
 		ID:     uuid.New().String(),
 		Title:  "Personal",
-		UserId: user1.ID,
+		UserID: user1.ID,
 	}
 	category3 := &Category{
 		ID:     uuid.New().String(),
 		Title:  "Shopping",
-		UserId: user2.ID,
+		UserID: user2.ID,
 	}
 
 	if err := categoryCRUD.CreateCategory(category1); err != nil {
@@ -131,20 +131,20 @@ func ExampleCRUDOperations() {
 	statement1 := &Statement{
 		ID:         uuid.New().String(),
 		Title:      "Complete project documentation",
-		UserId:     user1.ID,
-		CategoryId: category1.ID,
+		UserID:     user1.ID,
+		CategoryID: category1.ID,
 	}
 	statement2 := &Statement{
 		ID:         uuid.New().String(),
 		Title:      "Review code changes",
-		UserId:     user1.ID,
-		CategoryId: category1.ID,
+		UserID:     user1.ID,
+		CategoryID: category1.ID,
 	}
 	statement3 := &Statement{
 		ID:         uuid.New().String(),
 		Title:      "Buy groceries",
-		UserId:     user2.ID,
-		CategoryId: category3.ID,
+		UserID:     user2.ID,
+		CategoryID: category3.ID,
 	}
 
 	if err := statementCRUD.CreateStatement(statement1); err != nil {

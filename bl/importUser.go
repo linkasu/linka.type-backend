@@ -10,7 +10,7 @@ import (
 )
 
 // ImportUser импортирует пользователя и его категории из Firebase в PostgreSQL
-func ImportUser(login string, password string) error {
+func ImportUser(login, password string) error {
 	// Получаем пользователя из Firebase
 	user, err := fb.GetUser(login)
 	if err != nil {

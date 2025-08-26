@@ -6,13 +6,13 @@ import (
 	"firebase.google.com/go/v4/auth"
 )
 
-type FBCategory struct {
+type Category struct {
 	ID     string `json:"id"`
 	Label  string `json:"label"`
-	UserId string `json:"userId"`
+	UserID string `json:"userId"`
 }
 
-func GetCategories(user *auth.UserRecord) ([]*FBCategory, error) {
+func GetCategories(user *auth.UserRecord) ([]*Category, error) {
 	db, err := fb.Database(context.Background())
 	if err != nil {
 		return nil, err
@@ -23,14 +23,14 @@ func GetCategories(user *auth.UserRecord) ([]*FBCategory, error) {
 	if err != nil {
 		return nil, err
 	}
-	categories := []*FBCategory{}
+	categories := []*Category{}
 	for _, doc := range docs {
-		row := FBCategory{}
+		row := Category{}
 		err = doc.Unmarshal(&row)
 		if err != nil {
 			return nil, err
 		}
-		row.UserId = user.UID
+		row.UserID = user.UID
 		categories = append(categories, &row)
 	}
 	return categories, nil

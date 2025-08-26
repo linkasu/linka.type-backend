@@ -67,8 +67,8 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 
 		// Обрабатываем каждое statement
 		for _, fbStatement := range fbStatements {
-			// Убеждаемся, что используем правильный UserId (из категории)
-			fbStatement.UserId = fbCategory.UserId
+			// Убеждаемся, что используем правильный UserID (из категории)
+			fbStatement.UserID = fbCategory.UserID
 			result.TotalProcessed++
 
 			// Проверяем статус последней миграции
@@ -76,7 +76,7 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 			if err != nil {
 				errorMsg := fmt.Sprintf("failed to get migration status: %v", err)
 				result.Errors = append(result.Errors, ImportError{
-					CategoryID: fbStatement.CategoryId,
+					CategoryID: fbStatement.CategoryID,
 					UserID:     user.UID,
 					Error:      errorMsg,
 				})
@@ -90,7 +90,7 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 			if err != nil && err.Error() != "statement not found" {
 				errorMsg := fmt.Sprintf("failed to check existing statement: %v", err)
 				result.Errors = append(result.Errors, ImportError{
-					CategoryID: fbStatement.CategoryId,
+					CategoryID: fbStatement.CategoryID,
 					UserID:     user.UID,
 					Error:      errorMsg,
 				})
@@ -108,7 +108,7 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 				if err != nil {
 					result.Failed++
 					result.Errors = append(result.Errors, ImportError{
-						CategoryID: fbStatement.CategoryId,
+						CategoryID: fbStatement.CategoryID,
 						UserID:     user.UID,
 						Error:      err.Error(),
 					})
@@ -123,7 +123,7 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 				if err != nil {
 					result.Failed++
 					result.Errors = append(result.Errors, ImportError{
-						CategoryID: fbStatement.CategoryId,
+						CategoryID: fbStatement.CategoryID,
 						UserID:     user.UID,
 						Error:      err.Error(),
 					})
@@ -157,19 +157,19 @@ func ImportStatements(login string, password string) (*ImportStatementsResult, e
 }
 
 // importNewStatement импортирует новое statement
-func importNewStatement(fbStatement *fb.FBStatement, statementCRUD *db.StatementCRUD, migrationTracker *db.MigrationTracker) error {
+func importNewStatement(fbStatement *fb.Statement, statementCRUD *db.StatementCRUD, migrationTracker *db.MigrationTracker) error {
 	// Создаем statement в PostgreSQL
 	pgStatement := &db.Statement{
 		ID:         fbStatement.ID,
 		Title:      fbStatement.Text,
-		UserId:     fbStatement.UserId,
-		CategoryId: fbStatement.CategoryId,
+		UserID:     fbStatement.UserID,
+		CategoryID: fbStatement.CategoryID,
 	}
 
 	err := statementCRUD.CreateStatement(pgStatement)
 	if err != nil {
 		// Логируем неудачную попытку
-		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "import", "failed", err.Error()); logErr != nil {
+		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserID, "import", "failed", err.Error()); logErr != nil {
 			// Log the error but don't fail the operation
 			fmt.Printf("Failed to log migration: %v", logErr)
 		}
@@ -177,23 +177,23 @@ func importNewStatement(fbStatement *fb.FBStatement, statementCRUD *db.Statement
 	}
 
 	// Логируем успешную миграцию
-	return migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "import", "success", "")
+	return migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserID, "import", "success", "")
 }
 
 // updateExistingStatement обновляет существующее statement
-func updateExistingStatement(fbStatement *fb.FBStatement, statementCRUD *db.StatementCRUD, migrationTracker *db.MigrationTracker) error {
+func updateExistingStatement(fbStatement *fb.Statement, statementCRUD *db.StatementCRUD, migrationTracker *db.MigrationTracker) error {
 	// Обновляем statement в PostgreSQL
 	pgStatement := &db.Statement{
 		ID:         fbStatement.ID,
 		Title:      fbStatement.Text,
-		UserId:     fbStatement.UserId,
-		CategoryId: fbStatement.CategoryId,
+		UserID:     fbStatement.UserID,
+		CategoryID: fbStatement.CategoryID,
 	}
 
 	err := statementCRUD.UpdateStatement(pgStatement)
 	if err != nil {
 		// Логируем неудачную попытку
-		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "update", "failed", err.Error()); logErr != nil {
+		if logErr := migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserID, "update", "failed", err.Error()); logErr != nil {
 			// Log the error but don't fail the operation
 			fmt.Printf("Failed to log migration: %v", logErr)
 		}
@@ -201,11 +201,11 @@ func updateExistingStatement(fbStatement *fb.FBStatement, statementCRUD *db.Stat
 	}
 
 	// Логируем успешную миграцию
-	return migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserId, "update", "success", "")
+	return migrationTracker.LogMigration("statement", fbStatement.ID, fbStatement.UserID, "update", "success", "")
 }
 
 // ImportAllData импортирует пользователя, категории и statements
-func ImportAllData(login string, password string) (*ImportAllDataResult, error) {
+func ImportAllData(login, password string) (*ImportAllDataResult, error) {
 	startTime := time.Now()
 	result := &ImportAllDataResult{
 		StartTime: startTime,

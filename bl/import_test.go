@@ -2,6 +2,7 @@ package bl
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	"linka.type-backend/db"
@@ -11,7 +12,7 @@ import (
 // MockFirebaseClient для тестирования
 type MockFirebaseClient struct {
 	users      map[string]*MockUser
-	categories map[string][]*fb.FBCategory
+	categories map[string][]*fb.Category
 }
 
 type MockUser struct {
@@ -34,11 +35,11 @@ func (m *MockFirebaseClient) CheckPassword(email, password string) (bool, error)
 	return false, fmt.Errorf("authentication failed")
 }
 
-func (m *MockFirebaseClient) GetCategories(user *MockUser) ([]*fb.FBCategory, error) {
+func (m *MockFirebaseClient) GetCategories(user *MockUser) ([]*fb.Category, error) {
 	if categories, exists := m.categories[user.UID]; exists {
 		return categories, nil
 	}
-	return []*fb.FBCategory{}, nil
+	return []*fb.Category{}, nil
 }
 
 // TestImportCategories тестирует основную логику импорта
@@ -49,7 +50,7 @@ func TestImportCategories(t *testing.T) {
 	}
 	defer func() {
 		if err := db.CloseDB(); err != nil {
-			t.Logf("Failed to close database: %v", err)
+			log.Printf("Failed to close database: %v", err)
 		}
 	}()
 
@@ -64,10 +65,10 @@ func TestImportCategories(t *testing.T) {
 				Email: "test@example.com",
 			},
 		},
-		categories: map[string][]*fb.FBCategory{
+		categories: map[string][]*fb.Category{
 			"user123": {
-				{ID: "cat1", Label: "Category 1", UserId: "user123"},
-				{ID: "cat2", Label: "Category 2", UserId: "user123"},
+				{ID: "cat1", Label: "Category 1", UserID: "user123"},
+				{ID: "cat2", Label: "Category 2", UserID: "user123"},
 			},
 		},
 	}
@@ -110,7 +111,7 @@ func TestImportCategories(t *testing.T) {
 	t.Run("Import with new category", func(t *testing.T) {
 		// Добавляем новую категорию
 		mockClient.categories["user123"] = append(mockClient.categories["user123"],
-			&fb.FBCategory{ID: "cat3", Label: "Category 3", UserId: "user123"})
+			&fb.Category{ID: "cat3", Label: "Category 3", UserID: "user123"})
 
 		result, err := importCategoriesWithMock(mockClient, "test@example.com", "correct_password")
 		if err != nil {
@@ -135,7 +136,7 @@ func TestMigrationTracker(t *testing.T) {
 	}
 	defer func() {
 		if err := db.CloseDB(); err != nil {
-			t.Logf("Failed to close database: %v", err)
+			log.Printf("Failed to close database: %v", err)
 		}
 	}()
 
@@ -250,7 +251,7 @@ func clearTestData(t *testing.T) {
 	}
 }
 
-func importCategoriesWithMock(mockClient *MockFirebaseClient, email, password string) (*ImportCategoriesResult, error) {
+func importCategoriesWithMock(_ *MockFirebaseClient, _ string, _ string) (*ImportCategoriesResult, error) {
 	// Эта функция должна быть реализована для работы с mock клиентом
 	// В реальной реализации нужно будет модифицировать ImportCategories
 	// для поддержки dependency injection
@@ -262,7 +263,11 @@ func BenchmarkImportCategories(b *testing.B) {
 	if err := db.InitDB(); err != nil {
 		b.Fatalf("Failed to initialize test database: %v", err)
 	}
-	defer db.CloseDB()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			log.Printf("Failed to close database: %v", err)
+		}
+	}()
 
 	// Подготовка тестовых данных
 	clearTestDataForBenchmark(b)
@@ -271,6 +276,7 @@ func BenchmarkImportCategories(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Здесь должен быть вызов ImportCategories с тестовыми данными
 		// Реализация зависит от конкретных требований к бенчмарку
+		_ = i // Используем переменную, чтобы избежать предупреждения
 	}
 }
 

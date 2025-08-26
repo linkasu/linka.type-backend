@@ -51,7 +51,7 @@ func NotifyCategoryUpdated(userID string, category interface{}) {
 }
 
 // NotifyCategoryDeleted отправляет уведомление об удалении категории
-func NotifyCategoryDeleted(userID string, categoryID string) {
+func NotifyCategoryDeleted(userID, categoryID string) {
 	payload := map[string]interface{}{
 		"action":     "deleted",
 		"categoryId": categoryID,
@@ -83,7 +83,7 @@ func NotifyStatementUpdated(userID string, statement interface{}) {
 }
 
 // NotifyStatementDeleted отправляет уведомление об удалении statement
-func NotifyStatementDeleted(userID string, statementID string) {
+func NotifyStatementDeleted(userID, statementID string) {
 	payload := map[string]interface{}{
 		"action":      "deleted",
 		"statementId": statementID,

@@ -8,7 +8,7 @@ import (
 )
 
 // OTPCode представляет OTP код
-type OTPCode struct {
+type Code struct {
 	Code      string    `json:"code"`
 	Email     string    `json:"email"`
 	Type      string    `json:"type"` // "registration" или "reset_password"

@@ -3,20 +3,20 @@ package db
 type Statement struct {
 	ID         string `json:"id"`
 	Title      string `json:"text"`
-	UserId     string `json:"userId"`
-	CategoryId string `json:"categoryId"`
+	UserID     string `json:"userId"`
+	CategoryID string `json:"categoryId"`
 }
 
 type Category struct {
 	ID     string `json:"id"`
 	Title  string `json:"title"`
-	UserId string `json:"userId"`
+	UserID string `json:"userId"`
 }
 
 type User struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`
-	Password      string `json:"password"` //md5 hash
+	Password      string `json:"password"` // md5 hash
 	EmailVerified bool   `json:"email_verified"`
 	CreatedAt     string `json:"created_at"`
 	UpdatedAt     string `json:"updated_at"`

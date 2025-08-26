@@ -63,7 +63,7 @@ func GetStatement(c *gin.Context) {
 	}
 
 	// Проверяем, что statement принадлежит пользователю
-	if statement.UserId != userID {
+	if statement.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -88,7 +88,7 @@ func CreateStatement(c *gin.Context) {
 	// Проверяем, что категория принадлежит пользователю
 	categoryCRUD := &db.CategoryCRUD{}
 	category, err := categoryCRUD.GetCategoryByID(req.CategoryID)
-	if err != nil || category.UserId != userID {
+	if err != nil || category.UserID != userID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category"})
 		return
 	}
@@ -96,8 +96,8 @@ func CreateStatement(c *gin.Context) {
 	statement := &db.Statement{
 		ID:         utils.GenerateID(),
 		Title:      req.Title,
-		UserId:     userID,
-		CategoryId: req.CategoryID,
+		UserID:     userID,
+		CategoryID: req.CategoryID,
 	}
 
 	statementCRUD := &db.StatementCRUD{}
@@ -126,7 +126,7 @@ func UpdateStatement(c *gin.Context) {
 	// Проверяем, что statement принадлежит пользователю
 	statementCRUD := &db.StatementCRUD{}
 	existingStatement, err := statementCRUD.GetStatementByID(statementID)
-	if err != nil || existingStatement.UserId != userID {
+	if err != nil || existingStatement.UserID != userID {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Statement not found"})
 		return
 	}
@@ -134,7 +134,7 @@ func UpdateStatement(c *gin.Context) {
 	// Проверяем, что категория принадлежит пользователю
 	categoryCRUD := &db.CategoryCRUD{}
 	category, err := categoryCRUD.GetCategoryByID(req.CategoryID)
-	if err != nil || category.UserId != userID {
+	if err != nil || category.UserID != userID {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category"})
 		return
 	}
@@ -142,8 +142,8 @@ func UpdateStatement(c *gin.Context) {
 	statement := &db.Statement{
 		ID:         statementID,
 		Title:      req.Title,
-		UserId:     userID,
-		CategoryId: req.CategoryID,
+		UserID:     userID,
+		CategoryID: req.CategoryID,
 	}
 
 	if err := statementCRUD.UpdateStatement(statement); err != nil {
@@ -165,7 +165,7 @@ func DeleteStatement(c *gin.Context) {
 	// Проверяем, что statement принадлежит пользователю
 	statementCRUD := &db.StatementCRUD{}
 	statement, err := statementCRUD.GetStatementByID(statementID)
-	if err != nil || statement.UserId != userID {
+	if err != nil || statement.UserID != userID {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Statement not found"})
 		return
 	}
@@ -212,7 +212,7 @@ func GetCategory(c *gin.Context) {
 	}
 
 	// Проверяем, что категория принадлежит пользователю
-	if category.UserId != userID {
+	if category.UserID != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -237,7 +237,7 @@ func CreateCategory(c *gin.Context) {
 	category := &db.Category{
 		ID:     utils.GenerateID(),
 		Title:  req.Title,
-		UserId: userID,
+		UserID: userID,
 	}
 
 	categoryCRUD := &db.CategoryCRUD{}
@@ -266,7 +266,7 @@ func UpdateCategory(c *gin.Context) {
 	// Проверяем, что категория принадлежит пользователю
 	categoryCRUD := &db.CategoryCRUD{}
 	existingCategory, err := categoryCRUD.GetCategoryByID(categoryID)
-	if err != nil || existingCategory.UserId != userID {
+	if err != nil || existingCategory.UserID != userID {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
 	}
@@ -274,7 +274,7 @@ func UpdateCategory(c *gin.Context) {
 	category := &db.Category{
 		ID:     categoryID,
 		Title:  req.Title,
-		UserId: userID,
+		UserID: userID,
 	}
 
 	if err := categoryCRUD.UpdateCategory(category); err != nil {
@@ -296,7 +296,7 @@ func DeleteCategory(c *gin.Context) {
 	// Проверяем, что категория принадлежит пользователю
 	categoryCRUD := &db.CategoryCRUD{}
 	category, err := categoryCRUD.GetCategoryByID(categoryID)
-	if err != nil || category.UserId != userID {
+	if err != nil || category.UserID != userID {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Category not found"})
 		return
 	}

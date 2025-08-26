@@ -11,7 +11,7 @@ func TestMailMocking(t *testing.T) {
 	// Test that mail functions work in test mode
 	os.Setenv("TEST_MODE", "true")
 	os.Setenv("MAIL_SERVER", "smtp.test.com")
-	os.Setenv("MAIL_ADRESS", "test@example.com")
+	os.Setenv("MAIL_ADDRESS", "test@example.com")
 	os.Setenv("MAIL_PASSWORD", "test_password")
 
 	// Test SendOTPEmail
