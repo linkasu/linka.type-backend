@@ -82,8 +82,17 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Хешируем пароль (MD5 как в существующей системе)
-	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+	// Проверяем силу пароля и хешируем (bcrypt)
+	hasher := utils.NewPasswordHasher()
+	if ok, _ := hasher.ValidatePasswordStrength(req.Password); !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Weak password"})
+		return
+	}
+	hashedPassword, err := hasher.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
 
 	// Создаем пользователя (email не верифицирован)
 	user := &db.User{
@@ -166,9 +175,19 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	// Проверяем пароль
-	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
-	if user.Password != hashedPassword {
+	// Проверяем пароль: сначала bcrypt (новая схема), затем legacy MD5
+	hasher := utils.NewPasswordHasher()
+	passwordOK := hasher.CheckPassword(user.Password, req.Password) == nil
+	if !passwordOK {
+		legacy := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+		if user.Password == legacy {
+			passwordOK = true
+			if newHash, err := hasher.HashPassword(req.Password); err == nil {
+				_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+			}
+		}
+	}
+	if !passwordOK {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -448,8 +467,17 @@ func ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	// Хешируем новый пароль
-	hashedPassword := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+	// Проверяем силу нового пароля и хешируем (bcrypt)
+	hasher := utils.NewPasswordHasher()
+	if ok, _ := hasher.ValidatePasswordStrength(req.Password); !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Weak password"})
+		return
+	}
+	hashedPassword, err := hasher.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
 
 	// Обновляем пароль пользователя
 	if err := userCRUD.UpdateUserPassword(user.ID, hashedPassword); err != nil {
