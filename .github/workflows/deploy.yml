@@ -1,0 +1,115 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+jobs:
+  deploy-staging:
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: Build application
+      run: make build
+
+    - name: Build Docker image
+      run: docker compose build server
+
+    - name: Run tests before deploy
+      run: make test-unit
+      env:
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+        JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE }}
+        TEST_MODE: true
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Здесь будет логика деплоя в staging
+        # Например, push в registry, deploy в Kubernetes и т.д.
+
+  deploy-production:
+    if: github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    needs: deploy-staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: Build application
+      run: make build
+
+    - name: Build Docker image
+      run: docker compose build server
+
+    - name: Run full test suite
+      run: make test
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        JWT_ISSUER: ${{ secrets.JWT_ISSUER }}
+        JWT_AUDIENCE: ${{ secrets.JWT_AUDIENCE }}
+        MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
+        MAIL_PORT: ${{ secrets.MAIL_PORT }}
+        MAIL_ADRESS: ${{ secrets.MAIL_ADRESS }}
+        MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        TEST_MODE: true
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Здесь будет логика деплоя в production
+        # Например, push в registry, deploy в Kubernetes и т.д.
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy-staging.result }}" == "success" ] && [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ All deployments successful"
+        elif [ "${{ needs.deploy-staging.result }}" == "success" ]; then
+          echo "✅ Staging deployment successful"
+        elif [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "✅ Production deployment successful"
+        else
+          echo "❌ Deployment failed"
+          exit 1
+        fi

@@ -24,6 +24,9 @@ RUN chown -R nodejs:nodejs /app
 RUN chmod 777 /app/test-results
 USER nodejs
 
+# Открываем порт (если нужно)
+EXPOSE 3000
+
 # Устанавливаем переменные окружения
 ENV NODE_ENV=test
 ENV BASE_URL=http://server:8080

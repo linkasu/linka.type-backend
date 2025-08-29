@@ -71,6 +71,103 @@ CREATE TABLE statements (
 );
 ```
 
+## CI/CD Pipeline
+
+Проект включает полный CI/CD pipeline с GitHub Actions:
+
+### Workflows
+
+1. **CI (`ci.yml`)**
+   - Линтинг кода с golangci-lint
+   - Unit тесты
+   - Integration тесты с PostgreSQL
+   - E2E тесты с Docker Compose
+   - Сборка для разных платформ
+   - Проверка безопасности
+   - Покрытие кода тестами
+
+2. **Tests (`test.yml`)**
+   - Раздельные jobs для unit, integration и e2e тестов
+   - Линтинг с автоисправлением
+   - Параллельное выполнение тестов
+
+3. **E2E Tests (`e2e.yml`)**
+   - Отдельный workflow для E2E тестов
+   - Использует существующие Docker E2E тесты
+   - Полное тестирование API endpoints
+   - Тестирование аутентификации и авторизации
+   - Тестирование CRUD операций
+   - Тестирование WebSocket соединений
+   - Генерирует отчеты в JUnit формате
+
+4. **Security (`security.yml`)**
+   - Сканирование уязвимостей (govulncheck, gosec)
+   - Проверка зависимостей
+   - Сканирование Docker образов (Trivy)
+   - Запускается еженедельно
+
+5. **Deploy (`deploy.yml`)**
+   - Автоматический деплой в staging при push в main
+   - Ручной деплой в production
+   - Тесты перед деплоем
+
+### Локальное тестирование
+
+```bash
+# Запуск всех тестов
+make test
+
+# Только unit тесты
+make test-unit
+
+# Только integration тесты
+make test-integration
+
+# E2E тесты с Docker
+make test-e2e
+
+# E2E тесты без пересборки
+make test-e2e-only
+
+# Тесты с покрытием
+make test-coverage
+
+# Линтинг
+make lint
+
+# Линтинг с автоисправлением
+make lint-fix
+```
+
+### E2E тесты
+
+Проект включает готовые E2E тесты в `e2e-tests/`:
+
+- **Categories Tests** - 15 тестов CRUD операций
+- **Statements Tests** - 15 тестов CRUD операций  
+- **WebSocket Tests** - 12 тестов real-time уведомлений
+- **Authentication Tests** - тесты аутентификации
+- **Integration Tests** - комплексные тесты
+
+E2E тесты запускаются в Docker с полной изоляцией и тестируют:
+- API endpoints
+- JWT аутентификацию
+- Авторизацию и изоляцию данных
+- WebSocket соединения
+- Real-time уведомления
+- Обработку ошибок
+
+### Переменные окружения для тестов
+
+Все тесты используют безопасные переменные окружения:
+
+```bash
+JWT_SECRET=test-jwt-secret-for-ci
+JWT_ISSUER=test-issuer
+JWT_AUDIENCE=test-audience
+TEST_MODE=true
+```
+
 ## Environment Variables
 
 The application uses the following environment variables (configured in `docker-compose.yml`):
@@ -80,6 +177,16 @@ The application uses the following environment variables (configured in `docker-
 - `POSTGRES_USER`: Database user (default: `postgres`)
 - `POSTGRES_PASSWORD`: Database password (default: `postgres`)
 - `POSTGRES_DB`: Database name (default: `linkatype`)
+- `MAIL_SERVER`: SMTP server (default: `smtp.gmail.com`)
+- `MAIL_PORT`: SMTP port (default: `587`)
+- `MAIL_ADRESS`: Email address for sending (default: `test@example.com`)
+- `MAIL_PASSWORD`: Email password (default: `test-password`)
+- `JWT_SECRET`: Secret key for JWT tokens (default: `test-secret-key-for-development`)
+- `JWT_ISSUER`: JWT issuer claim (default: `linka-backend`)
+- `JWT_AUDIENCE`: JWT audience claim (default: `linka-users`)
+- `CORS_ORIGINS`: Comma-separated list of allowed origins (default: `http://localhost:3000,http://localhost:8080`)
+- `CORS_METHODS`: Comma-separated list of allowed HTTP methods (default: `GET, POST, PUT, DELETE, OPTIONS`)
+- `CORS_HEADERS`: Comma-separated list of allowed headers (default: `Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization`)
 
 ## Migration System
 

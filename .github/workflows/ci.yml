@@ -27,6 +27,113 @@ jobs:
     - name: Run golangci-lint
       run: golangci-lint run
 
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Run unit tests
+      run: make test-unit
+      env:
+        JWT_SECRET: test-jwt-secret-for-ci
+        JWT_ISSUER: test-issuer
+        JWT_AUDIENCE: test-audience
+        TEST_MODE: true
+
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.5'
+        cache: true
+
+    - name: Install dependencies
+      run: go mod download
+
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
+    - name: Run integration tests
+      run: make test-integration
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        JWT_SECRET: test-jwt-secret-for-ci
+        JWT_ISSUER: test-issuer
+        JWT_AUDIENCE: test-audience
+        MAIL_SERVER: smtp.gmail.com
+        MAIL_PORT: 587
+        MAIL_ADRESS: test@example.com
+        MAIL_PASSWORD: test_password
+        TEST_MODE: true
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and run E2E tests with Docker Compose
+      run: |
+        docker compose --profile test build
+        docker compose --profile test up --abort-on-container-exit --exit-code-from e2e-tests
+      env:
+        JWT_SECRET: test-jwt-secret-for-ci
+        JWT_ISSUER: test-issuer
+        JWT_AUDIENCE: test-audience
+        MAIL_SERVER: smtp.test.com
+        MAIL_PORT: 587
+        MAIL_ADRESS: test@example.com
+        MAIL_PASSWORD: test_password
+        TEST_MODE: true
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: test-results/
+        retention-days: 30
+
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -80,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        image: postgres:17
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_USER: postgres
@@ -105,12 +212,32 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
+    - name: Wait for PostgreSQL
+      run: |
+        until pg_isready -h localhost -p 5432 -U postgres; do
+          echo "Waiting for PostgreSQL..."
+          sleep 2
+        done
+
     - name: Run tests with coverage
       run: |
         go test -coverprofile=coverage.out -covermode=atomic ./...
         go tool cover -html=coverage.out -o coverage.html
+        go tool cover -func=coverage.out
       env:
-        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: test_db
+        JWT_SECRET: test-jwt-secret-for-ci
+        JWT_ISSUER: test-issuer
+        JWT_AUDIENCE: test-audience
+        MAIL_SERVER: smtp.gmail.com
+        MAIL_PORT: 587
+        MAIL_ADRESS: test@example.com
+        MAIL_PASSWORD: test_password
+        TEST_MODE: true
 
     - name: Upload coverage report
       uses: actions/upload-artifact@v4
@@ -119,4 +246,27 @@ jobs:
         path: |
           coverage.out
           coverage.html
-        retention-days: 30 
+        retention-days: 30
+
+  docker-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and test with Docker Compose
+      run: |
+        docker compose -f docker-compose.test.yml build
+        docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from e2e-tests
+      env:
+        JWT_SECRET: test-jwt-secret-for-ci
+        JWT_ISSUER: test-issuer
+        JWT_AUDIENCE: test-audience
+        MAIL_SERVER: smtp.gmail.com
+        MAIL_PORT: 587
+        MAIL_ADRESS: test@example.com
+        MAIL_PASSWORD: test_password
+        TEST_MODE: true 

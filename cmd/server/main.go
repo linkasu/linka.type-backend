@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"linka.type-backend/auth"
 	"linka.type-backend/db"
@@ -11,6 +12,65 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+// getEnv получает переменную окружения или возвращает дефолт
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// getCORSOrigins получает список разрешенных origins из переменной окружения
+func getCORSOrigins() []string {
+	origins := getEnv("CORS_ORIGINS", "http://localhost:3000,http://localhost:8080")
+	return strings.Split(origins, ",")
+}
+
+// getCORSMethods получает разрешенные HTTP методы
+func getCORSMethods() string {
+	return getEnv("CORS_METHODS", "GET, POST, PUT, DELETE, OPTIONS")
+}
+
+// getCORSHeaders получает разрешенные заголовки
+func getCORSHeaders() string {
+	return getEnv("CORS_HEADERS", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
+}
+
+// corsMiddleware создает CORS middleware с настройками из переменных окружения
+func corsMiddleware() gin.HandlerFunc {
+	allowedOrigins := getCORSOrigins()
+	allowedMethods := getCORSMethods()
+	allowedHeaders := getCORSHeaders()
+
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+
+		// Проверяем, разрешен ли origin
+		originAllowed := false
+		for _, allowedOrigin := range allowedOrigins {
+			if allowedOrigin == "*" || allowedOrigin == origin {
+				originAllowed = true
+				break
+			}
+		}
+
+		if originAllowed {
+			c.Header("Access-Control-Allow-Origin", origin)
+		}
+
+		c.Header("Access-Control-Allow-Methods", allowedMethods)
+		c.Header("Access-Control-Allow-Headers", allowedHeaders)
+		c.Header("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+
+		c.Next()
+	}
+}
 
 func main() {
 	// Инициализируем базу данных
@@ -30,19 +90,8 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 
-	// CORS middleware
-	router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization")
-		
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-		
-		c.Next()
-	})
+	// CORS middleware с настройками из переменных окружения
+	router.Use(corsMiddleware())
 
 	// Health check endpoint
 	router.GET("/api/health", func(c *gin.Context) {

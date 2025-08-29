@@ -1,11 +1,19 @@
 # API Documentation
 
-## Base URL
+## CORS Configuration
+
+The API supports configurable CORS settings through environment variables:
+
+- `CORS_ORIGINS`: Comma-separated list of allowed origins (default: `http://localhost:3000,http://localhost:8080`)
+- `CORS_METHODS`: Comma-separated list of allowed HTTP methods (default: `GET, POST, PUT, DELETE, OPTIONS`)
+- `CORS_HEADERS`: Comma-separated list of allowed headers (default: `Origin, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization`)
+
+For production, set `CORS_ORIGINS` to your specific domain(s), e.g.:
 ```
-http://localhost:8081/api
+CORS_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
 ```
 
-## Аутентификация
+## Authentication
 
 API использует JWT токены для аутентификации. Токен должен передаваться в заголовке `Authorization` в формате:
 ```
