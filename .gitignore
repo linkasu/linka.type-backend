@@ -30,3 +30,10 @@ bin/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Test results
+test-results/
+e2e-tests/test-results/
+*.xml
+*.html
+coverage/

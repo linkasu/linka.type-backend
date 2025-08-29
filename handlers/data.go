@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"linka.type-backend/auth"
 	"linka.type-backend/db"
@@ -85,6 +86,17 @@ func CreateStatement(c *gin.Context) {
 		return
 	}
 
+	// Дополнительная валидация
+	if strings.TrimSpace(req.Title) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title cannot be empty"})
+		return
+	}
+
+	if strings.TrimSpace(req.CategoryID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Category ID cannot be empty"})
+		return
+	}
+
 	// Проверяем, что категория принадлежит пользователю
 	categoryCRUD := &db.CategoryCRUD{}
 	category, err := categoryCRUD.GetCategoryByID(req.CategoryID)
@@ -120,6 +132,17 @@ func UpdateStatement(c *gin.Context) {
 	var req UpdateStatementRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Дополнительная валидация
+	if strings.TrimSpace(req.Title) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title cannot be empty"})
+		return
+	}
+
+	if strings.TrimSpace(req.CategoryID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Category ID cannot be empty"})
 		return
 	}
 
@@ -234,6 +257,12 @@ func CreateCategory(c *gin.Context) {
 		return
 	}
 
+	// Дополнительная валидация
+	if strings.TrimSpace(req.Title) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title cannot be empty"})
+		return
+	}
+
 	category := &db.Category{
 		ID:     utils.GenerateID(),
 		Title:  req.Title,
@@ -260,6 +289,12 @@ func UpdateCategory(c *gin.Context) {
 	var req UpdateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Дополнительная валидация
+	if strings.TrimSpace(req.Title) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title cannot be empty"})
 		return
 	}
 

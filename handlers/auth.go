@@ -61,6 +61,74 @@ type LoginResponse struct {
 	} `json:"user"`
 }
 
+// RegisterDirect обрабатывает прямую регистрацию пользователя без OTP
+func RegisterDirect(c *gin.Context) {
+	var req RegisterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Проверяем, существует ли пользователь
+	userCRUD := &db.UserCRUD{}
+	exists, err := userCRUD.UserExists(req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+
+	if exists {
+		c.JSON(http.StatusConflict, gin.H{"error": "User already exists"})
+		return
+	}
+
+	// Проверяем силу пароля и хешируем (bcrypt)
+	hasher := utils.NewPasswordHasher()
+	if ok, _ := hasher.ValidatePasswordStrength(req.Password); !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Weak password"})
+		return
+	}
+	hashedPassword, err := hasher.HashPassword(req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	// Создаем пользователя (email верифицирован автоматически)
+	user := &db.User{
+		ID:            utils.GenerateID(),
+		Email:         req.Email,
+		Password:      hashedPassword,
+		EmailVerified: true, // Автоматически верифицируем для прямой регистрации
+	}
+
+	if err := userCRUD.CreateUser(user); err != nil {
+		log.Printf("Error creating user: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		return
+	}
+
+	// Генерируем JWT токен
+	token, err := auth.GenerateToken(user.ID, user.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		return
+	}
+
+	response := LoginResponse{
+		Token: token,
+		User: struct {
+			ID    string `json:"id"`
+			Email string `json:"email"`
+		}{
+			ID:    user.ID,
+			Email: user.Email,
+		},
+	}
+
+	c.JSON(http.StatusCreated, response)
+}
+
 // Register обрабатывает регистрацию пользователя
 func Register(c *gin.Context) {
 	var req RegisterRequest
