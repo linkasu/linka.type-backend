@@ -29,14 +29,13 @@ class ApiClient {
       },
       (error) => {
         console.error('Response error:', error.response?.status, error.response?.data);
-        // Убираем циклические ссылки из ошибки
-        const cleanError = {
-          message: error.message,
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        };
-        return Promise.reject(cleanError);
+        // Создаем Error объект для правильной обработки в тестах
+        const errorMessage = error.response?.data?.error || error.message || 'Request failed';
+        const httpError = new Error(errorMessage);
+        httpError.status = error.response?.status;
+        httpError.statusText = error.response?.statusText;
+        httpError.data = error.response?.data;
+        return Promise.reject(httpError);
       }
     );
   }

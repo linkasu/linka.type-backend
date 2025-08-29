@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"linka.type-backend/auth"
@@ -36,7 +37,10 @@ func NotifyCategoryUpdate(userID string, category interface{}, action string) {
 			"action":   action,
 			"category": category,
 		}
+		log.Printf("Sending category notification: userID=%s, action=%s", userID, action)
 		WebSocketManager.BroadcastToUser(userID, "category_update", payload)
+	} else {
+		log.Printf("WebSocketManager is nil, cannot send notification")
 	}
 }
 
@@ -68,7 +72,10 @@ func NotifyStatementUpdate(userID string, statement interface{}, action string) 
 			"action":    action,
 			"statement": statement,
 		}
+		log.Printf("Sending statement notification: userID=%s, action=%s", userID, action)
 		WebSocketManager.BroadcastToUser(userID, "statement_update", payload)
+	} else {
+		log.Printf("WebSocketManager is nil, cannot send notification")
 	}
 }
 

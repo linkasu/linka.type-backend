@@ -101,7 +101,7 @@ describe('WebSocket Tests', () => {
       await apiClient.updateCategory(categoryResponse.id, updatedTitle);
 
       // Ждем уведомление об обновлении категории
-      const message = await wsClient.waitForMessage('category_update', 5000);
+      const message = await wsClient.waitForMessageWithAction('category_update', 'updated', 5000);
 
       expect(message).toHaveProperty('type', 'category_update');
       expect(message).toHaveProperty('payload');
@@ -126,7 +126,7 @@ describe('WebSocket Tests', () => {
       await apiClient.deleteCategory(categoryResponse.id);
 
       // Ждем уведомление об удалении категории
-      const message = await wsClient.waitForMessage('category_update', 5000);
+      const message = await wsClient.waitForMessageWithAction('category_update', 'deleted', 5000);
 
       expect(message).toHaveProperty('type', 'category_update');
       expect(message).toHaveProperty('payload');
@@ -156,7 +156,7 @@ describe('WebSocket Tests', () => {
       const statementResponse = await apiClient.createStatement(statementTitle, testCategory.id);
 
       // Ждем уведомление о создании statement
-      const message = await wsClient.waitForMessage('statement_update', 5000);
+      const message = await wsClient.waitForMessageWithAction('statement_update', 'created', 5000);
 
       expect(message).toHaveProperty('type', 'statement_update');
       expect(message).toHaveProperty('payload');
@@ -183,7 +183,7 @@ describe('WebSocket Tests', () => {
       await apiClient.updateStatement(statementResponse.id, updatedTitle, testCategory.id);
 
       // Ждем уведомление об обновлении statement
-      const message = await wsClient.waitForMessage('statement_update', 5000);
+      const message = await wsClient.waitForMessageWithAction('statement_update', 'updated', 5000);
 
       expect(message).toHaveProperty('type', 'statement_update');
       expect(message).toHaveProperty('payload');
@@ -209,7 +209,7 @@ describe('WebSocket Tests', () => {
       await apiClient.deleteStatement(statementResponse.id);
 
       // Ждем уведомление об удалении statement
-      const message = await wsClient.waitForMessage('statement_update', 5000);
+      const message = await wsClient.waitForMessageWithAction('statement_update', 'deleted', 5000);
 
       expect(message).toHaveProperty('type', 'statement_update');
       expect(message).toHaveProperty('payload');

@@ -14,7 +14,7 @@ global.wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 global.generateTestEmail = () => `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@example.com`;
 
 // Функция для генерации случайного пароля
-global.generateTestPassword = () => `password-${Math.random().toString(36).substr(2, 9)}`;
+global.generateTestPassword = () => `Password123!-${Math.random().toString(36).substr(2, 9)}`;
 
 console.log('E2E Test Setup Complete');
 console.log(`Base URL: ${global.BASE_URL}`);

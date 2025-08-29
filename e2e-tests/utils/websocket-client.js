@@ -81,9 +81,15 @@ class WebSocketClient {
       const startTime = Date.now();
       
       const checkMessages = () => {
-        const message = this.messages.find(msg => msg.type === type);
-        if (message) {
-          resolve(message);
+        // Ищем сообщения, которые пришли после начала ожидания
+        const recentMessages = this.messages.filter(msg => {
+          // Предполагаем, что новые сообщения добавляются в конец массива
+          return msg.type === type;
+        });
+        
+        if (recentMessages.length > 0) {
+          // Берем последнее сообщение нужного типа
+          resolve(recentMessages[recentMessages.length - 1]);
           return;
         }
 
@@ -104,13 +110,14 @@ class WebSocketClient {
       const startTime = Date.now();
       
       const checkMessages = () => {
-        const message = this.messages.find(msg => {
+        const recentMessages = this.messages.filter(msg => {
           if (msg.type !== type) return false;
           return payloadCheck(msg.payload);
         });
         
-        if (message) {
-          resolve(message);
+        if (recentMessages.length > 0) {
+          // Берем последнее сообщение, которое соответствует критериям
+          resolve(recentMessages[recentMessages.length - 1]);
           return;
         }
 
@@ -124,6 +131,12 @@ class WebSocketClient {
 
       checkMessages();
     });
+  }
+
+  waitForMessageWithAction(type, action, timeout = 10000) {
+    return this.waitForMessageWithPayload(type, (payload) => {
+      return payload.action === action;
+    }, timeout);
   }
 
   getMessages() {
