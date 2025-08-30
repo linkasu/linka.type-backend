@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"linka.type-backend/auth"
+	"linka.type-backend/bl"
 	"linka.type-backend/db"
 	"linka.type-backend/fb"
 	"linka.type-backend/mail"
@@ -269,6 +270,22 @@ func Login(c *gin.Context) {
 	if !passwordOK {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
+	}
+
+	// Импортируем данные из Firebase если пользователь существует там
+	if firebasePasswordOK != nil {
+		// Проверяем, существует ли пользователь в Firebase
+		fbUser, err := fb.GetUser(req.Email)
+		if err == nil && fbUser != nil {
+			// Импортируем пользователя, категории и фразы
+			importResult, err := bl.ImportAllData(req.Email, req.Password)
+			if err != nil {
+				log.Printf("Failed to import data from Firebase: %v", err)
+				// Не прерываем логин, только логируем ошибку
+			} else {
+				log.Printf("Successfully imported data from Firebase: %+v", importResult)
+			}
+		}
 	}
 
 	// Генерируем JWT токен
