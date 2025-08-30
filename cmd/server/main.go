@@ -114,6 +114,7 @@ func main() {
 		})
 
 		// OTP routes
+		api.POST("/auth/login", handlers.Login)
 		api.POST("/auth/register", handlers.Register)
 		api.POST("/auth/verify-email", handlers.VerifyEmail)
 		api.POST("/auth/reset-password", handlers.RequestPasswordReset)
