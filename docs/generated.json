@@ -1,16 +1,27 @@
 {
-  "generated_at": "2025-08-04T15:47:48.538830475+03:00",
+  "generated_at": "2025-08-31T00:57:45.569886212+03:00",
   "packages": {
     "auth": {
       "name": "auth",
       "description": "",
       "functions": [
         {
+          "name": "getJWTSecret",
+          "type": "function",
+          "description": "",
+          "file": "auth/jwt.go",
+          "line": 15,
+          "returns": [
+            "[]byte",
+            "error"
+          ]
+        },
+        {
           "name": "GenerateToken",
           "type": "function",
           "description": "GenerateToken генерирует JWT токен для пользователя",
           "file": "auth/jwt.go",
-          "line": 21,
+          "line": 34,
           "params": [
             {
               "name": "userID",
@@ -35,7 +46,7 @@
           "type": "function",
           "description": "ValidateToken валидирует JWT токен и возвращает claims",
           "file": "auth/jwt.go",
-          "line": 42,
+          "line": 66,
           "params": [
             {
               "name": "tokenString",
@@ -54,7 +65,7 @@
           "type": "function",
           "description": "SetJWTSecret устанавливает секретный ключ для JWT (для конфигурации)",
           "file": "auth/jwt.go",
-          "line": 62,
+          "line": 98,
           "params": [
             {
               "name": "secret",
@@ -125,11 +136,21 @@
           ]
         },
         {
-          "name": "JWTAuthMiddleware",
+          "name": "AuthMiddleware",
           "type": "function",
-          "description": "JWTAuthMiddleware middleware для проверки JWT токена",
+          "description": "AuthMiddleware проверяет JWT токен",
           "file": "auth/middleware.go",
-          "line": 11,
+          "line": 13,
+          "returns": [
+            "gin.HandlerFunc"
+          ]
+        },
+        {
+          "name": "EmailVerifiedMiddleware",
+          "type": "function",
+          "description": "EmailVerifiedMiddleware проверяет, что email пользователя верифицирован",
+          "file": "auth/middleware.go",
+          "line": 46,
           "returns": [
             "gin.HandlerFunc"
           ]
@@ -139,7 +160,7 @@
           "type": "function",
           "description": "GetUserIDFromContext получает user_id из контекста Gin",
           "file": "auth/middleware.go",
-          "line": 44,
+          "line": 76,
           "params": [
             {
               "name": "c",
@@ -157,7 +178,7 @@
           "type": "function",
           "description": "GetEmailFromContext получает email из контекста Gin",
           "file": "auth/middleware.go",
-          "line": 52,
+          "line": 84,
           "params": [
             {
               "name": "c",
@@ -169,6 +190,16 @@
           "returns": [
             "string"
           ]
+        },
+        {
+          "name": "JWTAuthMiddleware",
+          "type": "function",
+          "description": "JWTAuthMiddleware является алиасом для AuthMiddleware",
+          "file": "auth/middleware.go",
+          "line": 92,
+          "returns": [
+            "gin.HandlerFunc"
+          ]
         }
       ],
       "structs": [
@@ -177,7 +208,7 @@
           "type": "struct",
           "description": "Claims структура для JWT claims",
           "file": "auth/jwt.go",
-          "line": 14,
+          "line": 27,
           "params": [
             {
               "name": "UserID",
@@ -255,11 +286,11 @@
           "type": "function",
           "description": "importNewCategory импортирует новую категорию",
           "file": "bl/importCategories.go",
-          "line": 183,
+          "line": 181,
           "params": [
             {
               "name": "fbCategory",
-              "type": "*fb.FBCategory",
+              "type": "*fb.Category",
               "description": "",
               "required": true
             },
@@ -285,11 +316,11 @@
           "type": "function",
           "description": "updateExistingCategory обновляет существующую категорию",
           "file": "bl/importCategories.go",
-          "line": 203,
+          "line": 204,
           "params": [
             {
               "name": "fbCategory",
-              "type": "*fb.FBCategory",
+              "type": "*fb.Category",
               "description": "",
               "required": true
             },
@@ -315,7 +346,7 @@
           "type": "function",
           "description": "ImportCategoriesForAllUsers импортирует категории для всех пользователей Полезно для массовой миграции",
           "file": "bl/importCategories.go",
-          "line": 224,
+          "line": 228,
           "returns": [
             "*ImportCategoriesResult",
             "error"
@@ -326,7 +357,7 @@
           "type": "function",
           "description": "GetImportStatus получает статус импорта для пользователя",
           "file": "bl/importCategories.go",
-          "line": 231,
+          "line": 235,
           "params": [
             {
               "name": "userID",
@@ -374,7 +405,7 @@
           "params": [
             {
               "name": "fbStatement",
-              "type": "*fb.FBStatement",
+              "type": "*fb.Statement",
               "description": "",
               "required": true
             },
@@ -400,11 +431,11 @@
           "type": "function",
           "description": "updateExistingStatement обновляет существующее statement",
           "file": "bl/importStatements.go",
-          "line": 181,
+          "line": 184,
           "params": [
             {
               "name": "fbStatement",
-              "type": "*fb.FBStatement",
+              "type": "*fb.Statement",
               "description": "",
               "required": true
             },
@@ -430,7 +461,7 @@
           "type": "function",
           "description": "ImportAllData импортирует пользователя, категории и statements",
           "file": "bl/importStatements.go",
-          "line": 202,
+          "line": 208,
           "params": [
             {
               "name": "login",
@@ -479,7 +510,7 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 22,
+          "line": 23,
           "params": [
             {
               "name": "email",
@@ -498,7 +529,7 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 29,
+          "line": 30,
           "params": [
             {
               "name": "email",
@@ -523,7 +554,7 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 37,
+          "line": 38,
           "params": [
             {
               "name": "user",
@@ -533,7 +564,7 @@
             }
           ],
           "returns": [
-            "[]*fb.FBCategory",
+            "[]*fb.Category",
             "error"
           ]
         },
@@ -542,7 +573,7 @@
           "type": "function",
           "description": "TestImportCategories тестирует основную логику импорта",
           "file": "bl/import_test.go",
-          "line": 45,
+          "line": 46,
           "params": [
             {
               "name": "t",
@@ -557,7 +588,7 @@
           "type": "function",
           "description": "TestMigrationTracker тестирует трекер миграций",
           "file": "bl/import_test.go",
-          "line": 128,
+          "line": 133,
           "params": [
             {
               "name": "t",
@@ -572,7 +603,7 @@
           "type": "function",
           "description": "TestDetermineAction тестирует логику определения действия",
           "file": "bl/import_test.go",
-          "line": 171,
+          "line": 180,
           "params": [
             {
               "name": "t",
@@ -587,7 +618,7 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 230,
+          "line": 239,
           "params": [
             {
               "name": "t",
@@ -602,22 +633,22 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 245,
+          "line": 254,
           "params": [
             {
-              "name": "mockClient",
+              "name": "_",
               "type": "*MockFirebaseClient",
               "description": "",
               "required": true
             },
             {
-              "name": "email",
+              "name": "_",
               "type": "string",
               "description": "",
               "required": true
             },
             {
-              "name": "password",
+              "name": "_",
               "type": "string",
               "description": "",
               "required": true
@@ -633,7 +664,7 @@
           "type": "function",
           "description": "BenchmarkImportCategories тестирует производительность импорта",
           "file": "bl/import_test.go",
-          "line": 253,
+          "line": 262,
           "params": [
             {
               "name": "b",
@@ -648,7 +679,7 @@
           "type": "function",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 269,
+          "line": 283,
           "params": [
             {
               "name": "b",
@@ -806,7 +837,7 @@
           "type": "struct",
           "description": "ImportAllDataResult содержит результат полного импорта данных",
           "file": "bl/importStatements.go",
-          "line": 249,
+          "line": 255,
           "params": [
             {
               "name": "StatementsResult",
@@ -839,7 +870,7 @@
           "type": "struct",
           "description": "MockFirebaseClient для тестирования",
           "file": "bl/import_test.go",
-          "line": 12,
+          "line": 13,
           "params": [
             {
               "name": "users",
@@ -860,7 +891,7 @@
           "type": "struct",
           "description": "",
           "file": "bl/import_test.go",
-          "line": 17,
+          "line": 18,
           "params": [
             {
               "name": "UID",
@@ -1059,7 +1090,7 @@
           "type": "function",
           "description": "getEnv gets an environment variable or returns a default value",
           "file": "db/connection.go",
-          "line": 131,
+          "line": 144,
           "params": [
             {
               "name": "key",
@@ -1202,6 +1233,181 @@
           "params": [
             {
               "name": "entityType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "CreateOTP",
+          "type": "function",
+          "description": "CreateOTP создает новый OTP код",
+          "file": "db/otp_crud.go",
+          "line": 13,
+          "params": [
+            {
+              "name": "otpCode",
+              "type": "*OTPCode",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetOTPByEmailAndType",
+          "type": "function",
+          "description": "GetOTPByEmailAndType получает активный OTP код по email и типу",
+          "file": "db/otp_crud.go",
+          "line": 37,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "otpType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*OTPCode",
+            "error"
+          ]
+        },
+        {
+          "name": "MarkOTPAsUsed",
+          "type": "function",
+          "description": "MarkOTPAsUsed помечает OTP код как использованный",
+          "file": "db/otp_crud.go",
+          "line": 68,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteExpiredOTP",
+          "type": "function",
+          "description": "DeleteExpiredOTP удаляет истекшие OTP коды",
+          "file": "db/otp_crud.go",
+          "line": 80,
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "DeleteOTPByEmail",
+          "type": "function",
+          "description": "DeleteOTPByEmail удаляет все OTP коды для указанного email",
+          "file": "db/otp_crud.go",
+          "line": 92,
+          "params": [
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "GetOTPByCode",
+          "type": "function",
+          "description": "GetOTPByCode получает OTP код по самому коду",
+          "file": "db/otp_crud.go",
+          "line": 104,
+          "params": [
+            {
+              "name": "code",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "otpType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*OTPCode",
+            "error"
+          ]
+        },
+        {
+          "name": "GetOTPByCodeAnyStatus",
+          "type": "function",
+          "description": "GetOTPByCodeAnyStatus получает OTP код по коду независимо от статуса used/expired",
+          "file": "db/otp_crud.go",
+          "line": 135,
+          "params": [
+            {
+              "name": "code",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "otpType",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "*OTPCode",
+            "error"
+          ]
+        },
+        {
+          "name": "UpdateOTPExpiration",
+          "type": "function",
+          "description": "UpdateOTPExpiration обновляет время истечения OTP кода",
+          "file": "db/otp_crud.go",
+          "line": 166,
+          "params": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "expiresAt",
               "type": "string",
               "description": "",
               "required": true
@@ -1509,6 +1715,48 @@
             "bool",
             "error"
           ]
+        },
+        {
+          "name": "VerifyUserEmail",
+          "type": "function",
+          "description": "VerifyUserEmail marks user email as verified",
+          "file": "db/user_crud.go",
+          "line": 147,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
+        },
+        {
+          "name": "UpdateUserPassword",
+          "type": "function",
+          "description": "UpdateUserPassword updates user password",
+          "file": "db/user_crud.go",
+          "line": 169,
+          "params": [
+            {
+              "name": "userID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "newPassword",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ],
+          "returns": [
+            "error"
+          ]
         }
       ],
       "structs": [
@@ -1590,6 +1838,13 @@
           "line": 23
         },
         {
+          "name": "OTPCRUD",
+          "type": "struct",
+          "description": "OTPCRUD предоставляет методы для работы с OTP кодами",
+          "file": "db/otp_crud.go",
+          "line": 10
+        },
+        {
           "name": "StatementCRUD",
           "type": "struct",
           "description": "StatementCRUD provides CRUD operations for Statement entity",
@@ -1616,13 +1871,13 @@
               "required": true
             },
             {
-              "name": "UserId",
+              "name": "UserID",
               "type": "string",
               "description": "",
               "required": true
             },
             {
-              "name": "CategoryId",
+              "name": "CategoryID",
               "type": "string",
               "description": "",
               "required": true
@@ -1649,7 +1904,7 @@
               "required": true
             },
             {
-              "name": "UserId",
+              "name": "UserID",
               "type": "string",
               "description": "",
               "required": true
@@ -1677,6 +1932,75 @@
             },
             {
               "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "EmailVerified",
+              "type": "bool",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CreatedAt",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "UpdatedAt",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "OTPCode",
+          "type": "struct",
+          "description": "OTPCode представляет OTP код в базе данных",
+          "file": "db/types.go",
+          "line": 26,
+          "params": [
+            {
+              "name": "ID",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Code",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Type",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "ExpiresAt",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Used",
+              "type": "bool",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "CreatedAt",
               "type": "string",
               "description": "",
               "required": true
@@ -1738,7 +2062,7 @@
             }
           ],
           "returns": [
-            "[]*FBCategory",
+            "[]*Category",
             "error"
           ]
         },
@@ -1749,7 +2073,7 @@
           "file": "fb/GetStatements.go",
           "line": 21,
           "returns": [
-            "[]*FBStatement",
+            "[]*Statement",
             "error"
           ]
         },
@@ -1854,7 +2178,7 @@
           ]
         },
         {
-          "name": "FBCategory",
+          "name": "Category",
           "type": "struct",
           "description": "",
           "file": "fb/GetCategories.go",
@@ -1873,7 +2197,7 @@
               "required": true
             },
             {
-              "name": "UserId",
+              "name": "UserID",
               "type": "string",
               "description": "",
               "required": true
@@ -1881,7 +2205,7 @@
           ]
         },
         {
-          "name": "FBStatement",
+          "name": "Statement",
           "type": "struct",
           "description": "",
           "file": "fb/GetStatements.go",
@@ -1906,13 +2230,13 @@
               "required": true
             },
             {
-              "name": "UserId",
+              "name": "UserID",
               "type": "string",
               "description": "",
               "required": true
             },
             {
-              "name": "CategoryId",
+              "name": "CategoryID",
               "type": "string",
               "description": "",
               "required": true
@@ -1943,11 +2267,26 @@
       "description": "",
       "functions": [
         {
+          "name": "RegisterDirect",
+          "type": "function",
+          "description": "RegisterDirect обрабатывает прямую регистрацию пользователя без OTP",
+          "file": "handlers/auth.go",
+          "line": 67,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
           "name": "Register",
           "type": "function",
           "description": "Register обрабатывает регистрацию пользователя",
           "file": "handlers/auth.go",
-          "line": 37,
+          "line": 135,
           "params": [
             {
               "name": "c",
@@ -1962,7 +2301,67 @@
           "type": "function",
           "description": "Login обрабатывает логин пользователя",
           "file": "handlers/auth.go",
-          "line": 94,
+          "line": 233,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "VerifyEmail",
+          "type": "function",
+          "description": "VerifyEmail обрабатывает верификацию email",
+          "file": "handlers/auth.go",
+          "line": 365,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "RequestPasswordReset",
+          "type": "function",
+          "description": "RequestPasswordReset обрабатывает запрос на сброс пароля",
+          "file": "handlers/auth.go",
+          "line": 456,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "VerifyPasswordResetOTP",
+          "type": "function",
+          "description": "VerifyPasswordResetOTP верифицирует OTP для сброса пароля",
+          "file": "handlers/auth.go",
+          "line": 513,
+          "params": [
+            {
+              "name": "c",
+              "type": "*gin.Context",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ConfirmPasswordReset",
+          "type": "function",
+          "description": "ConfirmPasswordReset подтверждает сброс пароля",
+          "file": "handlers/auth.go",
+          "line": 569,
           "params": [
             {
               "name": "c",
@@ -1977,7 +2376,7 @@
           "type": "function",
           "description": "GetStatements получает все statements пользователя",
           "file": "handlers/data.go",
-          "line": 36,
+          "line": 37,
           "params": [
             {
               "name": "c",
@@ -1992,7 +2391,7 @@
           "type": "function",
           "description": "GetStatement получает конкретный statement",
           "file": "handlers/data.go",
-          "line": 54,
+          "line": 55,
           "params": [
             {
               "name": "c",
@@ -2007,7 +2406,7 @@
           "type": "function",
           "description": "CreateStatement создает новый statement",
           "file": "handlers/data.go",
-          "line": 75,
+          "line": 76,
           "params": [
             {
               "name": "c",
@@ -2022,7 +2421,7 @@
           "type": "function",
           "description": "UpdateStatement обновляет statement",
           "file": "handlers/data.go",
-          "line": 116,
+          "line": 128,
           "params": [
             {
               "name": "c",
@@ -2037,7 +2436,7 @@
           "type": "function",
           "description": "DeleteStatement удаляет statement",
           "file": "handlers/data.go",
-          "line": 161,
+          "line": 184,
           "params": [
             {
               "name": "c",
@@ -2052,7 +2451,7 @@
           "type": "function",
           "description": "GetCategories получает все категории пользователя",
           "file": "handlers/data.go",
-          "line": 185,
+          "line": 208,
           "params": [
             {
               "name": "c",
@@ -2067,7 +2466,7 @@
           "type": "function",
           "description": "GetCategory получает конкретную категорию",
           "file": "handlers/data.go",
-          "line": 203,
+          "line": 226,
           "params": [
             {
               "name": "c",
@@ -2082,7 +2481,7 @@
           "type": "function",
           "description": "CreateCategory создает новую категорию",
           "file": "handlers/data.go",
-          "line": 224,
+          "line": 247,
           "params": [
             {
               "name": "c",
@@ -2097,7 +2496,7 @@
           "type": "function",
           "description": "UpdateCategory обновляет категорию",
           "file": "handlers/data.go",
-          "line": 256,
+          "line": 285,
           "params": [
             {
               "name": "c",
@@ -2112,7 +2511,7 @@
           "type": "function",
           "description": "DeleteCategory удаляет категорию",
           "file": "handlers/data.go",
-          "line": 292,
+          "line": 327,
           "params": [
             {
               "name": "c",
@@ -2127,14 +2526,14 @@
           "type": "function",
           "description": "InitWebSocketManager инициализирует WebSocket менеджер",
           "file": "handlers/websocket.go",
-          "line": 16
+          "line": 17
         },
         {
           "name": "HandleWebSocket",
           "type": "function",
           "description": "HandleWebSocket обрабатывает WebSocket подключения",
           "file": "handlers/websocket.go",
-          "line": 21,
+          "line": 22,
           "params": [
             {
               "name": "c",
@@ -2149,7 +2548,7 @@
           "type": "function",
           "description": "NotifyCategoryUpdate отправляет уведомление об обновлении категории",
           "file": "handlers/websocket.go",
-          "line": 33,
+          "line": 34,
           "params": [
             {
               "name": "userID",
@@ -2176,7 +2575,7 @@
           "type": "function",
           "description": "NotifyCategoryCreated отправляет уведомление о создании категории",
           "file": "handlers/websocket.go",
-          "line": 44,
+          "line": 48,
           "params": [
             {
               "name": "userID",
@@ -2197,7 +2596,7 @@
           "type": "function",
           "description": "NotifyCategoryUpdated отправляет уведомление об обновлении категории",
           "file": "handlers/websocket.go",
-          "line": 49,
+          "line": 53,
           "params": [
             {
               "name": "userID",
@@ -2218,7 +2617,7 @@
           "type": "function",
           "description": "NotifyCategoryDeleted отправляет уведомление об удалении категории",
           "file": "handlers/websocket.go",
-          "line": 54,
+          "line": 58,
           "params": [
             {
               "name": "userID",
@@ -2239,7 +2638,7 @@
           "type": "function",
           "description": "NotifyStatementUpdate отправляет уведомление об обновлении statement",
           "file": "handlers/websocket.go",
-          "line": 65,
+          "line": 69,
           "params": [
             {
               "name": "userID",
@@ -2266,7 +2665,7 @@
           "type": "function",
           "description": "NotifyStatementCreated отправляет уведомление о создании statement",
           "file": "handlers/websocket.go",
-          "line": 76,
+          "line": 83,
           "params": [
             {
               "name": "userID",
@@ -2287,7 +2686,7 @@
           "type": "function",
           "description": "NotifyStatementUpdated отправляет уведомление об обновлении statement",
           "file": "handlers/websocket.go",
-          "line": 81,
+          "line": 88,
           "params": [
             {
               "name": "userID",
@@ -2308,7 +2707,7 @@
           "type": "function",
           "description": "NotifyStatementDeleted отправляет уведомление об удалении statement",
           "file": "handlers/websocket.go",
-          "line": 86,
+          "line": 93,
           "params": [
             {
               "name": "userID",
@@ -2331,7 +2730,7 @@
           "type": "struct",
           "description": "LoginRequest структура для запроса логина",
           "file": "handlers/auth.go",
-          "line": 16,
+          "line": 22,
           "params": [
             {
               "name": "Email",
@@ -2352,10 +2751,94 @@
           "type": "struct",
           "description": "RegisterRequest структура для запроса регистрации",
           "file": "handlers/auth.go",
-          "line": 22,
+          "line": 28,
           "params": [
             {
               "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Password",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "VerifyEmailRequest",
+          "type": "struct",
+          "description": "VerifyEmailRequest структура для запроса верификации email",
+          "file": "handlers/auth.go",
+          "line": 34,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Code",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ResetPasswordRequest",
+          "type": "struct",
+          "description": "ResetPasswordRequest структура для запроса сброса пароля",
+          "file": "handlers/auth.go",
+          "line": 40,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ResetPasswordVerifyRequest",
+          "type": "struct",
+          "description": "ResetPasswordVerifyRequest структура для верификации OTP при сбросе пароля",
+          "file": "handlers/auth.go",
+          "line": 45,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Code",
+              "type": "string",
+              "description": "",
+              "required": true
+            }
+          ]
+        },
+        {
+          "name": "ResetPasswordConfirmRequest",
+          "type": "struct",
+          "description": "ResetPasswordConfirmRequest структура для подтверждения нового пароля",
+          "file": "handlers/auth.go",
+          "line": 51,
+          "params": [
+            {
+              "name": "Email",
+              "type": "string",
+              "description": "",
+              "required": true
+            },
+            {
+              "name": "Code",
               "type": "string",
               "description": "",
               "required": true
@@ -2373,7 +2856,7 @@
           "type": "struct",
           "description": "LoginResponse структура для ответа при логине",
           "file": "handlers/auth.go",
-          "line": 28,
+          "line": 58,
           "params": [
             {
               "name": "Token",
@@ -2394,7 +2877,7 @@
           "type": "struct",
           "description": "CreateStatementRequest структура для создания statement",
           "file": "handlers/data.go",
-          "line": 14,
+          "line": 15,
           "params": [
             {
               "name": "Title",
@@ -2415,7 +2898,7 @@
           "type": "struct",
           "description": "UpdateStatementRequest структура для обновления statement",
           "file": "handlers/data.go",
-          "line": 20,
+          "line": 21,
           "params": [
             {
               "name": "Title",
@@ -2436,7 +2919,7 @@
           "type": "struct",
           "description": "CreateCategoryRequest структура для создания категории",
           "file": "handlers/data.go",
-          "line": 26,
+          "line": 27,
           "params": [
             {
               "name": "Title",
@@ -2451,7 +2934,7 @@
           "type": "struct",
           "description": "UpdateCategoryRequest структура для обновления категории",
           "file": "handlers/data.go",
-          "line": 31,
+          "line": 32,
           "params": [
             {
               "name": "Title",
@@ -2763,7 +3246,7 @@
           "type": "function",
           "description": "NewManager создает новый WebSocket менеджер",
           "file": "websocket/manager.go",
-          "line": 40,
+          "line": 39,
           "returns": [
             "*Manager"
           ]
@@ -2773,7 +3256,7 @@
           "type": "function",
           "description": "HandleWebSocket обрабатывает WebSocket подключения",
           "file": "websocket/manager.go",
-          "line": 53,
+          "line": 52,
           "params": [
             {
               "name": "w",
@@ -2800,7 +3283,7 @@
           "type": "function",
           "description": "registerClient регистрирует клиента",
           "file": "websocket/manager.go",
-          "line": 74,
+          "line": 73,
           "params": [
             {
               "name": "client",
@@ -2815,7 +3298,7 @@
           "type": "function",
           "description": "unregisterClient удаляет клиента",
           "file": "websocket/manager.go",
-          "line": 85,
+          "line": 84,
           "params": [
             {
               "name": "client",
@@ -2830,7 +3313,7 @@
           "type": "function",
           "description": "BroadcastToUser отправляет сообщение всем клиентам пользователя",
           "file": "websocket/manager.go",
-          "line": 112,
+          "line": 111,
           "params": [
             {
               "name": "userID",
@@ -2857,21 +3340,21 @@
           "type": "function",
           "description": "readPump читает сообщения от клиента",
           "file": "websocket/manager.go",
-          "line": 149
+          "line": 148
         },
         {
           "name": "writePump",
           "type": "function",
           "description": "writePump отправляет сообщения клиенту",
           "file": "websocket/manager.go",
-          "line": 189
+          "line": 193
         },
         {
           "name": "generateClientID",
           "type": "function",
           "description": "generateClientID генерирует уникальный ID для клиента",
           "file": "websocket/manager.go",
-          "line": 224,
+          "line": 239,
           "returns": [
             "string"
           ]
@@ -2941,12 +3424,6 @@
               "type": "*Manager",
               "description": "",
               "required": true
-            },
-            {
-              "name": "mu",
-              "type": "sync.Mutex",
-              "description": "",
-              "required": true
             }
           ]
         },
@@ -2955,7 +3432,7 @@
           "type": "struct",
           "description": "Manager управляет WebSocket подключениями",
           "file": "websocket/manager.go",
-          "line": 32,
+          "line": 31,
           "params": [
             {
               "name": "clients",

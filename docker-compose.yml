@@ -33,7 +33,7 @@ services:
       - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - MAIL_SERVER=${MAIL_SERVER:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
-      - MAIL_ADRESS=${MAIL_ADRESS:-test@example.com}
+      - MAIL_ADDRESS=${MAIL_ADDRESS:-test@example.com}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-test-password}
       - JWT_SECRET=${JWT_SECRET:-test-secret-key-for-development}
       - JWT_ISSUER=${JWT_ISSUER:-linka-backend}

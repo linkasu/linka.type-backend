@@ -124,7 +124,7 @@
 <body>
     <div class="container">
         <h1>📚 Linka Type Backend - Документация</h1>
-        <p><strong>Сгенерировано:</strong> 2025-08-04 15:47:48</p>
+        <p><strong>Сгенерировано:</strong> 2025-08-31 00:57:45</p>
 
         <div class="toc">
             <h3>📋 Содержание</h3>
@@ -433,6 +433,26 @@
         <h3>🔧 Функции</h3>
         
         <div class="function">
+            <h4>getJWTSecret</h4>
+            <p></p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>[]byte</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/jwt.go:15</div>
+        </div>
+        
+        <div class="function">
             <h4>GenerateToken</h4>
             <p>GenerateToken генерирует JWT токен для пользователя</p>
 
@@ -464,7 +484,7 @@
 
             
 
-            <div class="file-info">📁 auth/jwt.go:21</div>
+            <div class="file-info">📁 auth/jwt.go:34</div>
         </div>
         
         <div class="function">
@@ -493,7 +513,7 @@
 
             
 
-            <div class="file-info">📁 auth/jwt.go:42</div>
+            <div class="file-info">📁 auth/jwt.go:66</div>
         </div>
         
         <div class="function">
@@ -515,7 +535,7 @@
 
             
 
-            <div class="file-info">📁 auth/jwt.go:62</div>
+            <div class="file-info">📁 auth/jwt.go:98</div>
         </div>
         
         <div class="function">
@@ -607,8 +627,8 @@
         </div>
         
         <div class="function">
-            <h4>JWTAuthMiddleware</h4>
-            <p>JWTAuthMiddleware middleware для проверки JWT токена</p>
+            <h4>AuthMiddleware</h4>
+            <p>AuthMiddleware проверяет JWT токен</p>
 
             
 
@@ -621,7 +641,25 @@
 
             
 
-            <div class="file-info">📁 auth/middleware.go:11</div>
+            <div class="file-info">📁 auth/middleware.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>EmailVerifiedMiddleware</h4>
+            <p>EmailVerifiedMiddleware проверяет, что email пользователя верифицирован</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>gin.HandlerFunc</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/middleware.go:46</div>
         </div>
         
         <div class="function">
@@ -648,7 +686,7 @@
 
             
 
-            <div class="file-info">📁 auth/middleware.go:44</div>
+            <div class="file-info">📁 auth/middleware.go:76</div>
         </div>
         
         <div class="function">
@@ -675,7 +713,25 @@
 
             
 
-            <div class="file-info">📁 auth/middleware.go:52</div>
+            <div class="file-info">📁 auth/middleware.go:84</div>
+        </div>
+        
+        <div class="function">
+            <h4>JWTAuthMiddleware</h4>
+            <p>JWTAuthMiddleware является алиасом для AuthMiddleware</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>gin.HandlerFunc</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 auth/middleware.go:92</div>
         </div>
         
         
@@ -702,7 +758,7 @@
 
             
 
-            <div class="file-info">📁 auth/jwt.go:14</div>
+            <div class="file-info">📁 auth/jwt.go:27</div>
         </div>
         
         
@@ -794,7 +850,7 @@
             <h5>📝 Параметры:</h5>
             
             <div class="param">
-                <code>fbCategory</code> (*fb.FBCategory) 
+                <code>fbCategory</code> (*fb.Category) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
@@ -822,7 +878,7 @@
 
             
 
-            <div class="file-info">📁 bl/importCategories.go:183</div>
+            <div class="file-info">📁 bl/importCategories.go:181</div>
         </div>
         
         <div class="function">
@@ -833,7 +889,7 @@
             <h5>📝 Параметры:</h5>
             
             <div class="param">
-                <code>fbCategory</code> (*fb.FBCategory) 
+                <code>fbCategory</code> (*fb.Category) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
@@ -861,7 +917,7 @@
 
             
 
-            <div class="file-info">📁 bl/importCategories.go:203</div>
+            <div class="file-info">📁 bl/importCategories.go:204</div>
         </div>
         
         <div class="function">
@@ -881,7 +937,7 @@
 
             
 
-            <div class="file-info">📁 bl/importCategories.go:224</div>
+            <div class="file-info">📁 bl/importCategories.go:228</div>
         </div>
         
         <div class="function">
@@ -910,7 +966,7 @@
 
             
 
-            <div class="file-info">📁 bl/importCategories.go:231</div>
+            <div class="file-info">📁 bl/importCategories.go:235</div>
         </div>
         
         <div class="function">
@@ -956,7 +1012,7 @@
             <h5>📝 Параметры:</h5>
             
             <div class="param">
-                <code>fbStatement</code> (*fb.FBStatement) 
+                <code>fbStatement</code> (*fb.Statement) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
@@ -995,7 +1051,7 @@
             <h5>📝 Параметры:</h5>
             
             <div class="param">
-                <code>fbStatement</code> (*fb.FBStatement) 
+                <code>fbStatement</code> (*fb.Statement) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
@@ -1023,7 +1079,7 @@
 
             
 
-            <div class="file-info">📁 bl/importStatements.go:181</div>
+            <div class="file-info">📁 bl/importStatements.go:184</div>
         </div>
         
         <div class="function">
@@ -1058,7 +1114,7 @@
 
             
 
-            <div class="file-info">📁 bl/importStatements.go:202</div>
+            <div class="file-info">📁 bl/importStatements.go:208</div>
         </div>
         
         <div class="function">
@@ -1120,7 +1176,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:22</div>
+            <div class="file-info">📁 bl/import_test.go:23</div>
         </div>
         
         <div class="function">
@@ -1155,7 +1211,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:29</div>
+            <div class="file-info">📁 bl/import_test.go:30</div>
         </div>
         
         <div class="function">
@@ -1176,7 +1232,7 @@
             
             <h5>📤 Возвращает:</h5>
             
-            <div class="param"><code>[]*fb.FBCategory</code></div>
+            <div class="param"><code>[]*fb.Category</code></div>
             
             <div class="param"><code>error</code></div>
             
@@ -1184,7 +1240,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:37</div>
+            <div class="file-info">📁 bl/import_test.go:38</div>
         </div>
         
         <div class="function">
@@ -1206,7 +1262,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:45</div>
+            <div class="file-info">📁 bl/import_test.go:46</div>
         </div>
         
         <div class="function">
@@ -1228,7 +1284,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:128</div>
+            <div class="file-info">📁 bl/import_test.go:133</div>
         </div>
         
         <div class="function">
@@ -1250,7 +1306,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:171</div>
+            <div class="file-info">📁 bl/import_test.go:180</div>
         </div>
         
         <div class="function">
@@ -1272,7 +1328,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:230</div>
+            <div class="file-info">📁 bl/import_test.go:239</div>
         </div>
         
         <div class="function">
@@ -1283,19 +1339,19 @@
             <h5>📝 Параметры:</h5>
             
             <div class="param">
-                <code>mockClient</code> (*MockFirebaseClient) 
+                <code>_</code> (*MockFirebaseClient) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
             
             <div class="param">
-                <code>email</code> (string) 
+                <code>_</code> (string) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
             
             <div class="param">
-                <code>password</code> (string) 
+                <code>_</code> (string) 
                 <span class="required">*обязательный*</span>
                 - 
             </div>
@@ -1313,7 +1369,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:245</div>
+            <div class="file-info">📁 bl/import_test.go:254</div>
         </div>
         
         <div class="function">
@@ -1335,7 +1391,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:253</div>
+            <div class="file-info">📁 bl/import_test.go:262</div>
         </div>
         
         <div class="function">
@@ -1357,7 +1413,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:269</div>
+            <div class="file-info">📁 bl/import_test.go:283</div>
         </div>
         
         
@@ -1510,7 +1566,7 @@
 
             
 
-            <div class="file-info">📁 bl/importStatements.go:249</div>
+            <div class="file-info">📁 bl/importStatements.go:255</div>
         </div>
         
         <div class="struct">
@@ -1532,7 +1588,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:12</div>
+            <div class="file-info">📁 bl/import_test.go:13</div>
         </div>
         
         <div class="struct">
@@ -1554,7 +1610,7 @@
 
             
 
-            <div class="file-info">📁 bl/import_test.go:17</div>
+            <div class="file-info">📁 bl/import_test.go:18</div>
         </div>
         
         
@@ -1869,7 +1925,7 @@
 
             
 
-            <div class="file-info">📁 db/connection.go:131</div>
+            <div class="file-info">📁 db/connection.go:144</div>
         </div>
         
         <div class="function">
@@ -2055,6 +2111,255 @@
             
 
             <div class="file-info">📁 db/migration_tracker.go:125</div>
+        </div>
+        
+        <div class="function">
+            <h4>CreateOTP</h4>
+            <p>CreateOTP создает новый OTP код</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>otpCode</code> (*OTPCode) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:13</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetOTPByEmailAndType</h4>
+            <p>GetOTPByEmailAndType получает активный OTP код по email и типу</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>otpType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*OTPCode</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:37</div>
+        </div>
+        
+        <div class="function">
+            <h4>MarkOTPAsUsed</h4>
+            <p>MarkOTPAsUsed помечает OTP код как использованный</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:68</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteExpiredOTP</h4>
+            <p>DeleteExpiredOTP удаляет истекшие OTP коды</p>
+
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:80</div>
+        </div>
+        
+        <div class="function">
+            <h4>DeleteOTPByEmail</h4>
+            <p>DeleteOTPByEmail удаляет все OTP коды для указанного email</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:92</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetOTPByCode</h4>
+            <p>GetOTPByCode получает OTP код по самому коду</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>code</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>otpType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*OTPCode</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:104</div>
+        </div>
+        
+        <div class="function">
+            <h4>GetOTPByCodeAnyStatus</h4>
+            <p>GetOTPByCodeAnyStatus получает OTP код по коду независимо от статуса used/expired</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>code</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>email</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>otpType</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>*OTPCode</code></div>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:135</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateOTPExpiration</h4>
+            <p>UpdateOTPExpiration обновляет время истечения OTP кода</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>id</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>expiresAt</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:166</div>
         </div>
         
         <div class="function">
@@ -2516,6 +2821,66 @@
             <div class="file-info">📁 db/user_crud.go:134</div>
         </div>
         
+        <div class="function">
+            <h4>VerifyUserEmail</h4>
+            <p>VerifyUserEmail marks user email as verified</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:147</div>
+        </div>
+        
+        <div class="function">
+            <h4>UpdateUserPassword</h4>
+            <p>UpdateUserPassword updates user password</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>userID</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            <div class="param">
+                <code>newPassword</code> (string) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+            <h5>📤 Возвращает:</h5>
+            
+            <div class="param"><code>error</code></div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/user_crud.go:169</div>
+        </div>
+        
         
 
         
@@ -2594,6 +2959,17 @@
         </div>
         
         <div class="struct">
+            <h4>OTPCRUD</h4>
+            <p>OTPCRUD предоставляет методы для работы с OTP кодами</p>
+
+            
+
+            
+
+            <div class="file-info">📁 db/otp_crud.go:10</div>
+        </div>
+        
+        <div class="struct">
             <h4>StatementCRUD</h4>
             <p>StatementCRUD provides CRUD operations for Statement entity</p>
 
@@ -2620,11 +2996,11 @@
             </div>
             
             <div class="param">
-                <code>UserId</code> (string) - 
+                <code>UserID</code> (string) - 
             </div>
             
             <div class="param">
-                <code>CategoryId</code> (string) - 
+                <code>CategoryID</code> (string) - 
             </div>
             
             
@@ -2650,7 +3026,7 @@
             </div>
             
             <div class="param">
-                <code>UserId</code> (string) - 
+                <code>UserID</code> (string) - 
             </div>
             
             
@@ -2679,11 +3055,65 @@
                 <code>Password</code> (string) - 
             </div>
             
+            <div class="param">
+                <code>EmailVerified</code> (bool) - 
+            </div>
+            
+            <div class="param">
+                <code>CreatedAt</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>UpdatedAt</code> (string) - 
+            </div>
+            
             
 
             
 
             <div class="file-info">📁 db/types.go:16</div>
+        </div>
+        
+        <div class="struct">
+            <h4>OTPCode</h4>
+            <p>OTPCode представляет OTP код в базе данных</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>ID</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Code</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Type</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>ExpiresAt</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Used</code> (bool) - 
+            </div>
+            
+            <div class="param">
+                <code>CreatedAt</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 db/types.go:26</div>
         </div>
         
         <div class="struct">
@@ -2763,7 +3193,7 @@
             
             <h5>📤 Возвращает:</h5>
             
-            <div class="param"><code>[]*FBCategory</code></div>
+            <div class="param"><code>[]*Category</code></div>
             
             <div class="param"><code>error</code></div>
             
@@ -2783,7 +3213,7 @@
             
             <h5>📤 Возвращает:</h5>
             
-            <div class="param"><code>[]*FBStatement</code></div>
+            <div class="param"><code>[]*Statement</code></div>
             
             <div class="param"><code>error</code></div>
             
@@ -2906,7 +3336,7 @@
         </div>
         
         <div class="struct">
-            <h4>FBCategory</h4>
+            <h4>Category</h4>
             <p></p>
 
             
@@ -2921,7 +3351,7 @@
             </div>
             
             <div class="param">
-                <code>UserId</code> (string) - 
+                <code>UserID</code> (string) - 
             </div>
             
             
@@ -2932,7 +3362,7 @@
         </div>
         
         <div class="struct">
-            <h4>FBStatement</h4>
+            <h4>Statement</h4>
             <p></p>
 
             
@@ -2951,11 +3381,11 @@
             </div>
             
             <div class="param">
-                <code>UserId</code> (string) - 
+                <code>UserID</code> (string) - 
             </div>
             
             <div class="param">
-                <code>CategoryId</code> (string) - 
+                <code>CategoryID</code> (string) - 
             </div>
             
             
@@ -2997,6 +3427,28 @@
         <h3>🔧 Функции</h3>
         
         <div class="function">
+            <h4>RegisterDirect</h4>
+            <p>RegisterDirect обрабатывает прямую регистрацию пользователя без OTP</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:67</div>
+        </div>
+        
+        <div class="function">
             <h4>Register</h4>
             <p>Register обрабатывает регистрацию пользователя</p>
 
@@ -3015,7 +3467,7 @@
 
             
 
-            <div class="file-info">📁 handlers/auth.go:37</div>
+            <div class="file-info">📁 handlers/auth.go:135</div>
         </div>
         
         <div class="function">
@@ -3037,7 +3489,95 @@
 
             
 
-            <div class="file-info">📁 handlers/auth.go:94</div>
+            <div class="file-info">📁 handlers/auth.go:233</div>
+        </div>
+        
+        <div class="function">
+            <h4>VerifyEmail</h4>
+            <p>VerifyEmail обрабатывает верификацию email</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:365</div>
+        </div>
+        
+        <div class="function">
+            <h4>RequestPasswordReset</h4>
+            <p>RequestPasswordReset обрабатывает запрос на сброс пароля</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:456</div>
+        </div>
+        
+        <div class="function">
+            <h4>VerifyPasswordResetOTP</h4>
+            <p>VerifyPasswordResetOTP верифицирует OTP для сброса пароля</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:513</div>
+        </div>
+        
+        <div class="function">
+            <h4>ConfirmPasswordReset</h4>
+            <p>ConfirmPasswordReset подтверждает сброс пароля</p>
+
+            
+            <h5>📝 Параметры:</h5>
+            
+            <div class="param">
+                <code>c</code> (*gin.Context) 
+                <span class="required">*обязательный*</span>
+                - 
+            </div>
+            
+            
+
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:569</div>
         </div>
         
         <div class="function">
@@ -3059,7 +3599,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:36</div>
+            <div class="file-info">📁 handlers/data.go:37</div>
         </div>
         
         <div class="function">
@@ -3081,7 +3621,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:54</div>
+            <div class="file-info">📁 handlers/data.go:55</div>
         </div>
         
         <div class="function">
@@ -3103,7 +3643,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:75</div>
+            <div class="file-info">📁 handlers/data.go:76</div>
         </div>
         
         <div class="function">
@@ -3125,7 +3665,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:116</div>
+            <div class="file-info">📁 handlers/data.go:128</div>
         </div>
         
         <div class="function">
@@ -3147,7 +3687,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:161</div>
+            <div class="file-info">📁 handlers/data.go:184</div>
         </div>
         
         <div class="function">
@@ -3169,7 +3709,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:185</div>
+            <div class="file-info">📁 handlers/data.go:208</div>
         </div>
         
         <div class="function">
@@ -3191,7 +3731,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:203</div>
+            <div class="file-info">📁 handlers/data.go:226</div>
         </div>
         
         <div class="function">
@@ -3213,7 +3753,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:224</div>
+            <div class="file-info">📁 handlers/data.go:247</div>
         </div>
         
         <div class="function">
@@ -3235,7 +3775,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:256</div>
+            <div class="file-info">📁 handlers/data.go:285</div>
         </div>
         
         <div class="function">
@@ -3257,7 +3797,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:292</div>
+            <div class="file-info">📁 handlers/data.go:327</div>
         </div>
         
         <div class="function">
@@ -3270,7 +3810,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:16</div>
+            <div class="file-info">📁 handlers/websocket.go:17</div>
         </div>
         
         <div class="function">
@@ -3292,7 +3832,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:21</div>
+            <div class="file-info">📁 handlers/websocket.go:22</div>
         </div>
         
         <div class="function">
@@ -3326,7 +3866,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:33</div>
+            <div class="file-info">📁 handlers/websocket.go:34</div>
         </div>
         
         <div class="function">
@@ -3354,7 +3894,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:44</div>
+            <div class="file-info">📁 handlers/websocket.go:48</div>
         </div>
         
         <div class="function">
@@ -3382,7 +3922,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:49</div>
+            <div class="file-info">📁 handlers/websocket.go:53</div>
         </div>
         
         <div class="function">
@@ -3410,7 +3950,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:54</div>
+            <div class="file-info">📁 handlers/websocket.go:58</div>
         </div>
         
         <div class="function">
@@ -3444,7 +3984,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:65</div>
+            <div class="file-info">📁 handlers/websocket.go:69</div>
         </div>
         
         <div class="function">
@@ -3472,7 +4012,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:76</div>
+            <div class="file-info">📁 handlers/websocket.go:83</div>
         </div>
         
         <div class="function">
@@ -3500,7 +4040,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:81</div>
+            <div class="file-info">📁 handlers/websocket.go:88</div>
         </div>
         
         <div class="function">
@@ -3528,7 +4068,7 @@
 
             
 
-            <div class="file-info">📁 handlers/websocket.go:86</div>
+            <div class="file-info">📁 handlers/websocket.go:93</div>
         </div>
         
         
@@ -3555,7 +4095,7 @@
 
             
 
-            <div class="file-info">📁 handlers/auth.go:16</div>
+            <div class="file-info">📁 handlers/auth.go:22</div>
         </div>
         
         <div class="struct">
@@ -3577,7 +4117,95 @@
 
             
 
-            <div class="file-info">📁 handlers/auth.go:22</div>
+            <div class="file-info">📁 handlers/auth.go:28</div>
+        </div>
+        
+        <div class="struct">
+            <h4>VerifyEmailRequest</h4>
+            <p>VerifyEmailRequest структура для запроса верификации email</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Code</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:34</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ResetPasswordRequest</h4>
+            <p>ResetPasswordRequest структура для запроса сброса пароля</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:40</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ResetPasswordVerifyRequest</h4>
+            <p>ResetPasswordVerifyRequest структура для верификации OTP при сбросе пароля</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Code</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:45</div>
+        </div>
+        
+        <div class="struct">
+            <h4>ResetPasswordConfirmRequest</h4>
+            <p>ResetPasswordConfirmRequest структура для подтверждения нового пароля</p>
+
+            
+            <h5>📝 Поля:</h5>
+            
+            <div class="param">
+                <code>Email</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Code</code> (string) - 
+            </div>
+            
+            <div class="param">
+                <code>Password</code> (string) - 
+            </div>
+            
+            
+
+            
+
+            <div class="file-info">📁 handlers/auth.go:51</div>
         </div>
         
         <div class="struct">
@@ -3599,7 +4227,7 @@
 
             
 
-            <div class="file-info">📁 handlers/auth.go:28</div>
+            <div class="file-info">📁 handlers/auth.go:58</div>
         </div>
         
         <div class="struct">
@@ -3621,7 +4249,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:14</div>
+            <div class="file-info">📁 handlers/data.go:15</div>
         </div>
         
         <div class="struct">
@@ -3643,7 +4271,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:20</div>
+            <div class="file-info">📁 handlers/data.go:21</div>
         </div>
         
         <div class="struct">
@@ -3661,7 +4289,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:26</div>
+            <div class="file-info">📁 handlers/data.go:27</div>
         </div>
         
         <div class="struct">
@@ -3679,7 +4307,7 @@
 
             
 
-            <div class="file-info">📁 handlers/data.go:31</div>
+            <div class="file-info">📁 handlers/data.go:32</div>
         </div>
         
         
@@ -4147,7 +4775,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:40</div>
+            <div class="file-info">📁 websocket/manager.go:39</div>
         </div>
         
         <div class="function">
@@ -4181,7 +4809,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:53</div>
+            <div class="file-info">📁 websocket/manager.go:52</div>
         </div>
         
         <div class="function">
@@ -4203,7 +4831,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:74</div>
+            <div class="file-info">📁 websocket/manager.go:73</div>
         </div>
         
         <div class="function">
@@ -4225,7 +4853,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:85</div>
+            <div class="file-info">📁 websocket/manager.go:84</div>
         </div>
         
         <div class="function">
@@ -4259,7 +4887,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:112</div>
+            <div class="file-info">📁 websocket/manager.go:111</div>
         </div>
         
         <div class="function">
@@ -4272,7 +4900,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:149</div>
+            <div class="file-info">📁 websocket/manager.go:148</div>
         </div>
         
         <div class="function">
@@ -4285,7 +4913,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:189</div>
+            <div class="file-info">📁 websocket/manager.go:193</div>
         </div>
         
         <div class="function">
@@ -4303,7 +4931,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:224</div>
+            <div class="file-info">📁 websocket/manager.go:239</div>
         </div>
         
         
@@ -4364,10 +4992,6 @@
                 <code>Manager</code> (*Manager) - 
             </div>
             
-            <div class="param">
-                <code>mu</code> (sync.Mutex) - 
-            </div>
-            
             
 
             
@@ -4402,7 +5026,7 @@
 
             
 
-            <div class="file-info">📁 websocket/manager.go:32</div>
+            <div class="file-info">📁 websocket/manager.go:31</div>
         </div>
         
         
