@@ -30,6 +30,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=linkatype
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
       - MAIL_SERVER=${MAIL_SERVER:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_ADRESS=${MAIL_ADRESS:-test@example.com}

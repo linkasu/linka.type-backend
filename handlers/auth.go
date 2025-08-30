@@ -237,39 +237,80 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Login attempt for email: %s", req.Email)
+
 	// Получаем пользователя по email
 	userCRUD := &db.UserCRUD{}
 	user, err := userCRUD.GetUserByEmail(req.Email)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
-		return
+		log.Printf("User not found in PostgreSQL: %s, error: %v", req.Email, err)
+		// Пользователь не найден в PostgreSQL, но может существовать в Firebase
+		// Продолжаем проверку Firebase
+	} else {
+		log.Printf("User found in PostgreSQL: %s", user.ID)
 	}
 
-	// Проверяем пароль: сначала bcrypt (новая схема), затем legacy MD5
-	hasher := utils.NewPasswordHasher()
-	passwordOK := hasher.CheckPassword(user.Password, req.Password) == nil
-	if !passwordOK {
-		legacy := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
-		if user.Password == legacy {
-			passwordOK = true
-			if newHash, err := hasher.HashPassword(req.Password); err == nil {
-				_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+	// Проверяем пароль в PostgreSQL только если пользователь найден
+	var passwordOK bool
+	if user != nil {
+		hasher := utils.NewPasswordHasher()
+		passwordOK = hasher.CheckPassword(user.Password, req.Password) == nil
+		log.Printf("Bcrypt password check result: %v", passwordOK)
+		
+		if !passwordOK {
+			legacy := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
+			log.Printf("Trying legacy MD5 check for user: %s", user.ID)
+			if user.Password == legacy {
+				passwordOK = true
+				log.Printf("Legacy MD5 password match, updating to bcrypt")
+				if newHash, err := hasher.HashPassword(req.Password); err == nil {
+					_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+				}
 			}
 		}
+		
+		log.Printf("PostgreSQL password check final result: %v", passwordOK)
+	} else {
+		log.Printf("User not found in PostgreSQL, skipping password check")
+		passwordOK = false
 	}
 	// check if password is ok with firebase
 	firebasePasswordOK, err := fb.CheckPassword(req.Email, req.Password)
 	if err != nil {
+		log.Printf("Firebase password check error: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check password"})
 		return
 	}
+	log.Printf("Firebase password check result: %v", firebasePasswordOK)
+	
 	if firebasePasswordOK == nil {
+		log.Printf("Firebase authentication failed for user: %s", req.Email)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
-	if !passwordOK {
+	
+	// Если пользователь не найден в PostgreSQL, но аутентификация в Firebase успешна,
+	// то импортируем пользователя и продолжаем
+	if user == nil {
+		log.Printf("User not found in PostgreSQL but Firebase auth successful, importing user")
+		// Импорт будет выполнен в следующем блоке
+	} else if !passwordOK && firebasePasswordOK != nil {
+		// Пользователь найден в PostgreSQL, но пароль неверный, но Firebase аутентификация успешна
+		// Обновляем пароль в PostgreSQL и импортируем данные
+		log.Printf("User found in PostgreSQL but password incorrect, updating password and importing data")
+		hasher := utils.NewPasswordHasher()
+		if newHash, err := hasher.HashPassword(req.Password); err == nil {
+			_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+			log.Printf("Updated password for user: %s", user.ID)
+		}
+		// Импорт будет выполнен в следующем блоке
+	} else if !passwordOK {
+		// Пользователь найден в PostgreSQL, но пароль неверный и Firebase тоже не прошел
+		log.Printf("User found in PostgreSQL but password incorrect and Firebase auth failed")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
+	} else {
+		log.Printf("User authentication successful in PostgreSQL")
 	}
 
 	// Импортируем данные из Firebase если пользователь существует там
@@ -284,6 +325,17 @@ func Login(c *gin.Context) {
 				// Не прерываем логин, только логируем ошибку
 			} else {
 				log.Printf("Successfully imported data from Firebase: %+v", importResult)
+			}
+			
+			// Если пользователь был импортирован, получаем его из PostgreSQL
+			if user == nil {
+				user, err = userCRUD.GetUserByEmail(req.Email)
+				if err != nil {
+					log.Printf("Failed to get imported user from PostgreSQL: %v", err)
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user after import"})
+					return
+				}
+				log.Printf("Successfully retrieved imported user: %s", user.ID)
 			}
 		}
 	}
