@@ -250,107 +250,33 @@ func Login(c *gin.Context) {
 		log.Printf("User found in PostgreSQL: %s", user.ID)
 	}
 
-	// Проверяем пароль в PostgreSQL только если пользователь найден
-	var passwordOK bool
-	if user != nil {
-		hasher := utils.NewPasswordHasher()
-		passwordOK = hasher.CheckPassword(user.Password, req.Password) == nil
-		log.Printf("Bcrypt password check result: %v", passwordOK)
-
-		if !passwordOK {
-			legacy := fmt.Sprintf("%x", md5.Sum([]byte(req.Password)))
-			log.Printf("Trying legacy MD5 check for user: %s", user.ID)
-			if user.Password == legacy {
-				passwordOK = true
-				log.Printf("Legacy MD5 password match, updating to bcrypt")
-				if newHash, err := hasher.HashPassword(req.Password); err == nil {
-					_ = userCRUD.UpdateUserPassword(user.ID, newHash)
-				}
-			}
-		}
-
-		log.Printf("PostgreSQL password check final result: %v", passwordOK)
-	} else {
-		log.Printf("User not found in PostgreSQL, skipping password check")
-		passwordOK = false
-	}
+	// Проверяем пароль в PostgreSQL
+	passwordOK := checkPostgreSQLPassword(user, req.Password, userCRUD)
+	
 	// Если пароль в PostgreSQL неверный, пробуем Firebase
 	var firebasePasswordOK *fb.FirebaseAuthResponse
 	if !passwordOK {
-		log.Printf("PostgreSQL password check failed, trying Firebase authentication")
-		firebasePasswordOK, err = fb.CheckPassword(req.Email, req.Password)
-		if err != nil {
-			log.Printf("Firebase password check error: %v", err)
-			// Firebase аутентификация провалилась, но это не критично
-			firebasePasswordOK = nil
-		} else {
-			log.Printf("Firebase authentication successful")
-		}
-	}
-
-	// Определяем финальный результат аутентификации
-	var finalAuthOK bool
-	if passwordOK {
-		finalAuthOK = true
-		log.Printf("Authentication successful via PostgreSQL")
-	} else if firebasePasswordOK != nil {
-		finalAuthOK = true
-		log.Printf("Authentication successful via Firebase")
-	} else {
-		finalAuthOK = false
-		log.Printf("Authentication failed in both PostgreSQL and Firebase")
+		firebasePasswordOK = checkFirebasePassword(req.Email, req.Password)
 	}
 
 	// Если аутентификация не прошла нигде, возвращаем ошибку
-	if !finalAuthOK {
+	if !passwordOK && firebasePasswordOK == nil {
+		log.Printf("Authentication failed in both PostgreSQL and Firebase")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	// Если пользователь не найден в PostgreSQL, но аутентификация в Firebase успешна,
-	// то импортируем пользователя и продолжаем
-	if user == nil && firebasePasswordOK != nil {
-		log.Printf("User not found in PostgreSQL but Firebase auth successful, importing user")
-		// Импорт будет выполнен в следующем блоке
-	} else if !passwordOK && firebasePasswordOK != nil {
-		// Пользователь найден в PostgreSQL, но пароль неверный, но Firebase аутентификация успешна
-		// Обновляем пароль в PostgreSQL и импортируем данные
-		log.Printf("User found in PostgreSQL but password incorrect, updating password and importing data")
-		hasher := utils.NewPasswordHasher()
-		if newHash, err := hasher.HashPassword(req.Password); err == nil {
-			_ = userCRUD.UpdateUserPassword(user.ID, newHash)
-			log.Printf("Updated password for user: %s", user.ID)
-		}
-		// Импорт будет выполнен в следующем блоке
-	} else if passwordOK {
-		log.Printf("User authentication successful in PostgreSQL")
+	// Обрабатываем успешную аутентификацию
+	if passwordOK {
+		log.Printf("Authentication successful via PostgreSQL")
+	} else if firebasePasswordOK != nil {
+		log.Printf("Authentication successful via Firebase")
+		handleFirebaseAuth(user, req, userCRUD)
 	}
 
-	// Импортируем данные из Firebase если это необходимо
+	// Импортируем данные из Firebase если необходимо
 	if firebasePasswordOK != nil {
-		// Проверяем, существует ли пользователь в Firebase
-		fbUser, err := fb.GetUser(req.Email)
-		if err == nil && fbUser != nil {
-			// Импортируем пользователя, категории и фразы
-			importResult, err := bl.ImportAllData(req.Email, req.Password)
-			if err != nil {
-				log.Printf("Failed to import data from Firebase: %v", err)
-				// Не прерываем логин, только логируем ошибку
-			} else {
-				log.Printf("Successfully imported data from Firebase: %+v", importResult)
-			}
-
-			// Если пользователь был импортирован, получаем его из PostgreSQL
-			if user == nil {
-				user, err = userCRUD.GetUserByEmail(req.Email)
-				if err != nil {
-					log.Printf("Failed to get imported user from PostgreSQL: %v", err)
-					c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user after import"})
-					return
-				}
-				log.Printf("Successfully retrieved imported user: %s", user.ID)
-			}
-		}
+		importFirebaseData(req.Email, req.Password, user, userCRUD, c)
 	}
 
 	// Генерируем JWT токен
@@ -651,4 +577,80 @@ func ConfirmPasswordReset(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Password reset successfully",
 	})
+}
+
+// checkPostgreSQLPassword проверяет пароль в PostgreSQL
+func checkPostgreSQLPassword(user *db.User, password string, userCRUD *db.UserCRUD) bool {
+	if user == nil {
+		log.Printf("User not found in PostgreSQL, skipping password check")
+		return false
+	}
+
+	hasher := utils.NewPasswordHasher()
+	passwordOK := hasher.CheckPassword(user.Password, password) == nil
+	log.Printf("Bcrypt password check result: %v", passwordOK)
+
+	if !passwordOK {
+		legacy := fmt.Sprintf("%x", md5.Sum([]byte(password)))
+		log.Printf("Trying legacy MD5 check for user: %s", user.ID)
+		if user.Password == legacy {
+			passwordOK = true
+			log.Printf("Legacy MD5 password match, updating to bcrypt")
+			if newHash, err := hasher.HashPassword(password); err == nil {
+				_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+			}
+		}
+	}
+
+	log.Printf("PostgreSQL password check final result: %v", passwordOK)
+	return passwordOK
+}
+
+// checkFirebasePassword проверяет пароль в Firebase
+func checkFirebasePassword(email, password string) *fb.FirebaseAuthResponse {
+	log.Printf("PostgreSQL password check failed, trying Firebase authentication")
+	firebasePasswordOK, err := fb.CheckPassword(email, password)
+	if err != nil {
+		log.Printf("Firebase password check error: %v", err)
+		return nil
+	}
+	log.Printf("Firebase authentication successful")
+	return firebasePasswordOK
+}
+
+// handleFirebaseAuth обрабатывает успешную аутентификацию через Firebase
+func handleFirebaseAuth(user *db.User, req LoginRequest, userCRUD *db.UserCRUD) {
+	if user == nil {
+		log.Printf("User not found in PostgreSQL but Firebase auth successful, importing user")
+	} else {
+		log.Printf("User found in PostgreSQL but password incorrect, updating password and importing data")
+		hasher := utils.NewPasswordHasher()
+		if newHash, err := hasher.HashPassword(req.Password); err == nil {
+			_ = userCRUD.UpdateUserPassword(user.ID, newHash)
+			log.Printf("Updated password for user: %s", user.ID)
+		}
+	}
+}
+
+// importFirebaseData импортирует данные из Firebase
+func importFirebaseData(email, password string, user *db.User, userCRUD *db.UserCRUD, c *gin.Context) {
+	fbUser, err := fb.GetUser(email)
+	if err == nil && fbUser != nil {
+		importResult, err := bl.ImportAllData(email, password)
+		if err != nil {
+			log.Printf("Failed to import data from Firebase: %v", err)
+		} else {
+			log.Printf("Successfully imported data from Firebase: %+v", importResult)
+		}
+
+		if user == nil {
+			user, err = userCRUD.GetUserByEmail(email)
+			if err != nil {
+				log.Printf("Failed to get imported user from PostgreSQL: %v", err)
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user after import"})
+				return
+			}
+			log.Printf("Successfully retrieved imported user: %s", user.ID)
+		}
+	}
 }
