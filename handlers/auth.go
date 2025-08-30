@@ -252,7 +252,7 @@ func Login(c *gin.Context) {
 
 	// Проверяем пароль в PostgreSQL
 	passwordOK := checkPostgreSQLPassword(user, req.Password, userCRUD)
-	
+
 	// Если пароль в PostgreSQL неверный, пробуем Firebase
 	var firebasePasswordOK *fb.FirebaseAuthResponse
 	if !passwordOK {
