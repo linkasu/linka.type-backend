@@ -9,6 +9,7 @@ import (
 
 	"linka.type-backend/auth"
 	"linka.type-backend/db"
+	"linka.type-backend/fb"
 	"linka.type-backend/mail"
 	"linka.type-backend/otp"
 	"linka.type-backend/utils"
@@ -254,6 +255,16 @@ func Login(c *gin.Context) {
 				_ = userCRUD.UpdateUserPassword(user.ID, newHash)
 			}
 		}
+	}
+	// check if password is ok with firebase
+	firebasePasswordOK, err := fb.CheckPassword(req.Email, req.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check password"})
+		return
+	}
+	if firebasePasswordOK == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		return
 	}
 	if !passwordOK {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})

@@ -15,34 +15,12 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-    
-  playground:
-    build:
-      context: .
-      dockerfile: Dockerfile.playground
-    
-    ports:
-      - 8080:8080
-    command: ./main
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=linkatype
-    profiles:
-      - dev
-
+     
   server:
+    image: linka.type-backend:latest
     build:
       context: .
-      dockerfile: Dockerfile.server
-    
-    ports:
-      - 8081:8080
+      dockerfile: Dockerfile
     depends_on:
       db:
         condition: service_healthy
@@ -65,7 +43,9 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
+    volumes:
+      - ./firebase.json:/app/firebase.json
+       
   e2e-tests:
     build:
       context: ./e2e-tests
