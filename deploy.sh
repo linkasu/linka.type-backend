@@ -53,12 +53,25 @@ fi
 
 # Запуск тестов (если не пропущены)
 if [ "$SKIP_TESTS" = false ]; then
-    echo -e "${YELLOW}🧪 Запускаю тесты...${NC}"
-    if ! go test ./... -v; then
+    echo -e "${YELLOW}🧪 Запускаю тесты в Docker...${NC}"
+    
+    # Запускаем базу данных для тестов
+    echo -e "${YELLOW}🗄️ Запускаю базу данных для тестов...${NC}"
+    docker compose up -d db
+    
+    # Ждем готовности базы данных
+    echo -e "${YELLOW}⏳ Жду готовности базы данных...${NC}"
+    sleep 10
+    
+    # Запускаем тесты в Docker
+    if ! docker compose --profile test run --rm go-tests; then
         echo -e "${RED}❌ Тесты не прошли!${NC}"
         exit 1
     fi
     echo -e "${GREEN}✅ Тесты прошли успешно${NC}"
+    
+    # Останавливаем базу данных
+    docker compose down
 else
     echo -e "${YELLOW}⏭️ Пропускаю тесты${NC}"
 fi
