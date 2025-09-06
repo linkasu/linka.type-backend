@@ -1,10 +1,20 @@
 package auth
 
 import (
+	"os"
 	"testing"
 )
 
 func TestGenerateAndValidateToken(t *testing.T) {
+	// Устанавливаем переменные окружения для тестов
+	os.Setenv("JWT_SECRET", "test-secret-key")
+	os.Setenv("JWT_ISSUER", "test-issuer")
+	os.Setenv("JWT_AUDIENCE", "test-audience")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("JWT_ISSUER")
+		os.Unsetenv("JWT_AUDIENCE")
+	}()
 	userID := "test_user_123"
 	email := "test@example.com"
 
@@ -43,9 +53,15 @@ func TestValidateInvalidToken(t *testing.T) {
 }
 
 func TestTokenExpiration(t *testing.T) {
-	// Устанавливаем короткое время жизни токена для теста
-	originalSecret := jwtSecret
-	defer func() { jwtSecret = originalSecret }()
+	// Устанавливаем переменные окружения для тестов
+	os.Setenv("JWT_SECRET", "test-secret-key")
+	os.Setenv("JWT_ISSUER", "test-issuer")
+	os.Setenv("JWT_AUDIENCE", "test-audience")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("JWT_ISSUER")
+		os.Unsetenv("JWT_AUDIENCE")
+	}()
 
 	userID := "test_user_123"
 	email := "test@example.com"

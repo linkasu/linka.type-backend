@@ -84,7 +84,7 @@ func TestPasswordResetFlow(t *testing.T) {
 	t.Run("Register User", func(t *testing.T) {
 		reqBody := handlers.RegisterRequest{
 			Email:    suite.email,
-			Password: "oldpassword123",
+			Password: "OldPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/register", reqBody, "")
@@ -182,7 +182,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		reqBody := handlers.ResetPasswordConfirmRequest{
 			Email:    suite.email,
 			Code:     suite.resetOTPCode,
-			Password: "newpassword123",
+			Password: "NewPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/reset-password/confirm", reqBody, "")
@@ -200,7 +200,7 @@ func TestPasswordResetFlow(t *testing.T) {
 	t.Run("Login with New Password", func(t *testing.T) {
 		reqBody := handlers.LoginRequest{
 			Email:    suite.email,
-			Password: "newpassword123",
+			Password: "NewPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/login", reqBody, "")
@@ -219,7 +219,7 @@ func TestPasswordResetFlow(t *testing.T) {
 	t.Run("Login with Old Password Should Fail", func(t *testing.T) {
 		reqBody := handlers.LoginRequest{
 			Email:    suite.email,
-			Password: "oldpassword123",
+			Password: "OldPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/login", reqBody, "")
@@ -270,7 +270,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 		reqBody := handlers.ResetPasswordConfirmRequest{
 			Email:    suite.email,
 			Code:     "000000",
-			Password: "newpassword123",
+			Password: "NewPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/reset-password/confirm", reqBody, "")
@@ -311,7 +311,7 @@ func TestOTPExpiration(t *testing.T) {
 	t.Run("Setup User", func(t *testing.T) {
 		reqBody := handlers.RegisterRequest{
 			Email:    suite.email,
-			Password: "password123",
+			Password: "StrongPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/register", reqBody, "")
@@ -392,7 +392,7 @@ func TestOTPReuse(t *testing.T) {
 	t.Run("Setup User", func(t *testing.T) {
 		reqBody := handlers.RegisterRequest{
 			Email:    suite.email,
-			Password: "password123",
+			Password: "StrongPassword123!",
 		}
 
 		w := suite.makeRequest("POST", "/api/register", reqBody, "")

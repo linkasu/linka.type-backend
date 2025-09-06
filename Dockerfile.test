@@ -1,0 +1,28 @@
+FROM golang:1.24-alpine
+
+WORKDIR /app
+
+# Устанавливаем необходимые пакеты
+RUN apk add --no-cache git
+
+# Копируем файлы зависимостей
+COPY go.mod go.sum ./
+
+# Скачиваем зависимости
+RUN go mod download
+
+# Копируем исходный код
+COPY . .
+
+# Устанавливаем переменные окружения для тестов
+ENV POSTGRES_HOST=db
+ENV POSTGRES_PORT=5432
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=postgres
+ENV POSTGRES_DB=linkatype
+ENV JWT_SECRET=test-secret-key
+ENV JWT_ISSUER=test-issuer
+ENV JWT_AUDIENCE=test-audience
+
+# Команда по умолчанию - запуск тестов
+CMD ["go", "test", "./...", "-v"]

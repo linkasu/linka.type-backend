@@ -2,6 +2,7 @@ package fb
 
 import (
 	"context"
+	"errors"
 
 	"firebase.google.com/go/v4/auth"
 )
@@ -13,6 +14,10 @@ type Category struct {
 }
 
 func GetCategories(user *auth.UserRecord) ([]*Category, error) {
+	if !IsFirebaseInitialized() {
+		return nil, errors.New("Firebase is not initialized")
+	}
+	
 	db, err := fb.Database(context.Background())
 	if err != nil {
 		return nil, err

@@ -5,9 +5,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: linkatype
-
     restart: always
-
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -59,6 +57,28 @@ services:
       - /var/run:/var/run
     restart: always
        
+  go-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=linkatype
+      - JWT_SECRET=test-secret-key
+      - JWT_ISSUER=test-issuer
+      - JWT_AUDIENCE=test-audience
+    volumes:
+      - ./test-results:/app/test-results
+    profiles:
+      - test
+    command: ${TEST_COMMAND:-go test ./... -v}
+
   e2e-tests:
     build:
       context: ./e2e-tests

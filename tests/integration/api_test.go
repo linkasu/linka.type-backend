@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"linka.type-backend/auth"
@@ -155,6 +156,16 @@ func TestAuthenticationFlow(t *testing.T) {
 
 // TestJWTTokenGeneration тест генерации JWT токенов
 func TestJWTTokenGeneration(t *testing.T) {
+	// Устанавливаем переменные окружения для тестов
+	os.Setenv("JWT_SECRET", "test-secret-key")
+	os.Setenv("JWT_ISSUER", "test-issuer")
+	os.Setenv("JWT_AUDIENCE", "test-audience")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("JWT_ISSUER")
+		os.Unsetenv("JWT_AUDIENCE")
+	}()
+
 	userID := "test_user_123"
 	email := "test@example.com"
 

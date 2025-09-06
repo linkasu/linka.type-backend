@@ -155,7 +155,7 @@ func TestE2EFlow(t *testing.T) {
 
 	testData := &TestData{
 		Email:    "test@example.com",
-		Password: "password123",
+		Password: "StrongPassword123!",
 	}
 
 	// 1. Тест регистрации
@@ -358,7 +358,7 @@ func TestAuthenticationErrors(t *testing.T) {
 	t.Run("Register with invalid email", func(t *testing.T) {
 		registerBody := map[string]interface{}{
 			"email":    "invalid-email",
-			"password": "password123",
+			"password": "StrongPassword123!",
 		}
 
 		w := makeRequest(router, "POST", "/api/register", registerBody, "")
@@ -370,7 +370,7 @@ func TestAuthenticationErrors(t *testing.T) {
 		// Сначала регистрируем пользователя
 		registerBody := map[string]interface{}{
 			"email":    "test2@example.com",
-			"password": "password123",
+			"password": "StrongPassword123!",
 		}
 
 		makeRequest(router, "POST", "/api/register", registerBody, "")
@@ -411,10 +411,12 @@ func TestDataValidation(t *testing.T) {
 	// Регистрируем пользователя для тестов
 	registerBody := map[string]interface{}{
 		"email":    "test3@example.com",
-		"password": "password123",
+		"password": "StrongPassword123!",
 	}
 
 	w := makeRequest(router, "POST", "/api/register", registerBody, "")
+	assert.Equal(t, http.StatusCreated, w.Code)
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)

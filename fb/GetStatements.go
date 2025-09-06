@@ -2,6 +2,7 @@ package fb
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -19,6 +20,10 @@ type fbStatementRaw struct {
 }
 
 func (c *Category) GetStatements() ([]*Statement, error) {
+	if !IsFirebaseInitialized() {
+		return nil, errors.New("Firebase is not initialized")
+	}
+	
 	db, err := fb.Database(context.Background())
 	if err != nil {
 		return nil, err

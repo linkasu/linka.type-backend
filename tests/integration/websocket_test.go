@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"linka.type-backend/auth"
@@ -34,6 +35,16 @@ func setupWebSocketTestRouter() *gin.Engine {
 
 // TestWebSocketEndpoint тест WebSocket endpoint
 func TestWebSocketEndpoint(t *testing.T) {
+	// Устанавливаем переменные окружения для тестов
+	os.Setenv("JWT_SECRET", "test-secret-key")
+	os.Setenv("JWT_ISSUER", "test-issuer")
+	os.Setenv("JWT_AUDIENCE", "test-audience")
+	defer func() {
+		os.Unsetenv("JWT_SECRET")
+		os.Unsetenv("JWT_ISSUER")
+		os.Unsetenv("JWT_AUDIENCE")
+	}()
+
 	router := setupWebSocketTestRouter()
 
 	// Генерируем токен для тестирования
