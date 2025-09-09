@@ -116,15 +116,16 @@ func RegisterDirect(c *gin.Context) {
 		return
 	}
 
-	// Генерируем JWT токен
-	token, err := auth.GenerateToken(user.ID, user.Email)
+	// Генерируем пару токенов (access + refresh)
+	tokenPair, err := auth.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
 	}
 
 	response := LoginResponse{
-		Token: token,
+		Token:        tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
 		User: struct {
 			ID    string `json:"id"`
 			Email string `json:"email"`
@@ -214,15 +215,16 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	// Генерируем JWT токен
-	token, err := auth.GenerateToken(user.ID, user.Email)
+	// Генерируем пару токенов (access + refresh)
+	tokenPair, err := auth.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
 	}
 
 	response := LoginResponse{
-		Token: token,
+		Token:        tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
 		User: struct {
 			ID    string `json:"id"`
 			Email string `json:"email"`
@@ -285,15 +287,16 @@ func Login(c *gin.Context) {
 		importFirebaseData(req.Email, req.Password, user, userCRUD, c)
 	}
 
-	// Генерируем JWT токен
-	token, err := auth.GenerateToken(user.ID, user.Email)
+	// Генерируем пару токенов (access + refresh)
+	tokenPair, err := auth.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
 	}
 
 	response := LoginResponse{
-		Token: token,
+		Token:        tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
 		User: struct {
 			ID    string `json:"id"`
 			Email string `json:"email"`
@@ -372,15 +375,16 @@ func VerifyEmail(c *gin.Context) {
 		}
 	}()
 
-	// Генерируем JWT токен
-	token, err := auth.GenerateToken(user.ID, user.Email)
+	// Генерируем пару токенов (access + refresh)
+	tokenPair, err := auth.GenerateTokenPair(user.ID, user.Email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate tokens"})
 		return
 	}
 
 	response := LoginResponse{
-		Token: token,
+		Token:        tokenPair.AccessToken,
+		RefreshToken: tokenPair.RefreshToken,
 		User: struct {
 			ID    string `json:"id"`
 			Email string `json:"email"`
@@ -391,9 +395,10 @@ func VerifyEmail(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": "Email verified successfully",
-		"token":   response.Token,
-		"user":    response.User,
+		"message":       "Email verified successfully",
+		"token":         response.Token,
+		"refresh_token": response.RefreshToken,
+		"user":          response.User,
 	})
 }
 

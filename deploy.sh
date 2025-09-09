@@ -8,7 +8,7 @@ set -e
 # Конфигурация
 SERVER="linka.su"
 REMOTE_USER="aacidov"
-REMOTE_DIR="/home/linka.type-backend"
+REMOTE_DIR="/home/aacidov/linka.type-backend"
 DOCKER_IMAGE="bakaidov/linka-type-backend"
 TAG="latest"
 

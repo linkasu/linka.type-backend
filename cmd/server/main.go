@@ -104,7 +104,7 @@ func main() {
 		// Auth routes
 		api.POST("/register", handlers.RegisterDirect)
 		api.POST("/login", handlers.Login)
-		api.POST("/refresh", handlers.RefreshToken)
+		api.POST("/refresh-token", handlers.RefreshToken)
 		api.GET("/profile", auth.AuthMiddleware(), func(c *gin.Context) {
 			userID := auth.GetUserIDFromContext(c)
 			email := auth.GetEmailFromContext(c)
