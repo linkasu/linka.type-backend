@@ -21,16 +21,17 @@ func (c *CategoryCRUD) CreateCategory(category *Category) error {
 	if err != nil {
 		return fmt.Errorf("error creating category: %v", err)
 	}
-
+	category.CreatedAt = now.Format(time.RFC3339)
+	category.UpdatedAt = category.CreatedAt
 	return nil
 }
 
 // GetCategoryByID retrieves a category by ID
 func (c *CategoryCRUD) GetCategoryByID(id string) (*Category, error) {
-	query := `SELECT id, title, user_id FROM categories WHERE id = $1`
+	query := `SELECT id, title, user_id, created_at, updated_at FROM categories WHERE id = $1`
 
 	var category Category
-	err := DB.QueryRow(query, id).Scan(&category.ID, &category.Title, &category.UserID)
+	err := DB.QueryRow(query, id).Scan(&category.ID, &category.Title, &category.UserID, &category.CreatedAt, &category.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("category not found")
@@ -43,7 +44,7 @@ func (c *CategoryCRUD) GetCategoryByID(id string) (*Category, error) {
 
 // GetCategoriesByUserID retrieves all categories for a specific user
 func (c *CategoryCRUD) GetCategoriesByUserID(userID string) ([]*Category, error) {
-	query := `SELECT id, title, user_id FROM categories WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, title, user_id, created_at, updated_at FROM categories WHERE user_id = $1 ORDER BY created_at DESC`
 
 	rows, err := DB.Query(query, userID)
 	if err != nil {
@@ -54,7 +55,7 @@ func (c *CategoryCRUD) GetCategoriesByUserID(userID string) ([]*Category, error)
 	var categories []*Category
 	for rows.Next() {
 		var category Category
-		if err := rows.Scan(&category.ID, &category.Title, &category.UserID); err != nil {
+		if err := rows.Scan(&category.ID, &category.Title, &category.UserID, &category.CreatedAt, &category.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning category: %v", err)
 		}
 		categories = append(categories, &category)
@@ -69,7 +70,7 @@ func (c *CategoryCRUD) GetCategoriesByUserID(userID string) ([]*Category, error)
 
 // GetAllCategories retrieves all categories
 func (c *CategoryCRUD) GetAllCategories() ([]*Category, error) {
-	query := `SELECT id, title, user_id FROM categories ORDER BY created_at DESC`
+	query := `SELECT id, title, user_id, created_at, updated_at FROM categories ORDER BY created_at DESC`
 
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -80,7 +81,7 @@ func (c *CategoryCRUD) GetAllCategories() ([]*Category, error) {
 	var categories []*Category
 	for rows.Next() {
 		var category Category
-		if err := rows.Scan(&category.ID, &category.Title, &category.UserID); err != nil {
+		if err := rows.Scan(&category.ID, &category.Title, &category.UserID, &category.CreatedAt, &category.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning category: %v", err)
 		}
 		categories = append(categories, &category)
@@ -115,7 +116,7 @@ func (c *CategoryCRUD) UpdateCategory(category *Category) error {
 	if rowsAffected == 0 {
 		return fmt.Errorf("category not found")
 	}
-
+	category.UpdatedAt = now.Format(time.RFC3339)
 	return nil
 }
 

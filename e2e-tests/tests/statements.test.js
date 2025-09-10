@@ -37,6 +37,8 @@ describe('Statements Tests', () => {
       expect(response).toHaveProperty('text');
       expect(response).toHaveProperty('userId');
       expect(response).toHaveProperty('categoryId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.text).toBe(statementTitle);
       expect(response.userId).toBe(testUser.id);
       expect(response.categoryId).toBe(testCategory.id);
@@ -68,6 +70,8 @@ describe('Statements Tests', () => {
         expect(statement).toHaveProperty('text');
         expect(statement).toHaveProperty('userId');
         expect(statement).toHaveProperty('categoryId');
+        expect(statement).toHaveProperty('createdAt');
+        expect(statement).toHaveProperty('updatedAt');
         expect(statement.userId).toBe(testUser.id);
         expect(statement.categoryId).toBe(testCategory.id);
       });
@@ -85,6 +89,8 @@ describe('Statements Tests', () => {
       expect(response).toHaveProperty('text');
       expect(response).toHaveProperty('userId');
       expect(response).toHaveProperty('categoryId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.id).toBe(statementId);
       expect(response.text).toBe(statementTitle);
       expect(response.userId).toBe(testUser.id);
@@ -104,6 +110,8 @@ describe('Statements Tests', () => {
       expect(response).toHaveProperty('text');
       expect(response).toHaveProperty('userId');
       expect(response).toHaveProperty('categoryId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.id).toBe(statementId);
       expect(response.text).toBe(updatedTitle);
       expect(response.userId).toBe(testUser.id);
@@ -141,6 +149,8 @@ describe('Statements Tests', () => {
 
       expect(response.categoryId).toBe(newCategoryResponse.id);
       expect(response.text).toBe(statementTitle);
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
     });
   });
 

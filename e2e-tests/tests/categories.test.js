@@ -31,6 +31,8 @@ describe('Categories Tests', () => {
       expect(response).toHaveProperty('id');
       expect(response).toHaveProperty('title');
       expect(response).toHaveProperty('userId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.title).toBe(categoryTitle);
       expect(response.userId).toBe(testUser.id);
       expect(typeof response.id).toBe('string');
@@ -60,6 +62,8 @@ describe('Categories Tests', () => {
         expect(category).toHaveProperty('id');
         expect(category).toHaveProperty('title');
         expect(category).toHaveProperty('userId');
+        expect(category).toHaveProperty('createdAt');
+        expect(category).toHaveProperty('updatedAt');
         expect(category.userId).toBe(testUser.id);
       });
     });
@@ -75,6 +79,8 @@ describe('Categories Tests', () => {
       expect(response).toHaveProperty('id');
       expect(response).toHaveProperty('title');
       expect(response).toHaveProperty('userId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.id).toBe(categoryId);
       expect(response.title).toBe(categoryTitle);
       expect(response.userId).toBe(testUser.id);
@@ -92,6 +98,8 @@ describe('Categories Tests', () => {
       expect(response).toHaveProperty('id');
       expect(response).toHaveProperty('title');
       expect(response).toHaveProperty('userId');
+      expect(response).toHaveProperty('createdAt');
+      expect(response).toHaveProperty('updatedAt');
       expect(response.id).toBe(categoryId);
       expect(response.title).toBe(updatedTitle);
       expect(response.userId).toBe(testUser.id);

@@ -5,12 +5,16 @@ type Statement struct {
 	Title      string `json:"text"`
 	UserID     string `json:"userId"`
 	CategoryID string `json:"categoryId"`
+	CreatedAt  string `json:"createdAt"`
+	UpdatedAt  string `json:"updatedAt"`
 }
 
 type Category struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	UserID string `json:"userId"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	UserID    string `json:"userId"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type User struct {
