@@ -113,7 +113,9 @@ GET /categories
     {
       "id": "category_123",
       "title": "Работа",
-      "userId": "user_1234567890"
+      "userId": "user_1234567890",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     }
   ]
 }
@@ -211,7 +213,9 @@ ws.onclose = () => {
     "category": {
       "id": "category_123",
       "title": "Новая категория",
-      "userId": "user_123"
+      "userId": "user_123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     }
   },
   "user_id": "user_123"
@@ -227,7 +231,9 @@ ws.onclose = () => {
     "category": {
       "id": "category_123",
       "title": "Обновленная категория",
-      "userId": "user_123"
+      "userId": "user_123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-02T00:00:00Z"
     }
   },
   "user_id": "user_123"
@@ -256,7 +262,9 @@ ws.onclose = () => {
       "id": "statement_123",
       "text": "Новый statement",
       "userId": "user_123",
-      "categoryId": "category_123"
+      "categoryId": "category_123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     }
   },
   "user_id": "user_123"
@@ -273,7 +281,9 @@ ws.onclose = () => {
       "id": "statement_123",
       "text": "Обновленный statement",
       "userId": "user_123",
-      "categoryId": "category_123"
+      "categoryId": "category_123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-02T00:00:00Z"
     }
   },
   "user_id": "user_123"
@@ -315,7 +325,9 @@ GET /statements
       "id": "statement_123",
       "text": "Текст statement",
       "userId": "user_1234567890",
-      "categoryId": "category_123"
+      "categoryId": "category_123",
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:00:00Z"
     }
   ]
 }

@@ -167,6 +167,7 @@ func UpdateStatement(c *gin.Context) {
 		Title:      req.Title,
 		UserID:     userID,
 		CategoryID: req.CategoryID,
+		CreatedAt:  existingStatement.CreatedAt,
 	}
 
 	if err := statementCRUD.UpdateStatement(statement); err != nil {
@@ -307,9 +308,10 @@ func UpdateCategory(c *gin.Context) {
 	}
 
 	category := &db.Category{
-		ID:     categoryID,
-		Title:  req.Title,
-		UserID: userID,
+		ID:        categoryID,
+		Title:     req.Title,
+		UserID:    userID,
+		CreatedAt: existingCategory.CreatedAt,
 	}
 
 	if err := categoryCRUD.UpdateCategory(category); err != nil {

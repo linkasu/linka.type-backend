@@ -21,16 +21,17 @@ func (s *StatementCRUD) CreateStatement(statement *Statement) error {
 	if err != nil {
 		return fmt.Errorf("error creating statement: %v", err)
 	}
-
+	statement.CreatedAt = now.Format(time.RFC3339)
+	statement.UpdatedAt = statement.CreatedAt
 	return nil
 }
 
 // GetStatementByID retrieves a statement by ID
 func (s *StatementCRUD) GetStatementByID(id string) (*Statement, error) {
-	query := `SELECT id, title, user_id, category_id FROM statements WHERE id = $1`
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE id = $1`
 
 	var statement Statement
-	err := DB.QueryRow(query, id).Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID)
+	err := DB.QueryRow(query, id).Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("statement not found")
@@ -43,7 +44,7 @@ func (s *StatementCRUD) GetStatementByID(id string) (*Statement, error) {
 
 // GetStatementsByUserID retrieves all statements for a specific user
 func (s *StatementCRUD) GetStatementsByUserID(userID string) ([]*Statement, error) {
-	query := `SELECT id, title, user_id, category_id FROM statements WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE user_id = $1 ORDER BY created_at DESC`
 
 	rows, err := DB.Query(query, userID)
 	if err != nil {
@@ -54,7 +55,7 @@ func (s *StatementCRUD) GetStatementsByUserID(userID string) ([]*Statement, erro
 	var statements []*Statement
 	for rows.Next() {
 		var statement Statement
-		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID); err != nil {
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning statement: %v", err)
 		}
 		statements = append(statements, &statement)
@@ -69,7 +70,7 @@ func (s *StatementCRUD) GetStatementsByUserID(userID string) ([]*Statement, erro
 
 // GetStatementsByCategoryID retrieves all statements for a specific category
 func (s *StatementCRUD) GetStatementsByCategoryID(categoryID string) ([]*Statement, error) {
-	query := `SELECT id, title, user_id, category_id FROM statements WHERE category_id = $1 ORDER BY created_at DESC`
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE category_id = $1 ORDER BY created_at DESC`
 
 	rows, err := DB.Query(query, categoryID)
 	if err != nil {
@@ -80,7 +81,7 @@ func (s *StatementCRUD) GetStatementsByCategoryID(categoryID string) ([]*Stateme
 	var statements []*Statement
 	for rows.Next() {
 		var statement Statement
-		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID); err != nil {
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning statement: %v", err)
 		}
 		statements = append(statements, &statement)
@@ -95,7 +96,7 @@ func (s *StatementCRUD) GetStatementsByCategoryID(categoryID string) ([]*Stateme
 
 // GetAllStatements retrieves all statements
 func (s *StatementCRUD) GetAllStatements() ([]*Statement, error) {
-	query := `SELECT id, title, user_id, category_id FROM statements ORDER BY created_at DESC`
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements ORDER BY created_at DESC`
 
 	rows, err := DB.Query(query)
 	if err != nil {
@@ -106,7 +107,7 @@ func (s *StatementCRUD) GetAllStatements() ([]*Statement, error) {
 	var statements []*Statement
 	for rows.Next() {
 		var statement Statement
-		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID); err != nil {
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("error scanning statement: %v", err)
 		}
 		statements = append(statements, &statement)
@@ -141,7 +142,7 @@ func (s *StatementCRUD) UpdateStatement(statement *Statement) error {
 	if rowsAffected == 0 {
 		return fmt.Errorf("statement not found")
 	}
-
+	statement.UpdatedAt = now.Format(time.RFC3339)
 	return nil
 }
 
