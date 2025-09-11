@@ -133,6 +133,9 @@ func main() {
 			categories.DELETE("/:id", handlers.DeleteCategory)
 		}
 
+		// Hash route
+		api.GET("/hash", auth.AuthMiddleware(), handlers.GetCategoryHash)
+
 		// Statements routes
 		statements := api.Group("/statements")
 		statements.Use(auth.AuthMiddleware())
