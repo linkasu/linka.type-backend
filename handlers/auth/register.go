@@ -7,8 +7,9 @@ import (
 
 	"linka.type-backend/auth"
 	"linka.type-backend/bl/services"
-	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 	"linka.type-backend/mail"
+	"linka.type-backend/models"
 	"linka.type-backend/otp"
 	"linka.type-backend/utils"
 
@@ -91,8 +92,8 @@ func Register(c *gin.Context) {
 	}
 
 	// Сохраняем OTP в базу данных
-	otpCRUD := &db.OTPCRUD{}
-	otpRecord := &db.OTPCode{
+	otpCRUD := &repositories.OTPCRUD{}
+	otpRecord := &models.OTPCode{
 		ID:        utils.GenerateID(),
 		Email:     req.Email,
 		Code:      otpCode,

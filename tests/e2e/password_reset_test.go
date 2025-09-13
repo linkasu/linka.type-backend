@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 	"linka.type-backend/handlers"
 	"linka.type-backend/handlers/auth"
 	"linka.type-backend/utils"
@@ -102,7 +103,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 2: Получение OTP кода из базы данных (имитация получения email)
 	t.Run("Get OTP Code from Database", func(t *testing.T) {
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "registration")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -150,7 +151,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 5: Получение OTP кода для сброса пароля
 	t.Run("Get Reset OTP Code", func(t *testing.T) {
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "reset_password")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -319,7 +320,7 @@ func TestOTPExpiration(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		// Получаем OTP код
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "registration")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -344,7 +345,7 @@ func TestOTPExpiration(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// Получаем OTP код
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "reset_password")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -354,7 +355,7 @@ func TestOTPExpiration(t *testing.T) {
 	// Имитируем истечение срока действия OTP
 	t.Run("Simulate OTP Expiration", func(t *testing.T) {
 		// Обновляем время истечения в базе данных на прошлое время
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByCode(suite.resetOTPCode, suite.email, "reset_password")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -400,7 +401,7 @@ func TestOTPReuse(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, w.Code)
 
 		// Получаем и используем OTP для верификации
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "registration")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
@@ -423,7 +424,7 @@ func TestOTPReuse(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// Получаем OTP код
-		otpCRUD := &db.OTPCRUD{}
+		otpCRUD := &repositories.OTPCRUD{}
 		otpRecord, err := otpCRUD.GetOTPByEmailAndType(suite.email, "reset_password")
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)

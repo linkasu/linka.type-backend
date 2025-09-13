@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"linka.type-backend/auth"
-	"linka.type-backend/db"
 	"linka.type-backend/db/repositories"
 	"linka.type-backend/mail"
 	"linka.type-backend/otp"
@@ -29,7 +28,7 @@ func VerifyEmail(c *gin.Context) {
 	}
 
 	// Получаем OTP из базы данных
-	otpCRUD := &db.OTPCRUD{}
+	otpCRUD := &repositories.OTPCRUD{}
 	otpRecord, err := otpCRUD.GetOTPByCode(req.Code, req.Email, "registration")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})

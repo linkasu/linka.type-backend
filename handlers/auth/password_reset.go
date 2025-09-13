@@ -39,7 +39,7 @@ func RequestPasswordReset(c *gin.Context) {
 	}
 
 	// Удаляем старые OTP коды для этого email
-	otpCRUD := &db.OTPCRUD{}
+	otpCRUD := &repositories.OTPCRUD{}
 	if err := otpCRUD.DeleteOTPByEmail(req.Email); err != nil {
 		log.Printf("Failed to delete old OTP codes: %v", err)
 	}
@@ -86,7 +86,7 @@ func VerifyPasswordResetOTP(c *gin.Context) {
 	}
 
 	// Получаем OTP из базы данных (включая уже использованный, чтобы корректно отработать повтор)
-	otpCRUD := &db.OTPCRUD{}
+	otpCRUD := &repositories.OTPCRUD{}
 	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
@@ -143,7 +143,7 @@ func ConfirmPasswordReset(c *gin.Context) {
 
 	// Получаем OTP из базы данных независимо от статуса used,
 	// так как мы допускаем, что код мог быть отмечен использованным на этапе verify
-	otpCRUD := &db.OTPCRUD{}
+	otpCRUD := &repositories.OTPCRUD{}
 	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
