@@ -9,6 +9,7 @@ import (
 
 	"linka.type-backend/auth"
 	"linka.type-backend/handlers"
+	"linka.type-backend/handlers/data"
 	"linka.type-backend/websocket"
 
 	"github.com/gin-gonic/gin"
@@ -95,7 +96,7 @@ func TestWebSocketNotifications(t *testing.T) {
 			"userId": userID,
 		}
 
-		handlers.NotifyCategoryCreated(userID, category)
+		data.NotifyCategoryCreated(userID, category)
 		// Не должно вызывать ошибок
 	})
 
@@ -107,14 +108,14 @@ func TestWebSocketNotifications(t *testing.T) {
 			"userId": userID,
 		}
 
-		handlers.NotifyCategoryUpdated(userID, category)
+		data.NotifyCategoryUpdated(userID, category)
 		// Не должно вызывать ошибок
 	})
 
 	// Тест уведомления об удалении категории
 	t.Run("Notify category deleted", func(_ *testing.T) {
 		categoryID := "category_123"
-		handlers.NotifyCategoryDeleted(userID, categoryID)
+		data.NotifyCategoryDeleted(userID, categoryID)
 		// Не должно вызывать ошибок
 	})
 
@@ -127,7 +128,7 @@ func TestWebSocketNotifications(t *testing.T) {
 			"categoryId": "category_123",
 		}
 
-		handlers.NotifyStatementCreated(userID, statement)
+		data.NotifyStatementCreated(userID, statement)
 		// Не должно вызывать ошибок
 	})
 
@@ -140,14 +141,14 @@ func TestWebSocketNotifications(t *testing.T) {
 			"categoryId": "category_123",
 		}
 
-		handlers.NotifyStatementUpdated(userID, statement)
+		data.NotifyStatementUpdated(userID, statement)
 		// Не должно вызывать ошибок
 	})
 
 	// Тест уведомления об удалении statement
 	t.Run("Notify statement deleted", func(_ *testing.T) {
 		statementID := "statement_123"
-		handlers.NotifyStatementDeleted(userID, statementID)
+		data.NotifyStatementDeleted(userID, statementID)
 		// Не должно вызывать ошибок
 	})
 }

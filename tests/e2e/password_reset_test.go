@@ -10,6 +10,7 @@ import (
 
 	"linka.type-backend/db"
 	"linka.type-backend/handlers"
+	"linka.type-backend/handlers/auth"
 	"linka.type-backend/utils"
 
 	"github.com/gin-gonic/gin"
@@ -82,7 +83,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 1: Регистрация пользователя
 	t.Run("Register User", func(t *testing.T) {
-		reqBody := handlers.RegisterRequest{
+		reqBody := auth.RegisterRequest{
 			Email:    suite.email,
 			Password: "OldPassword123!",
 		}
@@ -112,7 +113,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 3: Верификация email
 	t.Run("Verify Email", func(t *testing.T) {
-		reqBody := handlers.VerifyEmailRequest{
+		reqBody := auth.VerifyEmailRequest{
 			Email: suite.email,
 			Code:  suite.otpCode,
 		}
@@ -132,7 +133,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 4: Запрос сброса пароля
 	t.Run("Request Password Reset", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordRequest{
+		reqBody := auth.ResetPasswordRequest{
 			Email: suite.email,
 		}
 
@@ -160,7 +161,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 6: Верификация OTP для сброса пароля
 	t.Run("Verify Reset OTP", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordVerifyRequest{
+		reqBody := auth.ResetPasswordVerifyRequest{
 			Email: suite.email,
 			Code:  suite.resetOTPCode,
 		}
@@ -179,7 +180,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 7: Подтверждение сброса пароля
 	t.Run("Confirm Password Reset", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordConfirmRequest{
+		reqBody := auth.ResetPasswordConfirmRequest{
 			Email:    suite.email,
 			Code:     suite.resetOTPCode,
 			Password: "NewPassword123!",
@@ -198,7 +199,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 8: Проверка, что новый пароль работает
 	t.Run("Login with New Password", func(t *testing.T) {
-		reqBody := handlers.LoginRequest{
+		reqBody := auth.LoginRequest{
 			Email:    suite.email,
 			Password: "NewPassword123!",
 		}
@@ -217,7 +218,7 @@ func TestPasswordResetFlow(t *testing.T) {
 
 	// Шаг 9: Проверка, что старый пароль больше не работает
 	t.Run("Login with Old Password Should Fail", func(t *testing.T) {
-		reqBody := handlers.LoginRequest{
+		reqBody := auth.LoginRequest{
 			Email:    suite.email,
 			Password: "OldPassword123!",
 		}
@@ -233,7 +234,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 	suite := NewPasswordResetTestSuite()
 
 	t.Run("Request Reset for Non-existent User", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordRequest{
+		reqBody := auth.ResetPasswordRequest{
 			Email: "nonexistent@example.com",
 		}
 
@@ -250,7 +251,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 	})
 
 	t.Run("Verify Invalid OTP Code", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordVerifyRequest{
+		reqBody := auth.ResetPasswordVerifyRequest{
 			Email: suite.email,
 			Code:  "000000",
 		}
@@ -267,7 +268,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 	})
 
 	t.Run("Confirm Reset with Invalid OTP", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordConfirmRequest{
+		reqBody := auth.ResetPasswordConfirmRequest{
 			Email:    suite.email,
 			Code:     "000000",
 			Password: "NewPassword123!",
@@ -285,7 +286,7 @@ func TestPasswordResetInvalidScenarios(t *testing.T) {
 	})
 
 	t.Run("Confirm Reset with Weak Password", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordConfirmRequest{
+		reqBody := auth.ResetPasswordConfirmRequest{
 			Email:    suite.email,
 			Code:     "123456",
 			Password: "123", // Слишком короткий пароль
@@ -309,7 +310,7 @@ func TestOTPExpiration(t *testing.T) {
 
 	// Создаем пользователя
 	t.Run("Setup User", func(t *testing.T) {
-		reqBody := handlers.RegisterRequest{
+		reqBody := auth.RegisterRequest{
 			Email:    suite.email,
 			Password: "StrongPassword123!",
 		}
@@ -325,7 +326,7 @@ func TestOTPExpiration(t *testing.T) {
 		suite.otpCode = otpRecord.Code
 
 		// Верифицируем email
-		verifyReq := handlers.VerifyEmailRequest{
+		verifyReq := auth.VerifyEmailRequest{
 			Email: suite.email,
 			Code:  suite.otpCode,
 		}
@@ -335,7 +336,7 @@ func TestOTPExpiration(t *testing.T) {
 
 	// Запрашиваем сброс пароля
 	t.Run("Request Password Reset", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordRequest{
+		reqBody := auth.ResetPasswordRequest{
 			Email: suite.email,
 		}
 
@@ -366,7 +367,7 @@ func TestOTPExpiration(t *testing.T) {
 
 	// Пытаемся использовать истекший OTP
 	t.Run("Use Expired OTP", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordVerifyRequest{
+		reqBody := auth.ResetPasswordVerifyRequest{
 			Email: suite.email,
 			Code:  suite.resetOTPCode,
 		}
@@ -390,7 +391,7 @@ func TestOTPReuse(t *testing.T) {
 
 	// Создаем пользователя и верифицируем email
 	t.Run("Setup User", func(t *testing.T) {
-		reqBody := handlers.RegisterRequest{
+		reqBody := auth.RegisterRequest{
 			Email:    suite.email,
 			Password: "StrongPassword123!",
 		}
@@ -404,7 +405,7 @@ func TestOTPReuse(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, otpRecord)
 
-		verifyReq := handlers.VerifyEmailRequest{
+		verifyReq := auth.VerifyEmailRequest{
 			Email: suite.email,
 			Code:  otpRecord.Code,
 		}
@@ -414,7 +415,7 @@ func TestOTPReuse(t *testing.T) {
 
 	// Запрашиваем сброс пароля
 	t.Run("Request Password Reset", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordRequest{
+		reqBody := auth.ResetPasswordRequest{
 			Email: suite.email,
 		}
 
@@ -431,7 +432,7 @@ func TestOTPReuse(t *testing.T) {
 
 	// Используем OTP первый раз
 	t.Run("Use OTP First Time", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordVerifyRequest{
+		reqBody := auth.ResetPasswordVerifyRequest{
 			Email: suite.email,
 			Code:  suite.resetOTPCode,
 		}
@@ -442,7 +443,7 @@ func TestOTPReuse(t *testing.T) {
 
 	// Пытаемся использовать тот же OTP второй раз
 	t.Run("Reuse OTP Should Fail", func(t *testing.T) {
-		reqBody := handlers.ResetPasswordVerifyRequest{
+		reqBody := auth.ResetPasswordVerifyRequest{
 			Email: suite.email,
 			Code:  suite.resetOTPCode,
 		}

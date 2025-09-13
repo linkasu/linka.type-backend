@@ -1,175 +1,63 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
-	"time"
+	"linka.type-backend/db/repositories"
 )
 
-// OTPCRUD предоставляет методы для работы с OTP кодами
-type OTPCRUD struct{}
+// OTPCRUD provides CRUD operations for OTP entity
+// This is a wrapper around OTPRepository for backward compatibility
+type OTPCRUD struct {
+	repo *repositories.OTPRepository
+}
 
-// CreateOTP создает новый OTP код
-func (otp *OTPCRUD) CreateOTP(otpCode *OTPCode) error {
-	query := `
-		INSERT INTO otp_codes (id, email, code, type, expires_at, used, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`
-
-	_, err := DB.Exec(query,
-		otpCode.ID,
-		otpCode.Email,
-		otpCode.Code,
-		otpCode.Type,
-		otpCode.ExpiresAt,
-		otpCode.Used,
-		otpCode.CreatedAt,
-	)
-
-	if err != nil {
-		return fmt.Errorf("failed to create OTP code: %v", err)
+// NewOTPCRUD creates a new OTPCRUD
+func NewOTPCRUD() *OTPCRUD {
+	return &OTPCRUD{
+		repo: repositories.NewOTPRepository(),
 	}
+}
 
-	return nil
+// CreateOTP creates a new OTP record
+func (o *OTPCRUD) CreateOTP(otp *OTPCode) error {
+	return o.repo.CreateOTP(otp)
+}
+
+// GetOTPByCode retrieves an OTP by code, email and type
+func (o *OTPCRUD) GetOTPByCode(code, email, otpType string) (*OTPCode, error) {
+	return o.repo.GetOTPByCode(code, email, otpType)
+}
+
+// GetOTPByCodeAnyStatus retrieves an OTP by code, email and type regardless of used status
+func (o *OTPCRUD) GetOTPByCodeAnyStatus(code, email, otpType string) (*OTPCode, error) {
+	return o.repo.GetOTPByCodeAnyStatus(code, email, otpType)
+}
+
+// MarkOTPAsUsed marks an OTP as used
+func (o *OTPCRUD) MarkOTPAsUsed(id string) error {
+	return o.repo.MarkOTPAsUsed(id)
+}
+
+// DeleteOTPByEmail deletes all OTP codes for an email
+func (o *OTPCRUD) DeleteOTPByEmail(email string) error {
+	return o.repo.DeleteOTPByEmail(email)
+}
+
+// DeleteExpiredOTPs deletes expired OTP codes
+func (o *OTPCRUD) DeleteExpiredOTPs() error {
+	return o.repo.DeleteExpiredOTPs()
+}
+
+// GetOTPByID retrieves an OTP by ID
+func (o *OTPCRUD) GetOTPByID(id string) (*OTPCode, error) {
+	return o.repo.GetOTPByID(id)
 }
 
 // GetOTPByEmailAndType получает активный OTP код по email и типу
-func (otp *OTPCRUD) GetOTPByEmailAndType(email, otpType string) (*OTPCode, error) {
-	query := `
-		SELECT id, email, code, type, expires_at, used, created_at
-		FROM otp_codes
-		WHERE email = $1 AND type = $2 AND used = false AND expires_at > $3
-		ORDER BY created_at DESC
-		LIMIT 1
-	`
-
-	var otpCode OTPCode
-	err := DB.QueryRow(query, email, otpType, time.Now().Format(time.RFC3339)).Scan(
-		&otpCode.ID,
-		&otpCode.Email,
-		&otpCode.Code,
-		&otpCode.Type,
-		&otpCode.ExpiresAt,
-		&otpCode.Used,
-		&otpCode.CreatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get OTP code: %v", err)
-	}
-
-	return &otpCode, nil
-}
-
-// MarkOTPAsUsed помечает OTP код как использованный
-func (otp *OTPCRUD) MarkOTPAsUsed(id string) error {
-	query := `UPDATE otp_codes SET used = true WHERE id = $1`
-
-	_, err := DB.Exec(query, id)
-	if err != nil {
-		return fmt.Errorf("failed to mark OTP as used: %v", err)
-	}
-
-	return nil
-}
-
-// DeleteExpiredOTP удаляет истекшие OTP коды
-func (otp *OTPCRUD) DeleteExpiredOTP() error {
-	query := `DELETE FROM otp_codes WHERE expires_at < $1`
-
-	_, err := DB.Exec(query, time.Now().Format(time.RFC3339))
-	if err != nil {
-		return fmt.Errorf("failed to delete expired OTP codes: %v", err)
-	}
-
-	return nil
-}
-
-// DeleteOTPByEmail удаляет все OTP коды для указанного email
-func (otp *OTPCRUD) DeleteOTPByEmail(email string) error {
-	query := `DELETE FROM otp_codes WHERE email = $1`
-
-	_, err := DB.Exec(query, email)
-	if err != nil {
-		return fmt.Errorf("failed to delete OTP codes for email: %v", err)
-	}
-
-	return nil
-}
-
-// GetOTPByCode получает OTP код по самому коду
-func (otp *OTPCRUD) GetOTPByCode(code, email, otpType string) (*OTPCode, error) {
-	query := `
-		SELECT id, email, code, type, expires_at, used, created_at
-		FROM otp_codes
-		WHERE code = $1 AND email = $2 AND type = $3 AND used = false AND expires_at > $4
-		ORDER BY created_at DESC
-		LIMIT 1
-	`
-
-	var otpCode OTPCode
-	err := DB.QueryRow(query, code, email, otpType, time.Now().Format(time.RFC3339)).Scan(
-		&otpCode.ID,
-		&otpCode.Email,
-		&otpCode.Code,
-		&otpCode.Type,
-		&otpCode.ExpiresAt,
-		&otpCode.Used,
-		&otpCode.CreatedAt,
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to get OTP by code: %v", err)
-	}
-
-	return &otpCode, nil
-}
-
-// GetOTPByCodeAnyStatus получает OTP код по коду независимо от статуса used/expired
-func (otp *OTPCRUD) GetOTPByCodeAnyStatus(code, email, otpType string) (*OTPCode, error) {
-    query := `
-        SELECT id, email, code, type, expires_at, used, created_at
-        FROM otp_codes
-        WHERE code = $1 AND email = $2 AND type = $3
-        ORDER BY created_at DESC
-        LIMIT 1
-    `
-
-    var otpCode OTPCode
-    err := DB.QueryRow(query, code, email, otpType).Scan(
-        &otpCode.ID,
-        &otpCode.Email,
-        &otpCode.Code,
-        &otpCode.Type,
-        &otpCode.ExpiresAt,
-        &otpCode.Used,
-        &otpCode.CreatedAt,
-    )
-
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return nil, nil
-        }
-        return nil, fmt.Errorf("failed to get OTP by code (any status): %v", err)
-    }
-
-    return &otpCode, nil
+func (o *OTPCRUD) GetOTPByEmailAndType(email, otpType string) (*OTPCode, error) {
+	return o.repo.GetOTPByEmailAndType(email, otpType)
 }
 
 // UpdateOTPExpiration обновляет время истечения OTP кода
-func (otp *OTPCRUD) UpdateOTPExpiration(id, expiresAt string) error {
-	query := `UPDATE otp_codes SET expires_at = $1 WHERE id = $2`
-
-	_, err := DB.Exec(query, expiresAt, id)
-	if err != nil {
-		return fmt.Errorf("failed to update OTP expiration: %v", err)
-	}
-
-	return nil
+func (o *OTPCRUD) UpdateOTPExpiration(id string, newExpiration time.Time) error {
+	return o.repo.UpdateOTPExpiration(id, newExpiration)
 }

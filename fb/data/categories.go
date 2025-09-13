@@ -1,24 +1,28 @@
-package fb
+package data
 
 import (
 	"context"
 	"errors"
 
 	"firebase.google.com/go/v4/auth"
+	fbauth "linka.type-backend/fb/auth"
 )
 
+// Category представляет категорию в Firebase
 type Category struct {
 	ID     string `json:"id"`
 	Label  string `json:"label"`
 	UserID string `json:"userId"`
 }
 
+// GetCategories получает категории пользователя из Firebase
 func GetCategories(user *auth.UserRecord) ([]*Category, error) {
-	if !IsFirebaseInitialized() {
+	if !fbauth.IsFirebaseInitialized() {
 		return nil, errors.New("Firebase is not initialized")
 	}
 	
-	db, err := fb.Database(context.Background())
+	fbApp := fbauth.GetFirebaseApp()
+	db, err := fbApp.Database(context.Background())
 	if err != nil {
 		return nil, err
 	}
