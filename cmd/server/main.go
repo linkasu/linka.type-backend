@@ -147,6 +147,13 @@ func main() {
 			statements.DELETE("/:id", handlers.DeleteStatement)
 		}
 
+		// Events routes
+		events := api.Group("/events")
+		events.Use(auth.AuthMiddleware())
+		{
+			events.POST("", handlers.CreateEvent)
+		}
+
 		// WebSocket route
 		api.GET("/ws", auth.AuthMiddleware(), handlers.HandleWebSocket)
 	}

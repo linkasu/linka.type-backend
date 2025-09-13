@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"linka.type-backend/handlers/data"
 	"github.com/gin-gonic/gin"
+	"linka.type-backend/handlers/data"
 )
 
 // GetStatements получает все statements пользователя
@@ -58,4 +58,9 @@ func DeleteCategory(c *gin.Context) {
 // GetCategoryHash возвращает хеш для конкретной категории или всех категорий
 func GetCategoryHash(c *gin.Context) {
 	data.GetCategoryHash(c)
+}
+
+// CreateEvent создает новое событие
+func CreateEvent(c *gin.Context) {
+	data.CreateEvent(c)
 }

@@ -7,3 +7,4 @@ type User = models.User
 type Category = models.Category
 type Statement = models.Statement
 type OTPCode = models.OTPCode
+type Event = models.Event

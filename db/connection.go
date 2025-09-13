@@ -127,8 +127,19 @@ func createTables() error {
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	);`
 
+	// Create events table
+	createEventsTable := `
+	CREATE TABLE IF NOT EXISTS events (
+		id VARCHAR(255) PRIMARY KEY,
+		user_id VARCHAR(255) NOT NULL,
+		event VARCHAR(255) NOT NULL,
+		data TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+	);`
+
 	// Execute table creation queries
-	queries := []string{createUsersTable, createCategoriesTable, createStatementsTable, createMigrationLogsTable, createOTPCodesTable}
+	queries := []string{createUsersTable, createCategoriesTable, createStatementsTable, createMigrationLogsTable, createOTPCodesTable, createEventsTable}
 
 	for _, query := range queries {
 		if _, err := DB.Exec(query); err != nil {
