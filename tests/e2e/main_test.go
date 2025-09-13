@@ -279,7 +279,7 @@ func TestE2EFlow(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Contains(t, response, "id")
-		assert.Equal(t, "Test Statement", response["text"])
+		assert.Equal(t, "Test Statement", response["title"])
 		assert.Equal(t, testData.UserID, response["userId"])
 		assert.Equal(t, testData.CategoryID, response["categoryId"])
 
@@ -302,7 +302,7 @@ func TestE2EFlow(t *testing.T) {
 
 		statement := statements[0].(map[string]interface{})
 		assert.Equal(t, testData.StatementID, statement["id"])
-		assert.Equal(t, "Test Statement", statement["text"])
+		assert.Equal(t, "Test Statement", statement["title"])
 	})
 
 	// 8. Тест обновления statement
@@ -320,7 +320,7 @@ func TestE2EFlow(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "Updated Statement", response["text"])
+		assert.Equal(t, "Updated Statement", response["title"])
 	})
 
 	// 9. Тест удаления statement
@@ -476,4 +476,69 @@ func TestHealthCheck(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, "ok", response["status"])
+}
+
+// TestCreateStatement отдельный тест для создания statement
+func TestCreateStatement(t *testing.T) {
+	router := setupTestServer()
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			t.Logf("Failed to close database: %v", err)
+		}
+	}()
+
+	// Регистрируем пользователя
+	registerBody := map[string]interface{}{
+		"email":    "test-statement@example.com",
+		"password": "StrongPassword123!",
+	}
+
+	w := makeRequest(router, "POST", "/api/register", registerBody, "")
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var registerResponse map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &registerResponse)
+	assert.NoError(t, err)
+
+	token := registerResponse["token"].(string)
+	user := registerResponse["user"].(map[string]interface{})
+	userID := user["id"].(string)
+
+	// Создаем категорию
+	categoryBody := map[string]interface{}{
+		"title": "Test Category for Statement",
+	}
+
+	w = makeRequest(router, "POST", "/api/categories", categoryBody, token)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var categoryResponse map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &categoryResponse)
+	assert.NoError(t, err)
+
+	categoryID := categoryResponse["id"].(string)
+
+	// Создаем statement
+	statementBody := map[string]interface{}{
+		"title":      "Test Statement",
+		"categoryId": categoryID,
+	}
+
+	w = makeRequest(router, "POST", "/api/statements", statementBody, token)
+
+	t.Logf("Status: %d", w.Code)
+	t.Logf("Response body: %s", w.Body.String())
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(t, err)
+
+	t.Logf("Create Statement Response: %+v", response)
+
+	assert.Contains(t, response, "id")
+	assert.Equal(t, "Test Statement", response["title"])
+	assert.Equal(t, userID, response["userId"])
+	assert.Equal(t, categoryID, response["categoryId"])
 }
