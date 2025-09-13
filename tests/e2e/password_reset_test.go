@@ -360,7 +360,7 @@ func TestOTPExpiration(t *testing.T) {
 		require.NotNil(t, otpRecord)
 
 		// Обновляем время истечения на прошлое время
-		expiredTime := time.Now().Add(-1 * time.Hour).Format(time.RFC3339)
+		expiredTime := time.Now().Add(-1 * time.Hour)
 		err = otpCRUD.UpdateOTPExpiration(otpRecord.ID, expiredTime)
 		require.NoError(t, err)
 	})
