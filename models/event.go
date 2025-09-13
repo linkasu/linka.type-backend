@@ -1,4 +1,4 @@
-/package models
+package models
 
 // Event represents an event in the system
 type Event struct {
