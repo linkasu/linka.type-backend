@@ -89,7 +89,12 @@ func VerifyPasswordResetOTP(c *gin.Context) {
 	otpCRUD := &repositories.OTPCRUD{}
 	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		// Если OTP не найден, это ошибка клиента (400), иначе внутренняя ошибка (500)
+		if err.Error() == "OTP not found" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired OTP code"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		}
 		return
 	}
 
@@ -146,7 +151,12 @@ func ConfirmPasswordReset(c *gin.Context) {
 	otpCRUD := &repositories.OTPCRUD{}
 	otpRecord, err := otpCRUD.GetOTPByCodeAnyStatus(req.Code, req.Email, "reset_password")
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		// Если OTP не найден, это ошибка клиента (400), иначе внутренняя ошибка (500)
+		if err.Error() == "OTP not found" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid or expired OTP code"})
+		} else {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		}
 		return
 	}
 

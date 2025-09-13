@@ -19,10 +19,11 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-
-    - name: Run tests with Docker Compose
+    - name: Build docker image
       run: |
         docker compose --profile test build
+    - name: Run tests with Docker Compose
+      run: |
         docker compose --profile test run --rm go-tests
       env:
         JWT_SECRET: test-jwt-secret-for-ci
