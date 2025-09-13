@@ -1,4 +1,4 @@
-package fb
+package auth
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"os"
 )
 
-// FirebaseAuthResponse represents the response from Firebase Authentication API
+// FirebaseAuthResponse представляет ответ от Firebase Authentication API
 type FirebaseAuthResponse struct {
 	IDToken      string `json:"idToken"`
 	Email        string `json:"email"`
@@ -19,13 +19,14 @@ type FirebaseAuthResponse struct {
 	Registered   bool   `json:"registered"`
 }
 
-// FirebaseAuthRequest represents the request to Firebase Authentication API
+// FirebaseAuthRequest представляет запрос к Firebase Authentication API
 type FirebaseAuthRequest struct {
 	Email             string `json:"email"`
 	Password          string `json:"password"`
 	ReturnSecureToken bool   `json:"returnSecureToken"`
 }
 
+// CheckPassword проверяет пароль в Firebase
 func CheckPassword(email, password string) (*FirebaseAuthResponse, error) {
 	// Get Firebase API key from environment variable
 	apiKey := os.Getenv("FIREBASE_API_KEY")

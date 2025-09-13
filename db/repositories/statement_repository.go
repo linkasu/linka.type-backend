@@ -1,0 +1,231 @@
+package repositories
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+
+	"linka.type-backend/database"
+	"linka.type-backend/models"
+)
+
+// StatementRepository provides CRUD operations for Statement entity
+type StatementRepository struct{}
+
+// NewStatementRepository creates a new StatementRepository
+func NewStatementRepository() *StatementRepository {
+	return &StatementRepository{}
+}
+
+// CreateStatement creates a new statement
+func (s *StatementRepository) CreateStatement(statement *models.Statement) error {
+	query := `
+		INSERT INTO statements (id, title, user_id, category_id, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`
+
+	now := time.Now()
+	_, err := database.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now, now)
+	if err != nil {
+		return fmt.Errorf("error creating statement: %v", err)
+	}
+	statement.CreatedAt = now.Format(time.RFC3339)
+	statement.UpdatedAt = statement.CreatedAt
+	return nil
+}
+
+// GetStatementByID retrieves a statement by ID
+func (s *StatementRepository) GetStatementByID(id string) (*models.Statement, error) {
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE id = $1`
+
+	var statement models.Statement
+	err := database.DB.QueryRow(query, id).Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("statement not found")
+		}
+		return nil, fmt.Errorf("error getting statement: %v", err)
+	}
+
+	return &statement, nil
+}
+
+// GetStatementsByUserID retrieves all statements for a specific user
+func (s *StatementRepository) GetStatementsByUserID(userID string) ([]*models.Statement, error) {
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE user_id = $1 ORDER BY created_at DESC`
+
+	rows, err := database.DB.Query(query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting statements: %v", err)
+	}
+	defer rows.Close()
+
+	var statements []*models.Statement
+	for rows.Next() {
+		var statement models.Statement
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("error scanning statement: %v", err)
+		}
+		statements = append(statements, &statement)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating statements: %v", err)
+	}
+
+	return statements, nil
+}
+
+// GetStatementsByCategoryID retrieves all statements for a specific category
+func (s *StatementRepository) GetStatementsByCategoryID(categoryID string) ([]*models.Statement, error) {
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE category_id = $1 ORDER BY created_at DESC`
+
+	rows, err := database.DB.Query(query, categoryID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting statements: %v", err)
+	}
+	defer rows.Close()
+
+	var statements []*models.Statement
+	for rows.Next() {
+		var statement models.Statement
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("error scanning statement: %v", err)
+		}
+		statements = append(statements, &statement)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating statements: %v", err)
+	}
+
+	return statements, nil
+}
+
+// GetAllStatements retrieves all statements
+func (s *StatementRepository) GetAllStatements() ([]*models.Statement, error) {
+	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements ORDER BY created_at DESC`
+
+	rows, err := database.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("error getting statements: %v", err)
+	}
+	defer rows.Close()
+
+	var statements []*models.Statement
+	for rows.Next() {
+		var statement models.Statement
+		if err := rows.Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("error scanning statement: %v", err)
+		}
+		statements = append(statements, &statement)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating statements: %v", err)
+	}
+
+	return statements, nil
+}
+
+// UpdateStatement updates an existing statement
+func (s *StatementRepository) UpdateStatement(statement *models.Statement) error {
+	query := `
+		UPDATE statements 
+		SET title = $2, user_id = $3, category_id = $4, updated_at = $5
+		WHERE id = $1
+	`
+
+	now := time.Now()
+	result, err := database.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now)
+	if err != nil {
+		return fmt.Errorf("error updating statement: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("statement not found")
+	}
+	statement.UpdatedAt = now.Format(time.RFC3339)
+	return nil
+}
+
+// DeleteStatement deletes a statement by ID
+func (s *StatementRepository) DeleteStatement(id string) error {
+	query := `DELETE FROM statements WHERE id = $1`
+
+	result, err := database.DB.Exec(query, id)
+	if err != nil {
+		return fmt.Errorf("error deleting statement: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("statement not found")
+	}
+
+	return nil
+}
+
+// DeleteStatementsByUserID deletes all statements for a specific user
+func (s *StatementRepository) DeleteStatementsByUserID(userID string) error {
+	query := `DELETE FROM statements WHERE user_id = $1`
+
+	result, err := database.DB.Exec(query, userID)
+	if err != nil {
+		return fmt.Errorf("error deleting statements: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no statements found for user")
+	}
+
+	return nil
+}
+
+// DeleteStatementsByCategoryID deletes all statements for a specific category
+func (s *StatementRepository) DeleteStatementsByCategoryID(categoryID string) error {
+	query := `DELETE FROM statements WHERE category_id = $1`
+
+	result, err := database.DB.Exec(query, categoryID)
+	if err != nil {
+		return fmt.Errorf("error deleting statements: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("no statements found for category")
+	}
+
+	return nil
+}
+
+// StatementExists checks if a statement exists by ID
+func (s *StatementRepository) StatementExists(id string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM statements WHERE id = $1)`
+
+	var exists bool
+	err := database.DB.QueryRow(query, id).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("error checking statement existence: %v", err)
+	}
+
+	return exists, nil
+}

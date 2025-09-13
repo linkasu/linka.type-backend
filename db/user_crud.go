@@ -1,188 +1,63 @@
 package db
 
 import (
-	"database/sql"
-	"fmt"
-	"time"
+	"linka.type-backend/db/repositories"
 )
 
 // UserCRUD provides CRUD operations for User entity
-type UserCRUD struct{}
+// This is a wrapper around UserRepository for backward compatibility
+type UserCRUD struct {
+	repo *repositories.UserRepository
+}
+
+// NewUserCRUD creates a new UserCRUD
+func NewUserCRUD() *UserCRUD {
+	return &UserCRUD{
+		repo: repositories.NewUserRepository(),
+	}
+}
 
 // CreateUser creates a new user
 func (u *UserCRUD) CreateUser(user *User) error {
-	query := `
-		INSERT INTO users (id, email, password, email_verified, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`
-
-	now := time.Now()
-	_, err := DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now, now)
-	if err != nil {
-		return fmt.Errorf("error creating user: %v", err)
-	}
-
-	return nil
+	return u.repo.CreateUser(user)
 }
 
 // GetUserByID retrieves a user by ID
 func (u *UserCRUD) GetUserByID(id string) (*User, error) {
-	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users WHERE id = $1`
-
-	var user User
-	err := DB.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
-		}
-		return nil, fmt.Errorf("error getting user: %v", err)
-	}
-
-	return &user, nil
+	return u.repo.GetUserByID(id)
 }
 
 // GetUserByEmail retrieves a user by email
 func (u *UserCRUD) GetUserByEmail(email string) (*User, error) {
-	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users WHERE email = $1`
-
-	var user User
-	err := DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("user not found")
-		}
-		return nil, fmt.Errorf("error getting user: %v", err)
-	}
-
-	return &user, nil
+	return u.repo.GetUserByEmail(email)
 }
 
 // GetAllUsers retrieves all users
 func (u *UserCRUD) GetAllUsers() ([]*User, error) {
-	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users ORDER BY created_at DESC`
-
-	rows, err := DB.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("error getting users: %v", err)
-	}
-	defer rows.Close()
-
-	var users []*User
-	for rows.Next() {
-		var user User
-		if err := rows.Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("error scanning user: %v", err)
-		}
-		users = append(users, &user)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating users: %v", err)
-	}
-
-	return users, nil
+	return u.repo.GetAllUsers()
 }
 
 // UpdateUser updates an existing user
 func (u *UserCRUD) UpdateUser(user *User) error {
-	query := `
-		UPDATE users 
-		SET email = $2, password = $3, email_verified = $4, updated_at = $5
-		WHERE id = $1
-	`
-
-	now := time.Now()
-	result, err := DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now)
-	if err != nil {
-		return fmt.Errorf("error updating user: %v", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error getting rows affected: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("user not found")
-	}
-
-	return nil
+	return u.repo.UpdateUser(user)
 }
 
 // DeleteUser deletes a user by ID
 func (u *UserCRUD) DeleteUser(id string) error {
-	query := `DELETE FROM users WHERE id = $1`
-
-	result, err := DB.Exec(query, id)
-	if err != nil {
-		return fmt.Errorf("error deleting user: %v", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error getting rows affected: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("user not found")
-	}
-
-	return nil
+	return u.repo.DeleteUser(id)
 }
 
 // UserExists checks if a user exists by email
 func (u *UserCRUD) UserExists(email string) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
-
-	var exists bool
-	err := DB.QueryRow(query, email).Scan(&exists)
-	if err != nil {
-		return false, fmt.Errorf("error checking user existence: %v", err)
-	}
-
-	return exists, nil
+	return u.repo.UserExists(email)
 }
 
 // VerifyUserEmail marks user email as verified
 func (u *UserCRUD) VerifyUserEmail(userID string) error {
-	query := `UPDATE users SET email_verified = true, updated_at = $2 WHERE id = $1`
-
-	now := time.Now()
-	result, err := DB.Exec(query, userID, now)
-	if err != nil {
-		return fmt.Errorf("error verifying user email: %v", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error getting rows affected: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("user not found")
-	}
-
-	return nil
+	return u.repo.VerifyUserEmail(userID)
 }
 
 // UpdateUserPassword updates user password
 func (u *UserCRUD) UpdateUserPassword(userID, newPassword string) error {
-	query := `UPDATE users SET password = $2, updated_at = $3 WHERE id = $1`
-
-	now := time.Now()
-	result, err := DB.Exec(query, userID, newPassword, now)
-	if err != nil {
-		return fmt.Errorf("error updating user password: %v", err)
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("error getting rows affected: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("user not found")
-	}
-
-	return nil
+	return u.repo.UpdateUserPassword(userID, newPassword)
 }
