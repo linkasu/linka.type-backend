@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"linka.type-backend/auth"
-	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 
 	"github.com/gin-gonic/gin"
 )
@@ -27,7 +27,7 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	// Получаем пользователя из базы данных
-	userCRUD := &db.UserCRUD{}
+	userCRUD := &repositories.UserCRUD{}
 	user, err := userCRUD.GetUserByEmail(claims.Email)
 	if err != nil {
 		log.Printf("User not found for refresh token: %s", claims.Email)

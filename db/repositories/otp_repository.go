@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"linka.type-backend/database"
+	"linka.type-backend/db"
 	"linka.type-backend/models"
 )
 
@@ -24,7 +24,7 @@ func (o *OTPRepository) CreateOTP(otp *models.OTPCode) error {
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`
 
-	_, err := database.DB.Exec(query, otp.ID, otp.Email, otp.Code, otp.Type, otp.ExpiresAt, otp.Used, otp.CreatedAt)
+	_, err := db.DB.Exec(query, otp.ID, otp.Email, otp.Code, otp.Type, otp.ExpiresAt, otp.Used, otp.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("error creating OTP: %v", err)
 	}
@@ -37,7 +37,7 @@ func (o *OTPRepository) GetOTPByCode(code, email, otpType string) (*models.OTPCo
 	query := `SELECT id, email, code, type, expires_at, used, created_at FROM otp_codes WHERE code = $1 AND email = $2 AND type = $3 AND used = false`
 
 	var otp models.OTPCode
-	err := database.DB.QueryRow(query, code, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
+	err := db.DB.QueryRow(query, code, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("OTP not found")
@@ -53,7 +53,7 @@ func (o *OTPRepository) GetOTPByCodeAnyStatus(code, email, otpType string) (*mod
 	query := `SELECT id, email, code, type, expires_at, used, created_at FROM otp_codes WHERE code = $1 AND email = $2 AND type = $3`
 
 	var otp models.OTPCode
-	err := database.DB.QueryRow(query, code, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
+	err := db.DB.QueryRow(query, code, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("OTP not found")
@@ -68,7 +68,7 @@ func (o *OTPRepository) GetOTPByCodeAnyStatus(code, email, otpType string) (*mod
 func (o *OTPRepository) MarkOTPAsUsed(id string) error {
 	query := `UPDATE otp_codes SET used = true WHERE id = $1`
 
-	result, err := database.DB.Exec(query, id)
+	result, err := db.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error marking OTP as used: %v", err)
 	}
@@ -89,7 +89,7 @@ func (o *OTPRepository) MarkOTPAsUsed(id string) error {
 func (o *OTPRepository) DeleteOTPByEmail(email string) error {
 	query := `DELETE FROM otp_codes WHERE email = $1`
 
-	result, err := database.DB.Exec(query, email)
+	result, err := db.DB.Exec(query, email)
 	if err != nil {
 		return fmt.Errorf("error deleting OTP codes: %v", err)
 	}
@@ -111,7 +111,7 @@ func (o *OTPRepository) DeleteExpiredOTPs() error {
 	query := `DELETE FROM otp_codes WHERE expires_at < $1`
 
 	now := time.Now().Format(time.RFC3339)
-	result, err := database.DB.Exec(query, now)
+	result, err := db.DB.Exec(query, now)
 	if err != nil {
 		return fmt.Errorf("error deleting expired OTP codes: %v", err)
 	}
@@ -129,7 +129,7 @@ func (o *OTPRepository) GetOTPByID(id string) (*models.OTPCode, error) {
 	query := `SELECT id, email, code, type, expires_at, used, created_at FROM otp_codes WHERE id = $1`
 
 	var otp models.OTPCode
-	err := database.DB.QueryRow(query, id).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
+	err := db.DB.QueryRow(query, id).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("OTP not found")
@@ -147,7 +147,7 @@ func (o *OTPRepository) GetOTPByEmailAndType(email, otpType string) (*models.OTP
 			  ORDER BY created_at DESC LIMIT 1`
 
 	var otp models.OTPCode
-	err := database.DB.QueryRow(query, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
+	err := db.DB.QueryRow(query, email, otpType).Scan(&otp.ID, &otp.Email, &otp.Code, &otp.Type, &otp.ExpiresAt, &otp.Used, &otp.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("OTP not found")
@@ -162,7 +162,7 @@ func (o *OTPRepository) GetOTPByEmailAndType(email, otpType string) (*models.OTP
 func (o *OTPRepository) UpdateOTPExpiration(id string, newExpiration time.Time) error {
 	query := `UPDATE otp_codes SET expires_at = $1 WHERE id = $2`
 
-	result, err := database.DB.Exec(query, newExpiration, id)
+	result, err := db.DB.Exec(query, newExpiration, id)
 	if err != nil {
 		return fmt.Errorf("error updating OTP expiration: %v", err)
 	}

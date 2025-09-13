@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 	"linka.type-backend/mail"
 	"linka.type-backend/otp"
 	"linka.type-backend/utils"
@@ -22,7 +23,7 @@ func RequestPasswordReset(c *gin.Context) {
 	}
 
 	// Проверяем, существует ли пользователь
-	userCRUD := &db.UserCRUD{}
+	userCRUD := &repositories.UserCRUD{}
 	_, err := userCRUD.GetUserByEmail(req.Email)
 	if err != nil {
 		// Не раскрываем информацию о существовании пользователя
@@ -169,7 +170,7 @@ func ConfirmPasswordReset(c *gin.Context) {
 	// На шаге confirm повторная проверка used не блокирует, т.к. verify уже мог отметить код
 
 	// Получаем пользователя
-	userCRUD := &db.UserCRUD{}
+	userCRUD := &repositories.UserCRUD{}
 	user, err := userCRUD.GetUserByEmail(req.Email)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})

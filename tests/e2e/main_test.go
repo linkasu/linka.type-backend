@@ -18,6 +18,10 @@ import (
 
 // clearTestDatabase очищает тестовую базу данных
 func clearTestDatabase() error {
+	if db.DB == nil {
+		return fmt.Errorf("database not initialized")
+	}
+
 	// Очищаем таблицы в правильном порядке (из-за внешних ключей)
 	tables := []string{"statements", "categories", "users"}
 	for _, table := range tables {

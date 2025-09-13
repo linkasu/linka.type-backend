@@ -5,14 +5,15 @@ import (
 	"net/http"
 
 	"linka.type-backend/bl"
-	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 	"linka.type-backend/fb"
+	"linka.type-backend/models"
 
 	"github.com/gin-gonic/gin"
 )
 
 // importFirebaseData импортирует данные из Firebase
-func importFirebaseData(email, password string, user *db.User, userCRUD *db.UserCRUD, c *gin.Context) {
+func importFirebaseData(email, password string, user *models.User, userCRUD *repositories.UserCRUD, c *gin.Context) {
 	fbUser, err := fb.GetUser(email)
 	if err == nil && fbUser != nil {
 		importResult, err := bl.ImportAllData(email, password)

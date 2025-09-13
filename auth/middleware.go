@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 
 	"github.com/gin-gonic/gin"
 )
@@ -53,7 +53,7 @@ func EmailVerifiedMiddleware() gin.HandlerFunc {
 		}
 
 		// Получаем пользователя из базы данных
-		userCRUD := &db.UserCRUD{}
+		userCRUD := &repositories.UserCRUD{}
 		user, err := userCRUD.GetUserByID(userID.(string))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})

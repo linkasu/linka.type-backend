@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"linka.type-backend/database"
+	"linka.type-backend/db"
 	"linka.type-backend/models"
 )
 
@@ -25,7 +25,7 @@ func (s *StatementRepository) CreateStatement(statement *models.Statement) error
 	`
 
 	now := time.Now()
-	_, err := database.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now, now)
+	_, err := db.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now, now)
 	if err != nil {
 		return fmt.Errorf("error creating statement: %v", err)
 	}
@@ -39,7 +39,7 @@ func (s *StatementRepository) GetStatementByID(id string) (*models.Statement, er
 	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE id = $1`
 
 	var statement models.Statement
-	err := database.DB.QueryRow(query, id).Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt)
+	err := db.DB.QueryRow(query, id).Scan(&statement.ID, &statement.Title, &statement.UserID, &statement.CategoryID, &statement.CreatedAt, &statement.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("statement not found")
@@ -54,7 +54,7 @@ func (s *StatementRepository) GetStatementByID(id string) (*models.Statement, er
 func (s *StatementRepository) GetStatementsByUserID(userID string) ([]*models.Statement, error) {
 	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE user_id = $1 ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query, userID)
+	rows, err := db.DB.Query(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting statements: %v", err)
 	}
@@ -80,7 +80,7 @@ func (s *StatementRepository) GetStatementsByUserID(userID string) ([]*models.St
 func (s *StatementRepository) GetStatementsByCategoryID(categoryID string) ([]*models.Statement, error) {
 	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements WHERE category_id = $1 ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query, categoryID)
+	rows, err := db.DB.Query(query, categoryID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting statements: %v", err)
 	}
@@ -106,7 +106,7 @@ func (s *StatementRepository) GetStatementsByCategoryID(categoryID string) ([]*m
 func (s *StatementRepository) GetAllStatements() ([]*models.Statement, error) {
 	query := `SELECT id, title, user_id, category_id, created_at, updated_at FROM statements ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query)
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting statements: %v", err)
 	}
@@ -137,7 +137,7 @@ func (s *StatementRepository) UpdateStatement(statement *models.Statement) error
 	`
 
 	now := time.Now()
-	result, err := database.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now)
+	result, err := db.DB.Exec(query, statement.ID, statement.Title, statement.UserID, statement.CategoryID, now)
 	if err != nil {
 		return fmt.Errorf("error updating statement: %v", err)
 	}
@@ -158,7 +158,7 @@ func (s *StatementRepository) UpdateStatement(statement *models.Statement) error
 func (s *StatementRepository) DeleteStatement(id string) error {
 	query := `DELETE FROM statements WHERE id = $1`
 
-	result, err := database.DB.Exec(query, id)
+	result, err := db.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting statement: %v", err)
 	}
@@ -179,7 +179,7 @@ func (s *StatementRepository) DeleteStatement(id string) error {
 func (s *StatementRepository) DeleteStatementsByUserID(userID string) error {
 	query := `DELETE FROM statements WHERE user_id = $1`
 
-	result, err := database.DB.Exec(query, userID)
+	result, err := db.DB.Exec(query, userID)
 	if err != nil {
 		return fmt.Errorf("error deleting statements: %v", err)
 	}
@@ -200,7 +200,7 @@ func (s *StatementRepository) DeleteStatementsByUserID(userID string) error {
 func (s *StatementRepository) DeleteStatementsByCategoryID(categoryID string) error {
 	query := `DELETE FROM statements WHERE category_id = $1`
 
-	result, err := database.DB.Exec(query, categoryID)
+	result, err := db.DB.Exec(query, categoryID)
 	if err != nil {
 		return fmt.Errorf("error deleting statements: %v", err)
 	}
@@ -222,7 +222,7 @@ func (s *StatementRepository) StatementExists(id string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM statements WHERE id = $1)`
 
 	var exists bool
-	err := database.DB.QueryRow(query, id).Scan(&exists)
+	err := db.DB.QueryRow(query, id).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("error checking statement existence: %v", err)
 	}

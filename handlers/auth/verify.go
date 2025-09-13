@@ -7,6 +7,7 @@ import (
 
 	"linka.type-backend/auth"
 	"linka.type-backend/db"
+	"linka.type-backend/db/repositories"
 	"linka.type-backend/mail"
 	"linka.type-backend/otp"
 
@@ -53,7 +54,7 @@ func VerifyEmail(c *gin.Context) {
 	}
 
 	// Получаем пользователя
-	userCRUD := &db.UserCRUD{}
+	userCRUD := &repositories.UserCRUD{}
 	user, err := userCRUD.GetUserByEmail(req.Email)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})

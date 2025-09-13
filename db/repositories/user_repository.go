@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"linka.type-backend/database"
+	"linka.type-backend/db"
 	"linka.type-backend/models"
 )
 
@@ -25,7 +25,7 @@ func (u *UserRepository) CreateUser(user *models.User) error {
 	`
 
 	now := time.Now()
-	_, err := database.DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now, now)
+	_, err := db.DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now, now)
 	if err != nil {
 		return fmt.Errorf("error creating user: %v", err)
 	}
@@ -38,7 +38,7 @@ func (u *UserRepository) GetUserByID(id string) (*models.User, error) {
 	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users WHERE id = $1`
 
 	var user models.User
-	err := database.DB.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	err := db.DB.QueryRow(query, id).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
@@ -54,7 +54,7 @@ func (u *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users WHERE email = $1`
 
 	var user models.User
-	err := database.DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
+	err := db.DB.QueryRow(query, email).Scan(&user.ID, &user.Email, &user.Password, &user.EmailVerified, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
@@ -69,7 +69,7 @@ func (u *UserRepository) GetUserByEmail(email string) (*models.User, error) {
 func (u *UserRepository) GetAllUsers() ([]*models.User, error) {
 	query := `SELECT id, email, password, email_verified, created_at, updated_at FROM users ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query)
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting users: %v", err)
 	}
@@ -100,7 +100,7 @@ func (u *UserRepository) UpdateUser(user *models.User) error {
 	`
 
 	now := time.Now()
-	result, err := database.DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now)
+	result, err := db.DB.Exec(query, user.ID, user.Email, user.Password, user.EmailVerified, now)
 	if err != nil {
 		return fmt.Errorf("error updating user: %v", err)
 	}
@@ -121,7 +121,7 @@ func (u *UserRepository) UpdateUser(user *models.User) error {
 func (u *UserRepository) DeleteUser(id string) error {
 	query := `DELETE FROM users WHERE id = $1`
 
-	result, err := database.DB.Exec(query, id)
+	result, err := db.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting user: %v", err)
 	}
@@ -143,7 +143,7 @@ func (u *UserRepository) UserExists(email string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
 
 	var exists bool
-	err := database.DB.QueryRow(query, email).Scan(&exists)
+	err := db.DB.QueryRow(query, email).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("error checking user existence: %v", err)
 	}
@@ -156,7 +156,7 @@ func (u *UserRepository) VerifyUserEmail(userID string) error {
 	query := `UPDATE users SET email_verified = true, updated_at = $2 WHERE id = $1`
 
 	now := time.Now()
-	result, err := database.DB.Exec(query, userID, now)
+	result, err := db.DB.Exec(query, userID, now)
 	if err != nil {
 		return fmt.Errorf("error verifying user email: %v", err)
 	}
@@ -178,7 +178,7 @@ func (u *UserRepository) UpdateUserPassword(userID, newPassword string) error {
 	query := `UPDATE users SET password = $2, updated_at = $3 WHERE id = $1`
 
 	now := time.Now()
-	result, err := database.DB.Exec(query, userID, newPassword, now)
+	result, err := db.DB.Exec(query, userID, newPassword, now)
 	if err != nil {
 		return fmt.Errorf("error updating user password: %v", err)
 	}

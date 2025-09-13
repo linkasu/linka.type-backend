@@ -1,58 +1,58 @@
-package db
+package repositories
 
 import (
-	"linka.type-backend/db/repositories"
+	"linka.type-backend/models"
 )
 
 // CategoryCRUD provides CRUD operations for Category entity
 // This is a wrapper around CategoryRepository for backward compatibility
 type CategoryCRUD struct {
-	repo *repositories.CategoryRepository
+	repo *models.CategoryRepository
 }
 
 // NewCategoryCRUD creates a new CategoryCRUD
-func NewCategoryCRUD() *CategoryCRUD {
+func NewCategoryCRUD() *models.CategoryCRUD {
 	return &CategoryCRUD{
-		repo: repositories.NewCategoryRepository(),
+		repo: NewCategoryRepository(),
 	}
 }
 
 // CreateCategory creates a new category
-func (c *CategoryCRUD) CreateCategory(category *Category) error {
+func (c *models.CategoryCRUD) CreateCategory(category *models.Category) error {
 	return c.repo.CreateCategory(category)
 }
 
 // GetCategoryByID retrieves a category by ID
-func (c *CategoryCRUD) GetCategoryByID(id string) (*Category, error) {
+func (c *models.CategoryCRUD) GetCategoryByID(id string) (*models.Category, error) {
 	return c.repo.GetCategoryByID(id)
 }
 
 // GetCategoriesByUserID retrieves all categories for a specific user
-func (c *CategoryCRUD) GetCategoriesByUserID(userID string) ([]*Category, error) {
+func (c *models.CategoryCRUD) GetCategoriesByUserID(userID string) ([]*models.Category, error) {
 	return c.repo.GetCategoriesByUserID(userID)
 }
 
 // GetAllCategories retrieves all categories
-func (c *CategoryCRUD) GetAllCategories() ([]*Category, error) {
+func (c *models.CategoryCRUD) GetAllCategories() ([]*models.Category, error) {
 	return c.repo.GetAllCategories()
 }
 
 // UpdateCategory updates an existing category
-func (c *CategoryCRUD) UpdateCategory(category *Category) error {
+func (c *models.CategoryCRUD) UpdateCategory(category *models.Category) error {
 	return c.repo.UpdateCategory(category)
 }
 
 // DeleteCategory deletes a category by ID
-func (c *CategoryCRUD) DeleteCategory(id string) error {
+func (c *models.CategoryCRUD) DeleteCategory(id string) error {
 	return c.repo.DeleteCategory(id)
 }
 
 // DeleteCategoriesByUserID deletes all categories for a specific user
-func (c *CategoryCRUD) DeleteCategoriesByUserID(userID string) error {
+func (c *models.CategoryCRUD) DeleteCategoriesByUserID(userID string) error {
 	return c.repo.DeleteCategoriesByUserID(userID)
 }
 
 // CategoryExists checks if a category exists by ID
-func (c *CategoryCRUD) CategoryExists(id string) (bool, error) {
+func (c *models.CategoryCRUD) CategoryExists(id string) (bool, error) {
 	return c.repo.CategoryExists(id)
 }

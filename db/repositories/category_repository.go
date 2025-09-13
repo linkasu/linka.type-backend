@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"linka.type-backend/database"
+	"linka.type-backend/db"
 	"linka.type-backend/models"
 )
 
@@ -25,7 +25,7 @@ func (c *CategoryRepository) CreateCategory(category *models.Category) error {
 	`
 
 	now := time.Now()
-	_, err := database.DB.Exec(query, category.ID, category.Title, category.UserID, now, now)
+	_, err := db.DB.Exec(query, category.ID, category.Title, category.UserID, now, now)
 	if err != nil {
 		return fmt.Errorf("error creating category: %v", err)
 	}
@@ -39,7 +39,7 @@ func (c *CategoryRepository) GetCategoryByID(id string) (*models.Category, error
 	query := `SELECT id, title, user_id, created_at, updated_at FROM categories WHERE id = $1`
 
 	var category models.Category
-	err := database.DB.QueryRow(query, id).Scan(&category.ID, &category.Title, &category.UserID, &category.CreatedAt, &category.UpdatedAt)
+	err := db.DB.QueryRow(query, id).Scan(&category.ID, &category.Title, &category.UserID, &category.CreatedAt, &category.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("category not found")
@@ -54,7 +54,7 @@ func (c *CategoryRepository) GetCategoryByID(id string) (*models.Category, error
 func (c *CategoryRepository) GetCategoriesByUserID(userID string) ([]*models.Category, error) {
 	query := `SELECT id, title, user_id, created_at, updated_at FROM categories WHERE user_id = $1 ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query, userID)
+	rows, err := db.DB.Query(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting categories: %v", err)
 	}
@@ -80,7 +80,7 @@ func (c *CategoryRepository) GetCategoriesByUserID(userID string) ([]*models.Cat
 func (c *CategoryRepository) GetAllCategories() ([]*models.Category, error) {
 	query := `SELECT id, title, user_id, created_at, updated_at FROM categories ORDER BY created_at DESC`
 
-	rows, err := database.DB.Query(query)
+	rows, err := db.DB.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("error getting categories: %v", err)
 	}
@@ -111,7 +111,7 @@ func (c *CategoryRepository) UpdateCategory(category *models.Category) error {
 	`
 
 	now := time.Now()
-	result, err := database.DB.Exec(query, category.ID, category.Title, category.UserID, now)
+	result, err := db.DB.Exec(query, category.ID, category.Title, category.UserID, now)
 	if err != nil {
 		return fmt.Errorf("error updating category: %v", err)
 	}
@@ -132,7 +132,7 @@ func (c *CategoryRepository) UpdateCategory(category *models.Category) error {
 func (c *CategoryRepository) DeleteCategory(id string) error {
 	query := `DELETE FROM categories WHERE id = $1`
 
-	result, err := database.DB.Exec(query, id)
+	result, err := db.DB.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("error deleting category: %v", err)
 	}
@@ -153,7 +153,7 @@ func (c *CategoryRepository) DeleteCategory(id string) error {
 func (c *CategoryRepository) DeleteCategoriesByUserID(userID string) error {
 	query := `DELETE FROM categories WHERE user_id = $1`
 
-	result, err := database.DB.Exec(query, userID)
+	result, err := db.DB.Exec(query, userID)
 	if err != nil {
 		return fmt.Errorf("error deleting categories: %v", err)
 	}
@@ -175,7 +175,7 @@ func (c *CategoryRepository) CategoryExists(id string) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM categories WHERE id = $1)`
 
 	var exists bool
-	err := database.DB.QueryRow(query, id).Scan(&exists)
+	err := db.DB.QueryRow(query, id).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("error checking category existence: %v", err)
 	}
