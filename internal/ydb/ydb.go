@@ -11,7 +11,8 @@ import (
 
 // Client wraps YDB driver and table client.
 type Client struct {
-	driver *ydb.Driver
+	driver   *ydb.Driver
+	database string
 }
 
 // New creates a YDB client.
@@ -32,12 +33,17 @@ func New(ctx context.Context, cfg config.YDBConfig) (*Client, error) {
 		return nil, fmt.Errorf("open ydb: %w", err)
 	}
 
-	return &Client{driver: driver}, nil
+	return &Client{driver: driver, database: cfg.Database}, nil
 }
 
 // Table returns a table client.
 func (c *Client) Table() table.Client {
 	return c.driver.Table()
+}
+
+// Database returns the configured database path.
+func (c *Client) Database() string {
+	return c.database
 }
 
 // Close shuts down the driver.

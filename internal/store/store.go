@@ -17,7 +17,7 @@ type Store interface {
 
 	ListStatements(ctx context.Context, userID, categoryID string) ([]models.Statement, error)
 	UpsertStatement(ctx context.Context, userID string, statement models.Statement) (models.Statement, error)
-	DeleteStatement(ctx context.Context, userID, statementID string, updatedAt int64) error
+	DeleteStatement(ctx context.Context, userID, categoryID, statementID string, updatedAt int64) error
 
 	GetUserState(ctx context.Context, userID string) (models.UserState, error)
 	SetUserState(ctx context.Context, userID string, state models.UserState, updatedAt int64) (models.UserState, error)
@@ -41,7 +41,7 @@ type LegacyWriter interface {
 	UpsertCategory(ctx context.Context, userID string, category models.Category) error
 	DeleteCategory(ctx context.Context, userID, categoryID string) error
 	UpsertStatement(ctx context.Context, userID string, statement models.Statement) error
-	DeleteStatement(ctx context.Context, userID, statementID string) error
+	DeleteStatement(ctx context.Context, userID, categoryID, statementID string) error
 	SetUserState(ctx context.Context, userID string, state models.UserState) error
 	SetQuickes(ctx context.Context, userID string, quickes []string) error
 	ImportGlobalCategory(ctx context.Context, userID, categoryID string) error
