@@ -46,3 +46,12 @@ type LegacyWriter interface {
 	SetQuickes(ctx context.Context, userID string, quickes []string) error
 	ImportGlobalCategory(ctx context.Context, userID, categoryID string) error
 }
+
+// LegacyReader reads data from Firebase RTDB for seeding and sync.
+type LegacyReader interface {
+	FetchUserData(ctx context.Context, userID string) ([]models.Category, []models.Statement, error)
+	GetUserState(ctx context.Context, userID string) (models.UserState, error)
+	ListGlobalCategories(ctx context.Context) ([]models.GlobalCategory, error)
+	ListFactoryQuestions(ctx context.Context) ([]models.FactoryQuestion, error)
+	IsAdmin(ctx context.Context, userID string) (bool, error)
+}
