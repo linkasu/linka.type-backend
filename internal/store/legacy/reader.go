@@ -188,7 +188,7 @@ func (r *Reader) ListGlobalCategories(ctx context.Context) ([]models.GlobalCateg
 // ListFactoryQuestions returns onboarding question templates.
 func (r *Reader) ListFactoryQuestions(ctx context.Context) ([]models.FactoryQuestion, error) {
 	ref := r.db.NewRef("factory/questions")
-	var raw map[string]firebaseQuestion
+	var raw any
 	if err := ref.Get(ctx, &raw); err != nil {
 		return nil, err
 	}
@@ -196,18 +196,87 @@ func (r *Reader) ListFactoryQuestions(ctx context.Context) ([]models.FactoryQues
 		return nil, nil
 	}
 
-	questions := make([]models.FactoryQuestion, 0, len(raw))
-	for key, q := range raw {
-		questions = append(questions, models.FactoryQuestion{
-			ID:         key,
-			Label:      q.Label,
-			Phrases:    q.Phrases,
-			Category:   q.Category,
-			Type:       q.Type,
-			OrderIndex: q.OrderIndex,
-		})
-	}
+	questions := parseFactoryQuestions(raw)
+	sort.Slice(questions, func(i, j int) bool {
+		return questions[i].OrderIndex < questions[j].OrderIndex
+	})
 	return questions, nil
+}
+
+func parseFactoryQuestions(raw any) []models.FactoryQuestion {
+	questions := make([]models.FactoryQuestion, 0)
+	switch value := raw.(type) {
+	case []any:
+		for idx, item := range value {
+			q := questionFromAny(item)
+			if q.ID == "" {
+				q.ID = fmt.Sprintf("%d", idx)
+			}
+			if q.OrderIndex == 0 {
+				q.OrderIndex = idx
+			}
+			questions = append(questions, q)
+		}
+	case map[string]any:
+		idx := 0
+		for key, item := range value {
+			q := questionFromAny(item)
+			if q.ID == "" {
+				q.ID = key
+			}
+			if q.OrderIndex == 0 {
+				q.OrderIndex = idx
+			}
+			questions = append(questions, q)
+			idx++
+		}
+	}
+	return questions
+}
+
+func questionFromAny(raw any) models.FactoryQuestion {
+	data, ok := raw.(map[string]any)
+	if !ok {
+		return models.FactoryQuestion{}
+	}
+	q := models.FactoryQuestion{
+		Label:    str(data["label"], ""),
+		Category: str(data["category"], ""),
+		Type:     str(data["type"], ""),
+	}
+	if uid := str(data["uid"], ""); uid != "" {
+		q.ID = uid
+	}
+	if id := str(data["id"], ""); id != "" && q.ID == "" {
+		q.ID = id
+	}
+
+	if rawOrder, ok := data["order_index"]; ok {
+		q.OrderIndex = int(int64From(rawOrder, 0))
+	}
+	if rawOrder, ok := data["orderIndex"]; ok && q.OrderIndex == 0 {
+		q.OrderIndex = int(int64From(rawOrder, 0))
+	}
+
+	q.Phrases = toStringSlice(data["phrases"])
+	return q
+}
+
+func toStringSlice(raw any) []string {
+	switch value := raw.(type) {
+	case []string:
+		return value
+	case []any:
+		out := make([]string, 0, len(value))
+		for _, item := range value {
+			if strVal, ok := item.(string); ok {
+				out = append(out, strVal)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
 }
 
 // IsAdmin checks if a user is in the admins list.
@@ -260,6 +329,26 @@ func parseQuickes(raw any) []string {
 		return out
 	default:
 		return nil
+	}
+}
+
+func str(raw any, fallback string) string {
+	if value, ok := raw.(string); ok && value != "" {
+		return value
+	}
+	return fallback
+}
+
+func int64From(raw any, fallback int64) int64 {
+	switch value := raw.(type) {
+	case int64:
+		return value
+	case int:
+		return int64(value)
+	case float64:
+		return int64(value)
+	default:
+		return fallback
 	}
 }
 

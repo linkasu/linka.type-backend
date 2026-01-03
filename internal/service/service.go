@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"time"
 
@@ -415,6 +416,9 @@ func (s *Service) ListGlobalStatements(ctx context.Context, categoryID string) (
 func (s *Service) ImportGlobalCategory(ctx context.Context, userID, categoryID string, force bool) (string, error) {
 	status, err := s.Store.ImportGlobalCategory(ctx, userID, categoryID, force)
 	if err != nil {
+		if errors.Is(err, store.ErrNotFound) && s.LegacyReader != nil {
+			return s.importGlobalFromLegacy(ctx, userID, categoryID, force)
+		}
 		return "", err
 	}
 	if status == "exists" {
@@ -427,6 +431,58 @@ func (s *Service) ImportGlobalCategory(ctx context.Context, userID, categoryID s
 	}
 
 	return status, nil
+}
+
+func (s *Service) importGlobalFromLegacy(ctx context.Context, userID, categoryID string, force bool) (string, error) {
+	if !force {
+		if _, err := s.findCategory(ctx, userID, categoryID); err == nil {
+			return "exists", nil
+		} else if !errors.Is(err, store.ErrNotFound) {
+			return "", err
+		}
+	}
+
+	globals, err := s.LegacyReader.ListGlobalCategories(ctx)
+	if err != nil {
+		return "", err
+	}
+	var global *models.GlobalCategory
+	for i := range globals {
+		if globals[i].ID == categoryID {
+			global = &globals[i]
+			break
+		}
+	}
+	if global == nil {
+		return "", store.ErrNotFound
+	}
+
+	updatedAt := time.Now().UnixMilli()
+	cat := models.Category{
+		ID:        global.ID,
+		Label:     global.Label,
+		Created:   global.Created,
+		Default:   global.Default,
+		UpdatedAt: updatedAt,
+	}
+	if _, err := s.Store.UpsertCategory(ctx, userID, cat); err != nil {
+		return "", err
+	}
+
+	for _, stmt := range global.Statements {
+		stmt.CategoryID = global.ID
+		stmt.UpdatedAt = updatedAt
+		if _, err := s.Store.UpsertStatement(ctx, userID, stmt); err != nil {
+			return "", err
+		}
+	}
+
+	if s.LegacyWriter != nil {
+		if err := s.LegacyWriter.ImportGlobalCategory(ctx, userID, categoryID); err != nil {
+			return "", err
+		}
+	}
+	return "ok", nil
 }
 
 // ListFactoryQuestions returns onboarding question templates.
