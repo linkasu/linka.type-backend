@@ -1,0 +1,105 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
+  CORE_API_CONTAINER: ${{ secrets.CORE_API_CONTAINER }}
+  REALTIME_CONTAINER: ${{ secrets.REALTIME_CONTAINER }}
+  SYNC_WORKER_CONTAINER: ${{ secrets.SYNC_WORKER_CONTAINER }}
+  FIREBASE_SECRET_NAME: ${{ secrets.FIREBASE_SECRET_NAME }}
+  FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+  FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+  YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+  YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+  YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yc CLI
+        run: |
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /tmp/yc -n
+          echo "/tmp/yc/bin" >> $GITHUB_PATH
+
+      - name: Configure yc CLI
+        env:
+          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
+          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+        run: |
+          printf '%s' "$YC_SA_KEY" > /tmp/sa-key.json
+          yc config set service-account-key /tmp/sa-key.json
+          yc config set cloud-id "$YC_CLOUD_ID"
+          yc config set folder-id "$YC_FOLDER_ID"
+
+      - name: Configure docker auth
+        run: yc container registry configure-docker --non-interactive
+
+      - name: Build and push core-api
+        run: |
+          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.core-api \
+            -t cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA} \
+            -t cr.yandex/${REGISTRY_ID}/linka-core-api:latest .
+          docker push cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA}
+          docker push cr.yandex/${REGISTRY_ID}/linka-core-api:latest
+
+      - name: Build and push realtime
+        run: |
+          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.realtime \
+            -t cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA} \
+            -t cr.yandex/${REGISTRY_ID}/linka-realtime:latest .
+          docker push cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA}
+          docker push cr.yandex/${REGISTRY_ID}/linka-realtime:latest
+
+      - name: Build and push sync-worker
+        run: |
+          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.sync-worker \
+            -t cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA} \
+            -t cr.yandex/${REGISTRY_ID}/linka-sync-worker:latest .
+          docker push cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA}
+          docker push cr.yandex/${REGISTRY_ID}/linka-sync-worker:latest
+
+      - name: Deploy core-api
+        run: |
+          yc serverless container revision deploy \
+            --container-name ${CORE_API_CONTAINER} \
+            --image cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA} \
+            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
+            --memory 512M \
+            --execution-timeout 60s \
+            --metadata-options gce-http-endpoint=enabled \
+            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},FEATURE_READ_SOURCE=firebase_only \
+            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
+
+      - name: Deploy realtime
+        run: |
+          yc serverless container revision deploy \
+            --container-name ${REALTIME_CONTAINER} \
+            --image cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA} \
+            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
+            --memory 512M \
+            --execution-timeout 120s \
+            --metadata-options gce-http-endpoint=enabled \
+            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},HTTP_READ_TIMEOUT=120s,HTTP_WRITE_TIMEOUT=120s,HTTP_IDLE_TIMEOUT=120s \
+            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
+
+      - name: Deploy sync-worker
+        run: |
+          yc serverless container revision deploy \
+            --container-name ${SYNC_WORKER_CONTAINER} \
+            --image cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA} \
+            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
+            --memory 512M \
+            --execution-timeout 600s \
+            --runtime task \
+            --metadata-options gce-http-endpoint=enabled \
+            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},SYNC_POLL_INTERVAL=5s,SYNC_STREAM_ENABLED=true,SYNC_STREAM_PATH=users,SYNC_STREAM_RECONNECT=5s \
+            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
