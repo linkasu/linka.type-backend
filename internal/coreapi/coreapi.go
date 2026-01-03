@@ -1,10 +1,12 @@
 package coreapi
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -48,36 +50,39 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 	r.Handle("/assets/*", assetsHandler())
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Use(httpmiddleware.Auth(verifier))
-		r.Get("/categories", api.listCategories)
-		r.Post("/categories", api.createCategory)
-		r.Patch("/categories/{id}", api.patchCategory)
-		r.Delete("/categories/{id}", api.deleteCategory)
+		r.Post("/auth", api.authToken)
+		r.Group(func(r chi.Router) {
+			r.Use(httpmiddleware.Auth(verifier))
+			r.Get("/categories", api.listCategories)
+			r.Post("/categories", api.createCategory)
+			r.Patch("/categories/{id}", api.patchCategory)
+			r.Delete("/categories/{id}", api.deleteCategory)
 
-		r.Get("/categories/{id}/statements", api.listStatements)
-		r.Post("/statements", api.createStatement)
-		r.Patch("/statements/{id}", api.patchStatement)
-		r.Delete("/statements/{id}", api.deleteStatement)
+			r.Get("/categories/{id}/statements", api.listStatements)
+			r.Post("/statements", api.createStatement)
+			r.Patch("/statements/{id}", api.patchStatement)
+			r.Delete("/statements/{id}", api.deleteStatement)
 
-		r.Get("/user/state", api.getUserState)
-		r.Put("/user/state", api.putUserState)
-		r.Get("/quickes", api.getQuickes)
-		r.Put("/quickes", api.putQuickes)
+			r.Get("/user/state", api.getUserState)
+			r.Put("/user/state", api.putUserState)
+			r.Get("/quickes", api.getQuickes)
+			r.Put("/quickes", api.putQuickes)
 
-		r.Get("/global/categories", api.listGlobalCategories)
-		r.Get("/global/categories/{id}/statements", api.listGlobalStatements)
-		r.Post("/global/import", api.importGlobal)
+			r.Get("/global/categories", api.listGlobalCategories)
+			r.Get("/global/categories/{id}/statements", api.listGlobalStatements)
+			r.Post("/global/import", api.importGlobal)
 
-		r.Get("/factory/questions", api.listFactoryQuestions)
-		r.Post("/onboarding/phrases", api.onboardingPhrases)
+			r.Get("/factory/questions", api.listFactoryQuestions)
+			r.Post("/onboarding/phrases", api.onboardingPhrases)
 
-		r.Post("/user/delete", api.deleteUser)
+			r.Post("/user/delete", api.deleteUser)
 
-		if cfg.TTS.ProxyEnabled {
-			r.Get("/voices", api.proxyVoices)
-			r.MethodFunc(http.MethodPost, "/tts", api.proxyTTS)
-			r.MethodFunc(http.MethodGet, "/tts", api.proxyTTS)
-		}
+			if cfg.TTS.ProxyEnabled {
+				r.Get("/voices", api.proxyVoices)
+				r.MethodFunc(http.MethodPost, "/tts", api.proxyTTS)
+				r.MethodFunc(http.MethodGet, "/tts", api.proxyTTS)
+			}
+		})
 	})
 
 	return r
@@ -501,6 +506,72 @@ func (api *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	writeStatusOK(w)
 }
 
+func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Email == "" || req.Password == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "email and password are required")
+		return
+	}
+	apiKey := strings.TrimSpace(api.config.Firebase.APIKey)
+	if apiKey == "" {
+		httpapi.WriteError(w, http.StatusServiceUnavailable, "auth_unavailable", "firebase api key not configured")
+		return
+	}
+
+	payload := firebaseSignInRequest{
+		Email:             req.Email,
+		Password:          req.Password,
+		ReturnSecureToken: true,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "auth_failed", "failed to build auth request")
+		return
+	}
+
+	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + url.QueryEscape(apiKey)
+	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
+		return
+	}
+	authReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := api.httpClient.Do(authReq)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		message := firebaseErrorMessage(resp.Body)
+		status, code, msg := firebaseAuthError(message)
+		httpapi.WriteError(w, status, code, msg)
+		return
+	}
+
+	var authResp firebaseSignInResponse
+	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "invalid auth response")
+		return
+	}
+	if authResp.IDToken == "" {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "missing token in auth response")
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"token": authResp.IDToken})
+}
+
 func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
 	api.proxyRequest(w, r, api.config.TTS.BaseURL+"/voices")
 }
@@ -576,3 +647,48 @@ func corsMiddleware(next http.Handler) http.Handler {
 }
 
 var _ http.Handler = (*chi.Mux)(nil)
+
+type firebaseSignInRequest struct {
+	Email             string `json:"email"`
+	Password          string `json:"password"`
+	ReturnSecureToken bool   `json:"returnSecureToken"`
+}
+
+type firebaseSignInResponse struct {
+	IDToken string `json:"idToken"`
+}
+
+type firebaseErrorResponse struct {
+	Error struct {
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
+func firebaseErrorMessage(body io.Reader) string {
+	payload, err := io.ReadAll(io.LimitReader(body, 1<<20))
+	if err != nil || len(payload) == 0 {
+		return ""
+	}
+	var resp firebaseErrorResponse
+	if err := json.Unmarshal(payload, &resp); err == nil && resp.Error.Message != "" {
+		return resp.Error.Message
+	}
+	return ""
+}
+
+func firebaseAuthError(message string) (int, string, string) {
+	switch message {
+	case "INVALID_PASSWORD", "EMAIL_NOT_FOUND":
+		return http.StatusUnauthorized, "invalid_credentials", "invalid email or password"
+	case "USER_DISABLED":
+		return http.StatusForbidden, "user_disabled", "user disabled"
+	case "INVALID_EMAIL":
+		return http.StatusBadRequest, "invalid_email", "invalid email"
+	case "MISSING_EMAIL", "MISSING_PASSWORD":
+		return http.StatusBadRequest, "invalid_payload", "email and password are required"
+	case "TOO_MANY_ATTEMPTS_TRY_LATER":
+		return http.StatusTooManyRequests, "rate_limited", "too many attempts, try later"
+	default:
+		return http.StatusBadGateway, "auth_failed", "firebase auth failed"
+	}
+}

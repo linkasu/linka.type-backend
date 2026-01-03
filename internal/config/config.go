@@ -34,6 +34,7 @@ type FirebaseConfig struct {
 	DatabaseURL     string
 	CredentialsFile string
 	CredentialsJSON string
+	APIKey          string
 }
 
 // YDBConfig holds YDB connection settings.
@@ -85,6 +86,7 @@ func Load() (Config, error) {
 		DatabaseURL:     getenv("FIREBASE_DATABASE_URL", ""),
 		CredentialsFile: getenv("FIREBASE_CREDENTIALS_FILE", ""),
 		CredentialsJSON: credentialsJSON,
+		APIKey:          getenv("FIREBASE_API_KEY", ""),
 	}
 
 	cfg.YDB = YDBConfig{

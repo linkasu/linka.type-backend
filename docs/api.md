@@ -1,6 +1,6 @@
 # API v1
 
-All endpoints require `Authorization: Bearer <Firebase ID token>`.
+All endpoints except `POST /v1/auth` require `Authorization: Bearer <Firebase ID token>`.
 
 ## Conventions
 - Timestamps are epoch milliseconds (int64).
@@ -11,6 +11,11 @@ All endpoints require `Authorization: Bearer <Firebase ID token>`.
   ```json
   {"error": {"code": "unauthorized", "message": "..."}}
   ```
+
+## Auth
+- `POST /v1/auth` (open)
+  - Body: `{email, password}`
+  - Returns: `{token}`
 
 ## Categories
 - `GET /v1/categories`

@@ -16,7 +16,16 @@ https://<gateway-id>.apigw.yandexcloud.net
 Authorization: Bearer <Firebase ID token>
 ```
 
-Firebase ID token должен быть получен через Firebase Auth в клиентском приложении.
+Firebase ID token должен быть получен через Firebase Auth в клиентском приложении
+или через открытый backend-эндпоинт `POST /v1/auth` по email и паролю.
+
+Пример получения токена:
+```bash
+curl -sS -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"secret"}' \
+  https://<gateway-id>.apigw.yandexcloud.net/v1/auth
+```
 
 ## Health
 ```
