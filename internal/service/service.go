@@ -396,6 +396,11 @@ func (s *Service) ListGlobalCategories(ctx context.Context, includeStatements bo
 		if err != nil {
 			return nil, err
 		}
+		if !includeStatements {
+			for i := range legacyCats {
+				legacyCats[i].Statements = nil
+			}
+		}
 		return legacyCats, nil
 	}
 	return categories, nil
