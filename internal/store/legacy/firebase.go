@@ -84,3 +84,8 @@ func (w *Writer) ImportGlobalCategory(ctx context.Context, userID, categoryID st
 	userRef := w.db.NewRef(fmt.Sprintf("users/%s/Category/%s", userID, categoryID))
 	return userRef.Set(ctx, payload)
 }
+
+func (w *Writer) DeleteUserData(ctx context.Context, userID string) error {
+	ref := w.db.NewRef(fmt.Sprintf("users/%s", userID))
+	return ref.Delete(ctx)
+}

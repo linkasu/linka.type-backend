@@ -45,6 +45,7 @@ type LegacyWriter interface {
 	SetUserState(ctx context.Context, userID string, state models.UserState) error
 	SetQuickes(ctx context.Context, userID string, quickes []string) error
 	ImportGlobalCategory(ctx context.Context, userID, categoryID string) error
+	DeleteUserData(ctx context.Context, userID string) error
 }
 
 // LegacyReader reads data from Firebase RTDB for seeding and sync.
