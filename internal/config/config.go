@@ -56,7 +56,10 @@ type TTSConfig struct {
 
 // SyncConfig controls sync-worker behavior.
 type SyncConfig struct {
-	PollInterval time.Duration
+	PollInterval    time.Duration
+	StreamEnabled   bool
+	StreamPath      string
+	StreamReconnect time.Duration
 }
 
 // Load reads config from environment variables.
@@ -96,7 +99,10 @@ func Load() (Config, error) {
 	}
 
 	cfg.Sync = SyncConfig{
-		PollInterval: getenvDuration("SYNC_POLL_INTERVAL", 5*time.Second),
+		PollInterval:    getenvDuration("SYNC_POLL_INTERVAL", 5*time.Second),
+		StreamEnabled:   getenvBool("SYNC_STREAM_ENABLED", false),
+		StreamPath:      getenv("SYNC_STREAM_PATH", "users"),
+		StreamReconnect: getenvDuration("SYNC_STREAM_RECONNECT", 5*time.Second),
 	}
 
 	if cfg.Feature.CohortPercent < 0 || cfg.Feature.CohortPercent > 100 {

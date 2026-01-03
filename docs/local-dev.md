@@ -19,6 +19,10 @@
 - `TTS_PROXY_ENABLED` - enable `/v1/tts` and `/v1/voices`
 - `TTS_BASE_URL` - defaults to `https://tts.linka.su`
 - `SYNC_POLL_INTERVAL` - sync-worker interval (default `5s`)
+- `SYNC_STREAM_ENABLED` - enable RTDB streaming (default `false`)
+- `SYNC_STREAM_PATH` - RTDB path for streaming (default `users`)
+- `SYNC_STREAM_RECONNECT` - reconnect delay (default `5s`)
+- `FIREBASE_ACCESS_TOKEN` - optional OAuth token for RTDB streaming
 
 ## Running (placeholder)
 - `go run ./cmd/core-api`
