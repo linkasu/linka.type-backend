@@ -15,6 +15,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/store/ydbstore"
 	"github.com/linkasu/linka.type-backend/internal/syncworker"
 	"github.com/linkasu/linka.type-backend/internal/ydb"
+	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -52,6 +53,16 @@ func main() {
 	}
 
 	worker := syncworker.New(ydbClient, ydbstore.New(ydbClient), fbClients.DB, legacyReader)
+	if cfg.Sync.StreamEnabled {
+		var tokenSource oauth2.TokenSource
+		tokenSource, err = firebase.TokenSource(ctx, cfg.Firebase)
+		if err != nil {
+			logger.Error("failed to init firebase token source", "error", err)
+			os.Exit(1)
+		}
+		worker.EnableStream(cfg.Firebase.DatabaseURL, tokenSource, cfg.Sync.StreamPath, cfg.Sync.StreamReconnect)
+		logger.Info("rtdb streaming enabled", "path", cfg.Sync.StreamPath)
+	}
 
 	shutdownCh := make(chan os.Signal, 1)
 	signal.Notify(shutdownCh, syscall.SIGINT, syscall.SIGTERM)

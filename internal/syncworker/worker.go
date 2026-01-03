@@ -13,19 +13,34 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/ydb"
 	"github.com/ydb-platform/ydb-go-sdk/v3/table"
 	"github.com/ydb-platform/ydb-go-sdk/v3/table/types"
+	"golang.org/x/oauth2"
 )
 
 // Worker syncs Firebase RTDB data into YDB.
 type Worker struct {
-	ydbClient *ydb.Client
-	store     store.Store
-	firebase  *db.Client
-	legacy    store.LegacyReader
+	ydbClient       *ydb.Client
+	store           store.Store
+	firebase        *db.Client
+	legacy          store.LegacyReader
+	streamBaseURL   string
+	streamPath      string
+	streamReconnect time.Duration
+	tokenSource     oauth2.TokenSource
 }
 
 // New creates a sync worker.
 func New(ydbClient *ydb.Client, store store.Store, firebase *db.Client, legacyReader store.LegacyReader) *Worker {
 	return &Worker{ydbClient: ydbClient, store: store, firebase: firebase, legacy: legacyReader}
+}
+
+// EnableStream configures RTDB streaming for incremental updates.
+func (w *Worker) EnableStream(baseURL string, tokenSource oauth2.TokenSource, path string, reconnect time.Duration) {
+	w.streamBaseURL = baseURL
+	w.tokenSource = tokenSource
+	w.streamPath = path
+	if reconnect > 0 {
+		w.streamReconnect = reconnect
+	}
 }
 
 // Run starts the periodic sync loop.
@@ -35,6 +50,10 @@ func (w *Worker) Run(ctx context.Context, interval time.Duration) error {
 
 	if err := w.SyncOnce(ctx); err != nil {
 		return err
+	}
+
+	if w.streamBaseURL != "" && w.tokenSource != nil {
+		go w.runStream(ctx)
 	}
 
 	for {
