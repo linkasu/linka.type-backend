@@ -14,6 +14,7 @@
 ## Configuration
 - Environment variables are injected per service (YDB endpoint, Firebase key, feature flag settings).
 - Use Lockbox to mount Firebase Admin credentials as a file or env var.
+- For YDB auth in Serverless Containers, enable metadata access and omit `YDB_TOKEN` so the service can fetch IAM tokens.
 
 ## Deployment layout
 - `Dockerfile.core-api`, `Dockerfile.realtime`, `Dockerfile.sync-worker` build the service containers.

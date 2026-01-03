@@ -36,7 +36,8 @@ yc serverless container revision deploy \
   --image cr.yandex/${REGISTRY_ID}/linka-core-api:latest \
   --service-account-id ${SERVICE_ACCOUNT_ID} \
   --memory 512M \
-  --environment PORT=8080,FIREBASE_PROJECT_ID=...,FIREBASE_DATABASE_URL=...,YDB_ENDPOINT=...,YDB_DATABASE=...,YDB_TOKEN=...
+  --metadata-options gce-http-endpoint=enabled \
+  --environment PORT=8080,FIREBASE_PROJECT_ID=...,FIREBASE_DATABASE_URL=...,YDB_ENDPOINT=...,YDB_DATABASE=...
 
 # realtime
 yc serverless container create --name linka-realtime
@@ -46,7 +47,8 @@ yc serverless container revision deploy \
   --image cr.yandex/${REGISTRY_ID}/linka-realtime:latest \
   --service-account-id ${SERVICE_ACCOUNT_ID} \
   --memory 512M \
-  --environment PORT=8080,FIREBASE_PROJECT_ID=...,YDB_ENDPOINT=...,YDB_DATABASE=...,YDB_TOKEN=...
+  --metadata-options gce-http-endpoint=enabled \
+  --environment PORT=8080,FIREBASE_PROJECT_ID=...,YDB_ENDPOINT=...,YDB_DATABASE=...
 
 # sync-worker
 yc serverless container create --name linka-sync-worker
@@ -56,7 +58,8 @@ yc serverless container revision deploy \
   --image cr.yandex/${REGISTRY_ID}/linka-sync-worker:latest \
   --service-account-id ${SERVICE_ACCOUNT_ID} \
   --memory 512M \
-  --environment FIREBASE_PROJECT_ID=...,FIREBASE_DATABASE_URL=...,YDB_ENDPOINT=...,YDB_DATABASE=...,YDB_TOKEN=...,SYNC_POLL_INTERVAL=5s
+  --metadata-options gce-http-endpoint=enabled \
+  --environment FIREBASE_PROJECT_ID=...,FIREBASE_DATABASE_URL=...,YDB_ENDPOINT=...,YDB_DATABASE=...,SYNC_POLL_INTERVAL=5s
 ```
 
 ## Routing
@@ -65,4 +68,4 @@ yc serverless container revision deploy \
 
 ## Secrets
 - Store Firebase Admin key in Lockbox and inject via `FIREBASE_CREDENTIALS_JSON` or `FIREBASE_CREDENTIALS_FILE`.
-- Optionally store YDB token in Lockbox.
+- Optionally store YDB token in Lockbox (`YDB_TOKEN`) if metadata is not available.

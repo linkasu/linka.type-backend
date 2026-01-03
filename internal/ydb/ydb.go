@@ -26,6 +26,8 @@ func New(ctx context.Context, cfg config.YDBConfig) (*Client, error) {
 	}
 	if cfg.Token != "" {
 		opts = append(opts, ydb.WithAccessTokenCredentials(cfg.Token))
+	} else if creds := newMetadataCredentials(); creds != nil {
+		opts = append(opts, ydb.WithCredentials(creds))
 	}
 
 	driver, err := ydb.Open(ctx, cfg.Endpoint, opts...)

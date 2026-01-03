@@ -14,6 +14,8 @@
 - `YDB_ENDPOINT`
 - `YDB_DATABASE`
 - `YDB_TOKEN`
+- `YDB_METADATA_URL` - override Yandex Cloud metadata token URL
+- `YDB_METADATA_DISABLED` - set to disable metadata token fallback
 - `FEATURE_READ_SOURCE` - `firebase_only`, `ydb_primary`, or `cohort`
 - `FEATURE_COHORT_PERCENT` - 0-100 for `cohort` mode
 - `TTS_PROXY_ENABLED` - enable `/v1/tts` and `/v1/voices`
