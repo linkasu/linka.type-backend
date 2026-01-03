@@ -38,7 +38,7 @@ ORDER BY created_at;`)
 
 	var out []models.Category
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ ORDER BY created_at;`)
 
 	var out []models.Statement
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -283,7 +283,7 @@ LIMIT 1;`)
 	)
 
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -405,7 +405,7 @@ ORDER BY created_at;`)
 
 	var out []models.GlobalCategory
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
 		if err != nil {
 			return err
 		}
@@ -477,7 +477,7 @@ ORDER BY created_at;`)
 
 	var out []models.Statement
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -584,7 +584,7 @@ ORDER BY order_index;`)
 
 	var out []models.FactoryQuestion
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
 		if err != nil {
 			return err
 		}
@@ -650,7 +650,7 @@ LIMIT 1;`)
 
 	var exists bool
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -800,7 +800,7 @@ LIMIT $limit;`)
 	)
 
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -883,7 +883,7 @@ LIMIT 1;`)
 
 	var createdAt int64
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -921,7 +921,7 @@ ORDER BY slot;`)
 
 	var quickes []string
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
@@ -976,7 +976,7 @@ LIMIT 1;`)
 
 	var exists bool
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
-		res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
 			return err
 		}
