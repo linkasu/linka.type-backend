@@ -16,4 +16,5 @@
 - Use Lockbox to mount Firebase Admin credentials as a file or env var.
 
 ## Deployment layout
+- `Dockerfile.core-api`, `Dockerfile.realtime`, `Dockerfile.sync-worker` build the service containers.
 - `yc/` will contain deployment configs (TBD: Terraform or yc-serverless spec).

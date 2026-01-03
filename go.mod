@@ -1,6 +1,8 @@
 module github.com/linkasu/linka.type-backend
 
-go 1.24.5
+go 1.23.9
+
+toolchain go1.24.5
 
 require (
 	firebase.google.com/go/v4 v4.18.0
