@@ -7,6 +7,13 @@ This is a minimal outline for deploying the three services to Yandex Cloud Serve
 - Container Registry created.
 - Service account with roles: `serverless.containers.editor`, `container-registry.images.pusher`, `logging.writer`, `lockbox.payloadViewer` (as needed).
 
+## Initialize YDB schema
+```bash
+export YDB_ENDPOINT=grpcs://ydb.serverless.yandexcloud.net:2135
+export YDB_DATABASE=/ru-central1/<cloud-id>/<db-id>
+go run ./yc/schema
+```
+
 ## Build and push images
 ```bash
 REGISTRY_ID=your-registry-id
