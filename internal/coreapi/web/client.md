@@ -3,11 +3,11 @@
 Документ для мобильных/веб‑клиентов и интеграций, которые работают с фразами и категориями пользователя.
 
 ## Base URL
-Используйте домен API Gateway или URL контейнера `core-api`.
+Используйте базовый URL продакшн API.
 
 Пример:
 ```
-https://<gateway-id>.apigw.yandexcloud.net
+https://backend.linka.su
 ```
 
 ## Аутентификация
@@ -19,7 +19,7 @@ https://<gateway-id>.apigw.yandexcloud.net
 curl -sS -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"secret"}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/auth
+  https://backend.linka.su/v1/auth
 ```
 
 ## Health
@@ -45,7 +45,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"label":"Мои фразы","created":1735689600000}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/categories
+  https://backend.linka.su/v1/categories
 ```
 
 ## Фразы (statements)
@@ -62,7 +62,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"categoryId":"<categoryId>","text":"Здравствуйте!"}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/statements
+  https://backend.linka.su/v1/statements
 ```
 
 ## Состояние пользователя и быстрые ответы
@@ -79,7 +79,7 @@ curl -sS -X PUT \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"quickes":["Да","Нет","Спасибо","Мне нужна помощь"]}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/quickes
+  https://backend.linka.su/v1/quickes
 ```
 
 ## Глобальные наборы и онбординг
@@ -97,7 +97,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"category_id":"<categoryId>","force":false}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/global/import
+  https://backend.linka.su/v1/global/import
 ```
 
 ## Удаление пользователя
@@ -110,7 +110,7 @@ curl -sS -X POST \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"delete_firebase":false}' \
-  https://<gateway-id>.apigw.yandexcloud.net/v1/user/delete
+  https://backend.linka.su/v1/user/delete
 ```
 
 ## Realtime
