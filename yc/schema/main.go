@@ -94,7 +94,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config load: %v\n", err)
+		os.Exit(1)
+	}
+
 	client, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ydb init: %v\n", err)
