@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -75,11 +76,15 @@ func Load() (Config, error) {
 		ShutdownTimeout: getenvDuration("HTTP_SHUTDOWN_TIMEOUT", 20*time.Second),
 	}
 
+	credentialsJSON, err := firebaseCredentialsJSON()
+	if err != nil {
+		return cfg, err
+	}
 	cfg.Firebase = FirebaseConfig{
 		ProjectID:       getenv("FIREBASE_PROJECT_ID", ""),
 		DatabaseURL:     getenv("FIREBASE_DATABASE_URL", ""),
 		CredentialsFile: getenv("FIREBASE_CREDENTIALS_FILE", ""),
-		CredentialsJSON: getenv("FIREBASE_CREDENTIALS_JSON", ""),
+		CredentialsJSON: credentialsJSON,
 	}
 
 	cfg.YDB = YDBConfig{
@@ -110,6 +115,20 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func firebaseCredentialsJSON() (string, error) {
+	if json := getenv("FIREBASE_CREDENTIALS_JSON", ""); json != "" {
+		return json, nil
+	}
+	if b64 := getenv("FIREBASE_CREDENTIALS_B64", ""); b64 != "" {
+		decoded, err := base64.StdEncoding.DecodeString(b64)
+		if err != nil {
+			return "", fmt.Errorf("decode FIREBASE_CREDENTIALS_B64: %w", err)
+		}
+		return string(decoded), nil
+	}
+	return "", nil
 }
 
 func httpAddr() string {
