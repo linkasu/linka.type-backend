@@ -40,9 +40,15 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 	r := chi.NewRouter()
 	r.Use(corsMiddleware)
 	r.Use(httpmiddleware.RequestID)
-	r.Use(httpmiddleware.Auth(verifier))
+
+	r.Get("/", serveWebFile("index.html", "text/html; charset=utf-8"))
+	r.Get("/client.md", serveWebFile("client.md", "text/markdown; charset=utf-8"))
+	r.Get("/AGENTS.md", serveWebFile("AGENTS.md", "text/markdown; charset=utf-8"))
+	r.Get("/healthz", healthHandler)
+	r.Handle("/assets/*", assetsHandler())
 
 	r.Route("/v1", func(r chi.Router) {
+		r.Use(httpmiddleware.Auth(verifier))
 		r.Get("/categories", api.listCategories)
 		r.Post("/categories", api.createCategory)
 		r.Patch("/categories/{id}", api.patchCategory)

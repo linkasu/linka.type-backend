@@ -5,101 +5,124 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  REGISTRY_ID: ${{ secrets.YC_REGISTRY_ID }}
-  CORE_API_CONTAINER: ${{ secrets.CORE_API_CONTAINER }}
-  REALTIME_CONTAINER: ${{ secrets.REALTIME_CONTAINER }}
-  SYNC_WORKER_CONTAINER: ${{ secrets.SYNC_WORKER_CONTAINER }}
-  FIREBASE_SECRET_NAME: ${{ secrets.FIREBASE_SECRET_NAME }}
-  FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-  FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
-  YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
-  YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
-  YC_SERVICE_ACCOUNT_ID: ${{ secrets.YC_SERVICE_ACCOUNT_ID }}
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FOLDER_ID: ${{ vars.FOLDER_ID }}
+      CLOUD_ID: ${{ vars.CLOUD_ID }}
+      SERVICE_ACCOUNT_ID: ${{ vars.SERVICE_ACCOUNT_ID }}
+      REGISTRY_ID: ${{ vars.REGISTRY_ID }}
+      CORE_API_CONTAINER_NAME: ${{ vars.CORE_API_CONTAINER_NAME }}
+      REALTIME_CONTAINER_NAME: ${{ vars.REALTIME_CONTAINER_NAME }}
+      SYNC_WORKER_CONTAINER_NAME: ${{ vars.SYNC_WORKER_CONTAINER_NAME }}
+      YDB_ENDPOINT: ${{ secrets.YDB_ENDPOINT }}
+      YDB_DATABASE: ${{ secrets.YDB_DATABASE }}
+      YDB_TOKEN: ${{ secrets.YDB_TOKEN }}
+      FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
+      FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+      FEATURE_READ_SOURCE: ${{ vars.FEATURE_READ_SOURCE }}
+      FEATURE_COHORT_PERCENT: ${{ vars.FEATURE_COHORT_PERCENT }}
+      TTS_PROXY_ENABLED: ${{ vars.TTS_PROXY_ENABLED }}
+      TTS_BASE_URL: ${{ vars.TTS_BASE_URL }}
+      SYNC_POLL_INTERVAL: ${{ vars.SYNC_POLL_INTERVAL }}
+      SYNC_STREAM_ENABLED: ${{ vars.SYNC_STREAM_ENABLED }}
+      SYNC_STREAM_PATH: ${{ vars.SYNC_STREAM_PATH }}
+      SYNC_STREAM_RECONNECT: ${{ vars.SYNC_STREAM_RECONNECT }}
+      IMAGE_TAG: latest
+      YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Install yc CLI
         run: |
-          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -i /tmp/yc -n
-          echo "/tmp/yc/bin" >> $GITHUB_PATH
+          curl -sSL https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash -s -- -n
+          echo "${HOME}/yandex-cloud/bin" >> "${GITHUB_PATH}"
+          yc --version
 
       - name: Configure yc CLI
-        env:
-          YC_SA_KEY: ${{ secrets.YC_SA_KEY }}
-          YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
-          YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
         run: |
-          printf '%s' "$YC_SA_KEY" > /tmp/sa-key.json
+          if [ -z "${YC_SERVICE_ACCOUNT_KEY}" ]; then
+            echo "Missing YC_SERVICE_ACCOUNT_KEY secret." >&2
+            exit 1
+          fi
+          printf '%s' "${YC_SERVICE_ACCOUNT_KEY}" > /tmp/sa-key.json
           yc config set service-account-key /tmp/sa-key.json
-          yc config set cloud-id "$YC_CLOUD_ID"
-          yc config set folder-id "$YC_FOLDER_ID"
+          if [ -n "${CLOUD_ID}" ]; then
+            yc config set cloud-id "${CLOUD_ID}"
+          fi
+          if [ -n "${FOLDER_ID}" ]; then
+            yc config set folder-id "${FOLDER_ID}"
+          fi
 
-      - name: Configure docker auth
+      - name: Set up Docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for Yandex Container Registry
         run: yc container registry configure-docker
 
-      - name: Build and push core-api
+      - name: Build and push images
         run: |
-          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.core-api \
-            -t cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA} \
-            -t cr.yandex/${REGISTRY_ID}/linka-core-api:latest .
-          docker push cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA}
-          docker push cr.yandex/${REGISTRY_ID}/linka-core-api:latest
-
-      - name: Build and push realtime
-        run: |
-          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.realtime \
-            -t cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA} \
-            -t cr.yandex/${REGISTRY_ID}/linka-realtime:latest .
-          docker push cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA}
-          docker push cr.yandex/${REGISTRY_ID}/linka-realtime:latest
-
-      - name: Build and push sync-worker
-        run: |
-          DOCKER_BUILDKIT=1 docker build --platform linux/amd64 -f Dockerfile.sync-worker \
-            -t cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA} \
-            -t cr.yandex/${REGISTRY_ID}/linka-sync-worker:latest .
-          docker push cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA}
-          docker push cr.yandex/${REGISTRY_ID}/linka-sync-worker:latest
+          if [ -z "${REGISTRY_ID}" ]; then
+            echo "Missing REGISTRY_ID." >&2
+            exit 1
+          fi
+          REGISTRY_ID="${REGISTRY_ID}" IMAGE_TAG="${IMAGE_TAG}" ./scripts/build-images.sh
 
       - name: Deploy core-api
         run: |
-          yc serverless container revision deploy \
-            --container-name ${CORE_API_CONTAINER} \
-            --image cr.yandex/${REGISTRY_ID}/linka-core-api:${GITHUB_SHA} \
-            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
-            --memory 512M \
-            --execution-timeout 60s \
-            --metadata-options gce-http-endpoint=enabled \
-            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},FEATURE_READ_SOURCE=firebase_only \
-            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
+          if [ -z "${FOLDER_ID}" ] || [ -z "${SERVICE_ACCOUNT_ID}" ] || [ -z "${REGISTRY_ID}" ] || [ -z "${YDB_ENDPOINT}" ] || [ -z "${YDB_DATABASE}" ] || [ -z "${FIREBASE_PROJECT_ID}" ]; then
+            echo "Missing required core-api deployment environment variables." >&2
+            exit 1
+          fi
+          CONTAINER_NAME="${CORE_API_CONTAINER_NAME:-linka-core-api}" \
+          FOLDER_ID="${FOLDER_ID}" SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID}" REGISTRY_ID="${REGISTRY_ID}" IMAGE_TAG="${IMAGE_TAG}" \
+          YDB_ENDPOINT="${YDB_ENDPOINT}" YDB_DATABASE="${YDB_DATABASE}" YDB_TOKEN="${YDB_TOKEN}" \
+          FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}" FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL}" FIREBASE_CREDENTIALS_JSON="${FIREBASE_CREDENTIALS_JSON}" \
+          FEATURE_READ_SOURCE="${FEATURE_READ_SOURCE}" FEATURE_COHORT_PERCENT="${FEATURE_COHORT_PERCENT}" \
+          TTS_PROXY_ENABLED="${TTS_PROXY_ENABLED}" TTS_BASE_URL="${TTS_BASE_URL}" \
+          ./scripts/deploy-core-api.sh
 
       - name: Deploy realtime
         run: |
-          yc serverless container revision deploy \
-            --container-name ${REALTIME_CONTAINER} \
-            --image cr.yandex/${REGISTRY_ID}/linka-realtime:${GITHUB_SHA} \
-            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
-            --memory 512M \
-            --execution-timeout 120s \
-            --metadata-options gce-http-endpoint=enabled \
-            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},HTTP_READ_TIMEOUT=120s,HTTP_WRITE_TIMEOUT=120s,HTTP_IDLE_TIMEOUT=120s \
-            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
+          if [ -z "${FOLDER_ID}" ] || [ -z "${SERVICE_ACCOUNT_ID}" ] || [ -z "${REGISTRY_ID}" ] || [ -z "${YDB_ENDPOINT}" ] || [ -z "${YDB_DATABASE}" ] || [ -z "${FIREBASE_PROJECT_ID}" ]; then
+            echo "Missing required realtime deployment environment variables." >&2
+            exit 1
+          fi
+          CONTAINER_NAME="${REALTIME_CONTAINER_NAME:-linka-realtime}" \
+          FOLDER_ID="${FOLDER_ID}" SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID}" REGISTRY_ID="${REGISTRY_ID}" IMAGE_TAG="${IMAGE_TAG}" \
+          YDB_ENDPOINT="${YDB_ENDPOINT}" YDB_DATABASE="${YDB_DATABASE}" YDB_TOKEN="${YDB_TOKEN}" \
+          FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}" FIREBASE_CREDENTIALS_JSON="${FIREBASE_CREDENTIALS_JSON}" \
+          ./scripts/deploy-realtime.sh
 
       - name: Deploy sync-worker
         run: |
-          yc serverless container revision deploy \
-            --container-name ${SYNC_WORKER_CONTAINER} \
-            --image cr.yandex/${REGISTRY_ID}/linka-sync-worker:${GITHUB_SHA} \
-            --service-account-id ${YC_SERVICE_ACCOUNT_ID} \
-            --memory 512M \
-            --execution-timeout 600s \
-            --runtime task \
-            --metadata-options gce-http-endpoint=enabled \
-            --environment ENV=prod,FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID},FIREBASE_DATABASE_URL=${FIREBASE_DATABASE_URL},YDB_ENDPOINT=${YDB_ENDPOINT},YDB_DATABASE=${YDB_DATABASE},SYNC_POLL_INTERVAL=5s,SYNC_STREAM_ENABLED=true,SYNC_STREAM_PATH=users,SYNC_STREAM_RECONNECT=5s \
-            --secret name=${FIREBASE_SECRET_NAME},key=firebase_admin_json,environment-variable=FIREBASE_CREDENTIALS_JSON
+          if [ -z "${FOLDER_ID}" ] || [ -z "${SERVICE_ACCOUNT_ID}" ] || [ -z "${REGISTRY_ID}" ] || [ -z "${YDB_ENDPOINT}" ] || [ -z "${YDB_DATABASE}" ] || [ -z "${FIREBASE_PROJECT_ID}" ] || [ -z "${FIREBASE_DATABASE_URL}" ]; then
+            echo "Missing required sync-worker deployment environment variables." >&2
+            exit 1
+          fi
+          CONTAINER_NAME="${SYNC_WORKER_CONTAINER_NAME:-linka-sync-worker}" \
+          FOLDER_ID="${FOLDER_ID}" SERVICE_ACCOUNT_ID="${SERVICE_ACCOUNT_ID}" REGISTRY_ID="${REGISTRY_ID}" IMAGE_TAG="${IMAGE_TAG}" \
+          YDB_ENDPOINT="${YDB_ENDPOINT}" YDB_DATABASE="${YDB_DATABASE}" YDB_TOKEN="${YDB_TOKEN}" \
+          FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}" FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL}" FIREBASE_CREDENTIALS_JSON="${FIREBASE_CREDENTIALS_JSON}" \
+          SYNC_POLL_INTERVAL="${SYNC_POLL_INTERVAL}" SYNC_STREAM_ENABLED="${SYNC_STREAM_ENABLED}" SYNC_STREAM_PATH="${SYNC_STREAM_PATH}" SYNC_STREAM_RECONNECT="${SYNC_STREAM_RECONNECT}" \
+          ./scripts/deploy-sync-worker.sh
+
+      - name: Smoke test core-api
+        run: |
+          CONTAINER_NAME="${CORE_API_CONTAINER_NAME:-linka-core-api}"
+          CORE_API_URL=$(yc serverless container get --name "${CONTAINER_NAME}" --folder-id "${FOLDER_ID}" --format json | jq -r '.url')
+          if [ -z "${CORE_API_URL}" ] || [ "${CORE_API_URL}" = "null" ]; then
+            echo "Failed to resolve CORE_API_URL." >&2
+            exit 1
+          fi
+          curl -sSf "${CORE_API_URL}/" >/dev/null
+          curl -sSf "${CORE_API_URL}/healthz" >/dev/null

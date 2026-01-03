@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINKa Type API — помогаем говорить через текст</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@300;400;500;600;700&family=Literata:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="background">
+    <div class="blob blob-one"></div>
+    <div class="blob blob-two"></div>
+    <div class="blob blob-three"></div>
+  </div>
+
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="/">LINKa Type API</a>
+      <div class="nav-links">
+        <a href="https://linka.su" target="_blank" rel="noreferrer">linka.su</a>
+        <a href="/client.md">Гайд интеграции</a>
+        <a href="/AGENTS.md">AGENTS</a>
+        <a href="#playground">API Playground</a>
+      </div>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow">LINKa — поддержка общения</span>
+        <h1 class="hero-title reveal">Помогаем людям с нарушениями речи говорить через понятный текст.</h1>
+        <p class="hero-text reveal delay-1">
+          LINKa Type API хранит пользовательские фразы, категории и быстрые ответы, поддерживает онбординг и дает
+          realtime-обновления. Это сердце приложения LINKa на <a href="https://linka.su" target="_blank" rel="noreferrer">linka.su</a>.
+        </p>
+        <div class="hero-actions reveal delay-2">
+          <a class="btn btn-primary" href="#playground">Попробовать API</a>
+          <a class="btn btn-ghost" href="/client.md">Документация клиента</a>
+        </div>
+        <div class="hero-badges reveal delay-3">
+          <span class="badge">REST + WebSocket</span>
+          <span class="badge">Firebase ID Token</span>
+          <span class="badge">YDB + Sync</span>
+        </div>
+      </div>
+      <div class="hero-card reveal delay-1">
+        <h2 class="card-title">Что умеет платформа</h2>
+        <ul class="card-list">
+          <li>Категории и фразы пользователя с сохранением истории.</li>
+          <li>Быстрые реплики, состояния онбординга и импорт глобальных наборов.</li>
+          <li>Realtime синхронизация через long-polling и WebSocket.</li>
+        </ul>
+        <div class="card-foot">
+          <span>Стек: Go + YDB + Firebase</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="section" id="about">
+    <div class="container">
+      <div class="section-head">
+        <span class="eyebrow">Функциональность</span>
+        <h2 class="section-title">API для приложений альтернативной коммуникации</h2>
+        <p class="section-subtitle">
+          LINKa Type помогает сохранять персональные фразы и быстро собирать ответы. API аккуратно мигрирует данные из
+          Firebase и поддерживает реалтайм, чтобы клиенты всегда были синхронизированы.
+        </p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card reveal">
+          <div class="feature-number">01</div>
+          <h3>Категории и фразы</h3>
+          <p>CRUD для категорий и утверждений, с историей обновлений и метаданными.</p>
+        </article>
+        <article class="feature-card reveal delay-1">
+          <div class="feature-number">02</div>
+          <h3>Быстрые ответы</h3>
+          <p>Сохраняйте короткие реплики и подключайте их к интерфейсу клавиатуры.</p>
+        </article>
+        <article class="feature-card reveal delay-2">
+          <div class="feature-number">03</div>
+          <h3>Онбординг</h3>
+          <p>Готовые вопросы и генерация стартовых фраз для первых экранов приложения.</p>
+        </article>
+        <article class="feature-card reveal delay-3">
+          <div class="feature-number">04</div>
+          <h3>Realtime</h3>
+          <p>Получайте изменения списков и фраз через /v1/changes и /v1/stream.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="flow">
+    <div class="container flow-grid">
+      <div class="flow-card reveal">
+        <h2 class="section-title">Как подключиться</h2>
+        <ol class="flow-list">
+          <li>Получите Firebase ID token в клиенте.</li>
+          <li>Выберите базовый URL (Gateway или контейнер core-api).</li>
+          <li>Синхронизируйте категории, фразы и быстрые ответы.</li>
+        </ol>
+        <p class="flow-note">Подробности и примеры запросов — в <a href="/client.md">гайде разработчика</a>.</p>
+      </div>
+      <div class="flow-card glow reveal delay-1">
+        <h3 class="card-title">Realtime в двух вариантах</h3>
+        <div class="split">
+          <div>
+            <span class="tag">Long polling</span>
+            <p>GET /v1/changes?cursor=...</p>
+          </div>
+          <div>
+            <span class="tag">WebSocket</span>
+            <p>WS /v1/stream?cursor=...</p>
+          </div>
+        </div>
+        <p class="flow-note">Оба формата возвращают курсор и список изменений.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="playground">
+    <div class="container playground-grid">
+      <div class="playground-info reveal">
+        <span class="eyebrow">API Playground</span>
+        <h2 class="section-title">Проверьте запросы прямо здесь</h2>
+        <p class="section-subtitle">
+          Введите Firebase ID token и выполните запросы к API. Все вызовы идут напрямую в backend, CORS уже настроен.
+        </p>
+        <div class="tips">
+          <div>
+            <strong>Подсказка</strong>
+            <p>Базовый URL по умолчанию — текущий домен, если фронтенд и API развернуты вместе.</p>
+          </div>
+          <div>
+            <strong>Безопасность</strong>
+            <p>Токен хранится только в памяти браузера и не отправляется на сторонние сервисы.</p>
+          </div>
+        </div>
+      </div>
+      <div class="playground-panel reveal delay-1">
+        <label class="field">
+          <span>Base URL</span>
+          <input id="baseUrl" type="url" placeholder="https://api.example.com">
+        </label>
+        <label class="field">
+          <span>Firebase ID token</span>
+          <input id="token" type="password" placeholder="eyJhbGciOi...">
+        </label>
+        <label class="field">
+          <span>Шаблон запроса</span>
+          <select id="template"></select>
+        </label>
+        <label class="field">
+          <span>Метод</span>
+          <select id="method">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Путь</span>
+          <input id="path" type="text" placeholder="/v1/categories">
+        </label>
+        <label class="field">
+          <span>JSON тело (опционально)</span>
+          <textarea id="body" rows="6" placeholder='{"label":"Мои фразы"}'></textarea>
+        </label>
+        <button class="btn btn-primary" id="send">Отправить</button>
+        <div class="response">
+          <div class="response-head">
+            <span>Ответ</span>
+            <span id="status">—</span>
+          </div>
+          <pre id="output">Готово к запросу.</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="access">
+    <div class="container callout reveal">
+      <div>
+        <h2 class="section-title">Нужен доступ или помощь с интеграцией?</h2>
+        <p class="section-subtitle">Напишите нам — расскажем о сценариях и поделимся рекомендациями.</p>
+      </div>
+      <a class="btn btn-primary" href="mailto:feedback@linka.su">Связаться</a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <span>LINKa — мы поможем сказать.</span>
+      <span>© 2026 LINKa</span>
+    </div>
+  </footer>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
