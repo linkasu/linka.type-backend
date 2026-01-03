@@ -34,7 +34,9 @@ All endpoints require `Authorization: Bearer <Firebase ID token>`.
 - `POST /v1/statements`
   - Body: `{id?, categoryId, text, created?, questions?}`
   - If `questions` is present, runs onboarding phrase generation and sets `inited` if needed.
-  - Returns: `{status:"ok"}` or `{status:"exists"}` when onboarding was already done.
+  - Returns:
+    - `{status:"ok"}` for onboarding requests.
+    - `{status:"ok", statement:{...}}` for regular statement creation.
 
 - `PATCH /v1/statements/{id}`
   - Body: `{text?}`
