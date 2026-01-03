@@ -51,6 +51,8 @@ yc serverless container revision deploy \
   --metadata-options gce-http-endpoint=enabled \
   --environment "${envs}"
 
+yc serverless container allow-unauthenticated-invoke --name "${CONTAINER_NAME}"
+
 echo "realtime deployed."
 
 yc serverless container get --name "${CONTAINER_NAME}" --folder-id "${FOLDER_ID}" --format json
