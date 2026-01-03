@@ -4,6 +4,7 @@ go 1.24.5
 
 require (
 	firebase.google.com/go/v4 v4.18.0
+	github.com/go-chi/chi/v5 v5.2.3
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/ydb-platform/ydb-go-sdk/v3 v3.125.1
 	google.golang.org/api v0.231.0

@@ -1,0 +1,572 @@
+package coreapi
+
+import (
+	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	fbauth "firebase.google.com/go/v4/auth"
+	"github.com/go-chi/chi/v5"
+	"github.com/linkasu/linka.type-backend/internal/auth"
+	"github.com/linkasu/linka.type-backend/internal/config"
+	"github.com/linkasu/linka.type-backend/internal/httpapi"
+	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
+	"github.com/linkasu/linka.type-backend/internal/service"
+	"github.com/linkasu/linka.type-backend/internal/userctx"
+)
+
+// API wires HTTP handlers for core-api.
+type API struct {
+	svc        *service.Service
+	auth       auth.Verifier
+	fbAuth     *fbauth.Client
+	config     config.Config
+	httpClient *http.Client
+}
+
+// New builds the core API router.
+func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cfg config.Config) http.Handler {
+	api := &API{
+		svc:        svc,
+		auth:       verifier,
+		fbAuth:     fbAuth,
+		config:     cfg,
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+	}
+
+	r := chi.NewRouter()
+	r.Use(corsMiddleware)
+	r.Use(httpmiddleware.RequestID)
+	r.Use(httpmiddleware.Auth(verifier))
+
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/categories", api.listCategories)
+		r.Post("/categories", api.createCategory)
+		r.Patch("/categories/{id}", api.patchCategory)
+		r.Delete("/categories/{id}", api.deleteCategory)
+
+		r.Get("/categories/{id}/statements", api.listStatements)
+		r.Post("/statements", api.createStatement)
+		r.Patch("/statements/{id}", api.patchStatement)
+		r.Delete("/statements/{id}", api.deleteStatement)
+
+		r.Get("/user/state", api.getUserState)
+		r.Put("/user/state", api.putUserState)
+		r.Get("/quickes", api.getQuickes)
+		r.Put("/quickes", api.putQuickes)
+
+		r.Get("/global/categories", api.listGlobalCategories)
+		r.Get("/global/categories/{id}/statements", api.listGlobalStatements)
+		r.Post("/global/import", api.importGlobal)
+
+		r.Get("/factory/questions", api.listFactoryQuestions)
+		r.Post("/onboarding/phrases", api.onboardingPhrases)
+
+		r.Post("/user/delete", api.deleteUser)
+
+		if cfg.TTS.ProxyEnabled {
+			r.Get("/voices", api.proxyVoices)
+			r.MethodFunc(http.MethodPost, "/tts", api.proxyTTS)
+			r.MethodFunc(http.MethodGet, "/tts", api.proxyTTS)
+		}
+	})
+
+	return r
+}
+
+func (api *API) listCategories(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categories, err := api.svc.ListCategories(r.Context(), user.UID)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "categories_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, categories)
+}
+
+func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		ID      string `json:"id"`
+		Label   string `json:"label"`
+		Created int64  `json:"created"`
+		Default *bool  `json:"default"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.Label) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_label", "label is required")
+		return
+	}
+
+	category, err := api.svc.CreateCategory(r.Context(), user.UID, service.CategoryInput{
+		ID:      req.ID,
+		Label:   req.Label,
+		Created: req.Created,
+		Default: req.Default,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_category_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, category)
+}
+
+func (api *API) patchCategory(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+
+	var req struct {
+		Label   *string `json:"label"`
+		Default *bool   `json:"default"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if req.Label == nil && req.Default == nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "label or default is required")
+		return
+	}
+
+	category, err := api.svc.UpdateCategory(r.Context(), user.UID, categoryID, service.CategoryPatch{
+		Label:   req.Label,
+		Default: req.Default,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_category_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, category)
+}
+
+func (api *API) deleteCategory(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+
+	if err := api.svc.DeleteCategory(r.Context(), user.UID, categoryID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_category_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) listStatements(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+
+	statements, err := api.svc.ListStatements(r.Context(), user.UID, categoryID)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "statements_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, statements)
+}
+
+func (api *API) createStatement(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		ID         string                  `json:"id"`
+		CategoryID string                  `json:"categoryId"`
+		Text       string                  `json:"text"`
+		Created    int64                   `json:"created"`
+		Questions  []service.QuestionInput `json:"questions"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+
+	if len(req.Questions) > 0 {
+		if _, err := api.svc.OnboardingPhrases(r.Context(), user.UID, req.Questions); err != nil {
+			httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed", err.Error())
+			return
+		}
+		writeStatusOK(w)
+		return
+	}
+
+	if strings.TrimSpace(req.CategoryID) == "" || strings.TrimSpace(req.Text) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "categoryId and text are required")
+		return
+	}
+
+	statement, err := api.svc.CreateStatement(r.Context(), user.UID, service.StatementInput{
+		ID:         req.ID,
+		CategoryID: req.CategoryID,
+		Text:       req.Text,
+		Created:    req.Created,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_statement_failed", err.Error())
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+		"status":    "ok",
+		"statement": statement,
+	})
+}
+
+func (api *API) patchStatement(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	statementID := chi.URLParam(r, "id")
+	if statementID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "statement id is required")
+		return
+	}
+
+	var req struct {
+		Text *string `json:"text"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if req.Text == nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "text is required")
+		return
+	}
+
+	statement, err := api.svc.UpdateStatement(r.Context(), user.UID, statementID, service.StatementPatch{Text: req.Text})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_statement_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, statement)
+}
+
+func (api *API) deleteStatement(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	statementID := chi.URLParam(r, "id")
+	if statementID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "statement id is required")
+		return
+	}
+
+	if err := api.svc.DeleteStatement(r.Context(), user.UID, statementID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_statement_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) getUserState(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	state, err := api.svc.GetUserState(r.Context(), user.UID)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "state_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, state)
+}
+
+func (api *API) putUserState(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var raw map[string]json.RawMessage
+	if err := decodeJSON(w, r, &raw); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	var patch service.UserStatePatch
+	if value, ok := raw["inited"]; ok {
+		if err := json.Unmarshal(value, &patch.Inited); err != nil {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_inited", err.Error())
+			return
+		}
+	}
+	if value, ok := raw["quickes"]; ok {
+		patch.QuickesSet = true
+		if err := json.Unmarshal(value, &patch.Quickes); err != nil {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_quickes", err.Error())
+			return
+		}
+	}
+	if patch.Inited == nil && !patch.QuickesSet {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "inited or quickes required")
+		return
+	}
+
+	state, err := api.svc.UpdateUserState(r.Context(), user.UID, patch)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "state_update_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, state)
+}
+
+func (api *API) getQuickes(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	state, err := api.svc.GetUserState(r.Context(), user.UID)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, state.Quickes)
+}
+
+func (api *API) putQuickes(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		Quickes []string `json:"quickes"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if len(req.Quickes) == 0 {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "quickes are required")
+		return
+	}
+
+	quickes, err := api.svc.SetQuickes(r.Context(), user.UID, req.Quickes)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_update_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, quickes)
+}
+
+func (api *API) listGlobalCategories(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	includeStatements := r.URL.Query().Get("include_statements") == "true"
+	categories, err := api.svc.ListGlobalCategories(r.Context(), includeStatements)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, categories)
+}
+
+func (api *API) listGlobalStatements(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+	statements, err := api.svc.ListGlobalStatements(r.Context(), categoryID)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_statements_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, statements)
+}
+
+func (api *API) importGlobal(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		CategoryID string `json:"category_id"`
+		Force      bool   `json:"force"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.CategoryID) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "category_id is required")
+		return
+	}
+
+	status, err := api.svc.ImportGlobalCategory(r.Context(), user.UID, req.CategoryID, req.Force)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "import_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{"status": status})
+}
+
+func (api *API) listFactoryQuestions(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	questions, err := api.svc.ListFactoryQuestions(r.Context())
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, questions)
+}
+
+func (api *API) onboardingPhrases(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		Questions []service.QuestionInput `json:"questions"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if len(req.Questions) == 0 {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "questions are required")
+		return
+	}
+
+	if _, err := api.svc.OnboardingPhrases(r.Context(), user.UID, req.Questions); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) deleteUser(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	var req struct {
+		DeleteFirebase bool `json:"delete_firebase"`
+	}
+	_ = decodeJSON(w, r, &req)
+
+	if err := api.svc.DeleteUser(r.Context(), user.UID, req.DeleteFirebase); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_failed", err.Error())
+		return
+	}
+	if req.DeleteFirebase && api.fbAuth != nil {
+		_ = api.fbAuth.DeleteUser(r.Context(), user.UID)
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
+	api.proxyRequest(w, r, api.config.TTS.BaseURL+"/voices")
+}
+
+func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
+	api.proxyRequest(w, r, api.config.TTS.BaseURL+"/tts")
+}
+
+func (api *API) proxyRequest(w http.ResponseWriter, r *http.Request, target string) {
+	if r.URL.RawQuery != "" {
+		target = target + "?" + r.URL.RawQuery
+	}
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, r.Body)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed", err.Error())
+		return
+	}
+	req.Header = r.Header.Clone()
+
+	resp, err := api.httpClient.Do(req)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed", err.Error())
+		return
+	}
+	defer resp.Body.Close()
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	_, _ = io.Copy(w, resp.Body)
+}
+
+func mustUser(w http.ResponseWriter, r *http.Request) auth.User {
+	user, ok := userctx.From(r.Context())
+	if !ok {
+		httpapi.WriteError(w, http.StatusUnauthorized, "unauthorized", "missing user context")
+		return auth.User{}
+	}
+	return user
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
+	body := http.MaxBytesReader(w, r.Body, 2<<20)
+	dec := json.NewDecoder(body)
+	if err := dec.Decode(dst); err != nil {
+		if errors.Is(err, io.EOF) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func writeStatusOK(w http.ResponseWriter) {
+	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+var _ http.Handler = (*chi.Mux)(nil)
