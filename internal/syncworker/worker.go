@@ -315,7 +315,7 @@ func (w *Worker) exec(ctx context.Context, query string, params *table.QueryPara
 
 func optionalBool(val *bool) types.Value {
 	if val == nil {
-		return types.OptionalValue(types.NullValue(types.TypeBool))
+		return types.NullValue(types.TypeBool)
 	}
 	return types.OptionalValue(types.BoolValue(*val))
 }

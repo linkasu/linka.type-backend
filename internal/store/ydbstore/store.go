@@ -339,7 +339,7 @@ VALUES ($user_id, $created_at, $inited, $deleted_at);`)
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$created_at", types.Int64Value(createdAt)),
 		table.ValueParam("$inited", types.BoolValue(state.Inited)),
-		table.ValueParam("$deleted_at", types.OptionalValue(types.NullValue(types.TypeInt64))),
+		table.ValueParam("$deleted_at", types.NullValue(types.TypeInt64)),
 	)
 
 	if err := s.execWrite(ctx, query, params); err != nil {
@@ -864,7 +864,7 @@ func (s *Store) execWrite(ctx context.Context, query string, params *table.Query
 
 func optionalBool(val *bool) types.Value {
 	if val == nil {
-		return types.OptionalValue(types.NullValue(types.TypeBool))
+		return types.NullValue(types.TypeBool)
 	}
 	return types.OptionalValue(types.BoolValue(*val))
 }
