@@ -92,7 +92,7 @@ Notes:
 
 ## API requirements (v1)
 Auth:
-- Authorization: `Bearer <Firebase ID token>` on all endpoints.
+- Authorization: `Bearer <token>` on all endpoints except `/v1/auth` (default via /v1/auth).
 
 Data:
 - `GET /v1/categories`

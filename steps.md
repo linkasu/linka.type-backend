@@ -22,7 +22,7 @@
 6) Set up Lockbox for secrets and Cloud Logging/metrics.
 
 ## Phase 3: Build the backend (compatibility-first)
-1) Implement auth middleware that validates Firebase ID tokens.
+1) Implement auth middleware that validates bearer tokens (Firebase ID tokens).
 2) Implement CRUD endpoints for categories and statements.
 3) Implement quickes and inited state endpoints.
 4) Implement global categories list and importFromGlobal logic.
@@ -53,7 +53,7 @@ PWA (linka-type-pwa):
 2) Replace Store data access with Yandex endpoints for categories, statements, quickes, and inited.
 3) Replace Firebase Functions calls (createStatement, importFromGlobal) with HTTP.
 4) Add long polling and WebSocket listeners; keep Firebase listeners as fallback.
-5) Send Firebase ID token in Authorization header for API calls.
+5) Send bearer token (default via /v1/auth) in Authorization header for API calls.
 6) Use https://tts.linka.su/tts for audio and https://tts.linka.su/voices for voice list (or keep a compatibility proxy if needed).
 
 Android KMP (linkatype-android):

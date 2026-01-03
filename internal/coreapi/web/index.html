@@ -43,7 +43,7 @@
         </div>
         <div class="hero-badges reveal delay-3">
           <span class="badge">REST + WebSocket</span>
-          <span class="badge">Firebase ID Token</span>
+          <span class="badge">Token Auth</span>
           <span class="badge">YDB + Sync</span>
         </div>
       </div>
@@ -101,7 +101,7 @@
       <div class="flow-card reveal">
         <h2 class="section-title">Как подключиться</h2>
         <ol class="flow-list">
-          <li>Получите Firebase ID token в клиенте или через POST /v1/auth (email + пароль).</li>
+          <li>Получите токен через POST /v1/auth (email + пароль).</li>
           <li>Выберите базовый URL (Gateway или контейнер core-api).</li>
           <li>Синхронизируйте категории, фразы и быстрые ответы.</li>
         </ol>
@@ -130,7 +130,7 @@
         <span class="eyebrow">API Playground</span>
         <h2 class="section-title">Проверьте запросы прямо здесь</h2>
         <p class="section-subtitle">
-          Введите Firebase ID token (его можно получить через /v1/auth) и выполните запросы к API. Все вызовы идут напрямую в backend, CORS уже настроен.
+          Введите токен (по умолчанию через /v1/auth) и выполните запросы к API. Все вызовы идут напрямую в backend, CORS уже настроен.
         </p>
         <div class="tips">
           <div>
@@ -149,7 +149,7 @@
           <input id="baseUrl" type="url" placeholder="https://api.example.com">
         </label>
         <label class="field">
-          <span>Firebase ID token</span>
+          <span>Токен доступа</span>
           <input id="token" type="password" placeholder="eyJhbGciOi...">
         </label>
         <label class="field">

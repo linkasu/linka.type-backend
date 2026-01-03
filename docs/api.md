@@ -1,6 +1,6 @@
 # API v1
 
-All endpoints except `POST /v1/auth` require `Authorization: Bearer <Firebase ID token>`.
+All endpoints except `POST /v1/auth` require a bearer token (default: token from `POST /v1/auth`).
 
 ## Conventions
 - Timestamps are epoch milliseconds (int64).

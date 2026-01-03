@@ -22,14 +22,14 @@
 - Keeps `admins`, `global` data, and `factory/questions` in sync.
 
 ## Data flow
-1. Client calls API with Firebase ID token.
+1. Client calls API with a bearer token (default from `/v1/auth`).
 2. core-api verifies token and resolves user_id.
 3. core-api reads from YDB; if missing, it seeds from Firebase.
 4. Mutations are written to YDB, then mirrored to Firebase.
 5. A `changes` row is written for realtime delivery.
 
 ## Auth and authorization
-- All endpoints require `Authorization: Bearer <Firebase ID token>`.
+- All endpoints except `/v1/auth` require a bearer token.
 - Users can only access their own data.
 - Global and factory write operations require admin (via `admins` table).
 

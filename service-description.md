@@ -37,7 +37,7 @@ Yandex Cloud:
 - Cloud Logging and monitoring
 
 ## Service responsibilities
-- Authentication and identity mapping (accept Firebase ID tokens initially)
+- Authentication and identity mapping (accept bearer tokens; default via /v1/auth)
 - CRUD for categories, statements, quick phrases, and onboarding flags
 - Global categories and admin write access
 - Onboarding question templates and phrase generation
@@ -64,7 +64,7 @@ Key requirements:
 
 ## API surface (v1)
 Auth:
-- Authorization: Bearer <Firebase ID token> (initially required for all endpoints).
+- Bearer token required for all endpoints except /v1/auth (default via /v1/auth).
 
 Data:
 - GET /v1/categories
