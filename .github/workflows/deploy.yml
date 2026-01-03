@@ -129,6 +129,7 @@ jobs:
             echo "Failed to resolve CORE_API_URL." >&2
             exit 1
           fi
+          CORE_API_URL="${CORE_API_URL%/}"
           curl -sSf "${CORE_API_URL}/" >/dev/null
           curl -sSf "${CORE_API_URL}/healthz" >/dev/null
           : "${AUTH_TEST_EMAIL:?Missing AUTH_TEST_EMAIL secret}"
