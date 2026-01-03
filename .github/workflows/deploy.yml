@@ -41,7 +41,7 @@ jobs:
           yc config set folder-id "$YC_FOLDER_ID"
 
       - name: Configure docker auth
-        run: yc container registry configure-docker --non-interactive
+        run: yc container registry configure-docker
 
       - name: Build and push core-api
         run: |
