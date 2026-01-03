@@ -8,6 +8,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/ydb-platform/ydb-go-sdk/v3 v3.125.1
 	google.golang.org/api v0.231.0
+	nhooyr.io/websocket v1.8.17
 )
 
 require (
