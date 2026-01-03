@@ -29,6 +29,8 @@ jobs:
       FIREBASE_DATABASE_URL: ${{ secrets.FIREBASE_DATABASE_URL }}
       FIREBASE_CREDENTIALS_B64: ${{ secrets.FIREBASE_CREDENTIALS_B64 }}
       FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+      AUTH_TEST_EMAIL: ${{ secrets.AUTH_TEST_EMAIL }}
+      AUTH_TEST_PASSWORD: ${{ secrets.AUTH_TEST_PASSWORD }}
       FEATURE_READ_SOURCE: ${{ vars.FEATURE_READ_SOURCE }}
       FEATURE_COHORT_PERCENT: ${{ vars.FEATURE_COHORT_PERCENT }}
       TTS_PROXY_ENABLED: ${{ vars.TTS_PROXY_ENABLED }}
@@ -120,6 +122,7 @@ jobs:
 
       - name: Smoke test core-api
         run: |
+          set -euo pipefail
           CONTAINER_NAME="${CORE_API_CONTAINER_NAME:-linka-core-api}"
           CORE_API_URL=$(yc serverless container get --name "${CONTAINER_NAME}" --folder-id "${FOLDER_ID}" --format json | jq -r '.url')
           if [ -z "${CORE_API_URL}" ] || [ "${CORE_API_URL}" = "null" ]; then
@@ -128,3 +131,14 @@ jobs:
           fi
           curl -sSf "${CORE_API_URL}/" >/dev/null
           curl -sSf "${CORE_API_URL}/healthz" >/dev/null
+          : "${AUTH_TEST_EMAIL:?Missing AUTH_TEST_EMAIL secret}"
+          : "${AUTH_TEST_PASSWORD:?Missing AUTH_TEST_PASSWORD secret}"
+          auth_response=$(curl -sS -X POST -H "Content-Type: application/json" \
+            -d "{\"email\":\"${AUTH_TEST_EMAIL}\",\"password\":\"${AUTH_TEST_PASSWORD}\"}" \
+            "${CORE_API_URL}/v1/auth")
+          token=$(echo "${auth_response}" | jq -r '.token // empty')
+          if [ -z "${token}" ]; then
+            echo "Auth smoke test failed." >&2
+            echo "${auth_response}" | jq -c '.error // {}'
+            exit 1
+          fi

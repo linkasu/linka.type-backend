@@ -101,7 +101,7 @@
       <div class="flow-card reveal">
         <h2 class="section-title">Как подключиться</h2>
         <ol class="flow-list">
-          <li>Получите Firebase ID token в клиенте.</li>
+          <li>Получите Firebase ID token в клиенте или через POST /v1/auth (email + пароль).</li>
           <li>Выберите базовый URL (Gateway или контейнер core-api).</li>
           <li>Синхронизируйте категории, фразы и быстрые ответы.</li>
         </ol>
@@ -130,7 +130,7 @@
         <span class="eyebrow">API Playground</span>
         <h2 class="section-title">Проверьте запросы прямо здесь</h2>
         <p class="section-subtitle">
-          Введите Firebase ID token и выполните запросы к API. Все вызовы идут напрямую в backend, CORS уже настроен.
+          Введите Firebase ID token (его можно получить через /v1/auth) и выполните запросы к API. Все вызовы идут напрямую в backend, CORS уже настроен.
         </p>
         <div class="tips">
           <div>

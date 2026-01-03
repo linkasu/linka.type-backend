@@ -11,6 +11,12 @@
 
   const templates = [
     {
+      label: "POST /v1/auth",
+      method: "POST",
+      path: "/v1/auth",
+      body: JSON.stringify({ email: "user@example.com", password: "secret" }, null, 2)
+    },
+    {
       label: "GET /v1/categories",
       method: "GET",
       path: "/v1/categories",
