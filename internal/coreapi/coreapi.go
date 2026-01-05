@@ -7,7 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -881,7 +883,8 @@ func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.CreateClientKey(r.Context(), key); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "key_create_failed", err.Error())
+		log.Printf("CreateClientKey error: %v", err)
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_create_failed", fmt.Sprintf("failed to create client key: %v", err))
 		return
 	}
 
