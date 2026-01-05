@@ -3,7 +3,6 @@ package httpmiddleware
 import (
 	"net/http"
 
-	"github.com/linkasu/linka.type-backend/internal/auth"
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
