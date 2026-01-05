@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-//go:embed web/* web/assets/*
+//go:embed web/* web/assets/* web/admin/*
 var webFS embed.FS
 
 var (

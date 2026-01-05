@@ -2,6 +2,9 @@ package coreapi
 
 import (
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"io"
@@ -17,6 +20,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
 	"github.com/linkasu/linka.type-backend/internal/service"
+	"github.com/linkasu/linka.type-backend/internal/store"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
 )
 
@@ -46,6 +50,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 	r.Get("/", serveWebFile("index.html", "text/html; charset=utf-8"))
 	r.Get("/client.md", serveWebFile("client.md", "text/markdown; charset=utf-8"))
 	r.Get("/AGENTS.md", serveWebFile("AGENTS.md", "text/markdown; charset=utf-8"))
+	r.Get("/admin/", serveWebFile("admin/index.html", "text/html; charset=utf-8"))
 	r.Get("/healthz", healthHandler)
 	r.Handle("/assets/*", assetsHandler())
 
@@ -84,6 +89,26 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 			}
 
 			r.Get("/predictor", api.predictorComplete)
+		})
+
+		r.Route("/admin", func(r chi.Router) {
+			r.Use(httpmiddleware.Auth(verifier))
+			r.Use(httpmiddleware.Admin(svc))
+			r.Get("/stats", api.adminStats)
+			r.Get("/admins", api.adminListAdmins)
+			r.Post("/admins", api.adminAddAdmin)
+			r.Delete("/admins/{user_id}", api.adminRemoveAdmin)
+			r.Get("/client-keys", api.adminListClientKeys)
+			r.Post("/client-keys", api.adminCreateClientKey)
+			r.Delete("/client-keys/{key_hash}", api.adminRevokeClientKey)
+			r.Get("/global/categories", api.adminListGlobalCategories)
+			r.Post("/global/categories", api.adminCreateGlobalCategory)
+			r.Patch("/global/categories/{id}", api.adminUpdateGlobalCategory)
+			r.Delete("/global/categories/{id}", api.adminDeleteGlobalCategory)
+			r.Get("/factory/questions", api.adminListFactoryQuestions)
+			r.Post("/factory/questions", api.adminCreateFactoryQuestion)
+			r.Patch("/factory/questions/{id}", api.adminUpdateFactoryQuestion)
+			r.Delete("/factory/questions/{id}", api.adminDeleteFactoryQuestion)
 		})
 	})
 
@@ -752,4 +777,310 @@ func firebaseAuthError(message string) (int, string, string) {
 	default:
 		return http.StatusBadGateway, "auth_failed", "firebase auth failed"
 	}
+}
+
+func (api *API) adminStats(w http.ResponseWriter, r *http.Request) {
+	window := r.URL.Query().Get("window")
+	if window == "" {
+		window = "24h"
+	}
+	duration, err := time.ParseDuration(window)
+	if err != nil {
+		duration = 24 * time.Hour
+	}
+	since := time.Now().Add(-duration)
+
+	stats, err := api.svc.AdminStats(r.Context(), since)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "stats_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, stats)
+}
+
+func (api *API) adminListAdmins(w http.ResponseWriter, r *http.Request) {
+	admins, err := api.svc.ListAdmins(r.Context())
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "admins_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": admins})
+}
+
+func (api *API) adminAddAdmin(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		UserID string `json:"user_id"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.UserID) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "user_id is required")
+		return
+	}
+
+	if err := api.svc.AddAdmin(r.Context(), req.UserID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "add_admin_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) adminRemoveAdmin(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "user_id")
+	if userID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "user_id is required")
+		return
+	}
+
+	if err := api.svc.RemoveAdmin(r.Context(), userID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "remove_admin_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) adminListClientKeys(w http.ResponseWriter, r *http.Request) {
+	keys, err := api.svc.ListClientKeys(r.Context())
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "keys_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": keys})
+}
+
+func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ClientID string `json:"client_id"`
+		Status   string `json:"status"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.ClientID) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "client_id is required")
+		return
+	}
+	if req.Status == "" {
+		req.Status = "active"
+	}
+
+	keyPlain, keyHash, err := generateClientKey()
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_generation_failed", err.Error())
+		return
+	}
+
+	key := store.ClientKey{
+		KeyHash:   keyHash,
+		ClientID:  req.ClientID,
+		Status:    req.Status,
+		CreatedAt: time.Now().UnixMilli(),
+	}
+
+	if err := api.svc.CreateClientKey(r.Context(), key); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_create_failed", err.Error())
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"api_key":     keyPlain,
+		"key_hash":    keyHash,
+		"client_id":   req.ClientID,
+		"status":      req.Status,
+		"created_at":  key.CreatedAt,
+	})
+}
+
+func (api *API) adminRevokeClientKey(w http.ResponseWriter, r *http.Request) {
+	keyHash := chi.URLParam(r, "key_hash")
+	if keyHash == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_hash", "key_hash is required")
+		return
+	}
+
+	if err := api.svc.RevokeClientKey(r.Context(), keyHash); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_revoke_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) adminListGlobalCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := api.svc.ListGlobalCategories(r.Context(), true)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, categories)
+}
+
+func (api *API) adminCreateGlobalCategory(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID      string `json:"id"`
+		Label   string `json:"label"`
+		Default *bool  `json:"default"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.Label) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_label", "label is required")
+		return
+	}
+
+	category, err := api.svc.CreateGlobalCategory(r.Context(), service.GlobalCategoryInput{
+		ID:      req.ID,
+		Label:   req.Label,
+		Default: req.Default,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_global_category_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, category)
+}
+
+func (api *API) adminUpdateGlobalCategory(w http.ResponseWriter, r *http.Request) {
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+
+	var req struct {
+		Label   *string `json:"label"`
+		Default *bool   `json:"default"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+
+	category, err := api.svc.UpdateGlobalCategory(r.Context(), categoryID, service.GlobalCategoryPatch{
+		Label:   req.Label,
+		Default: req.Default,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_global_category_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, category)
+}
+
+func (api *API) adminDeleteGlobalCategory(w http.ResponseWriter, r *http.Request) {
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+
+	if err := api.svc.DeleteGlobalCategory(r.Context(), categoryID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_global_category_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func (api *API) adminListFactoryQuestions(w http.ResponseWriter, r *http.Request) {
+	questions, err := api.svc.ListFactoryQuestions(r.Context())
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, questions)
+}
+
+func (api *API) adminCreateFactoryQuestion(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ID         string   `json:"id"`
+		Label      string   `json:"label"`
+		Phrases    []string `json:"phrases"`
+		Category   string   `json:"category"`
+		Type       string   `json:"type"`
+		OrderIndex int      `json:"order_index"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	if strings.TrimSpace(req.Label) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_label", "label is required")
+		return
+	}
+
+	question, err := api.svc.CreateFactoryQuestion(r.Context(), service.FactoryQuestionInput{
+		ID:         req.ID,
+		Label:      req.Label,
+		Phrases:    req.Phrases,
+		Category:   req.Category,
+		Type:       req.Type,
+		OrderIndex: req.OrderIndex,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_question_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, question)
+}
+
+func (api *API) adminUpdateFactoryQuestion(w http.ResponseWriter, r *http.Request) {
+	questionID := chi.URLParam(r, "id")
+	if questionID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "question id is required")
+		return
+	}
+
+	var req struct {
+		Label      *string   `json:"label"`
+		Phrases    []string  `json:"phrases"`
+		Category   *string   `json:"category"`
+		Type       *string   `json:"type"`
+		OrderIndex *int      `json:"order_index"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+
+	question, err := api.svc.UpdateFactoryQuestion(r.Context(), questionID, service.FactoryQuestionPatch{
+		Label:      req.Label,
+		Phrases:    req.Phrases,
+		Category:   req.Category,
+		Type:       req.Type,
+		OrderIndex: req.OrderIndex,
+	})
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_question_failed", err.Error())
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, question)
+}
+
+func (api *API) adminDeleteFactoryQuestion(w http.ResponseWriter, r *http.Request) {
+	questionID := chi.URLParam(r, "id")
+	if questionID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "question id is required")
+		return
+	}
+
+	if err := api.svc.DeleteFactoryQuestion(r.Context(), questionID); err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_question_failed", err.Error())
+		return
+	}
+	writeStatusOK(w)
+}
+
+func generateClientKey() (string, string, error) {
+	buf := make([]byte, 32)
+	if _, err := io.ReadFull(rand.Reader, buf); err != nil {
+		return "", "", err
+	}
+	keyPlain := "ltk_" + hex.EncodeToString(buf)
+	hash := sha256.Sum256([]byte(keyPlain))
+	keyHash := hex.EncodeToString(hash[:])
+	return keyPlain, keyHash, nil
 }

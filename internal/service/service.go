@@ -68,6 +68,39 @@ type QuestionInput struct {
 	Type       string   `json:"type"`
 }
 
+// GlobalCategoryInput captures global category creation payload.
+type GlobalCategoryInput struct {
+	ID      string
+	Label   string
+	Created int64
+	Default *bool
+}
+
+// GlobalCategoryPatch captures global category updates.
+type GlobalCategoryPatch struct {
+	Label   *string
+	Default *bool
+}
+
+// FactoryQuestionInput captures factory question creation payload.
+type FactoryQuestionInput struct {
+	ID         string
+	Label      string
+	Phrases    []string
+	Category   string
+	Type       string
+	OrderIndex int
+}
+
+// FactoryQuestionPatch captures factory question updates.
+type FactoryQuestionPatch struct {
+	Label      *string
+	Phrases    []string
+	Category   *string
+	Type       *string
+	OrderIndex *int
+}
+
 // ListCategories returns categories using the configured read source.
 func (s *Service) ListCategories(ctx context.Context, userID string) ([]models.Category, error) {
 	if s.useYDB(userID) {
@@ -773,4 +806,167 @@ func filterStatements(statements []models.Statement, categoryID string) []models
 
 func boolPtr(val bool) *bool {
 	return &val
+}
+
+// AdminStats returns statistics for admin panel.
+func (s *Service) AdminStats(ctx context.Context, since time.Time) (map[string]interface{}, error) {
+	users, err := s.Store.CountUsers(ctx, since)
+	if err != nil {
+		return nil, err
+	}
+	categories, err := s.Store.CountCategories(ctx, since)
+	if err != nil {
+		return nil, err
+	}
+	statements, err := s.Store.CountStatements(ctx, since)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"total_users":     users,
+		"total_categories": categories,
+		"total_statements": statements,
+		"since":           since.Format(time.RFC3339),
+		"window_seconds":  int(time.Since(since).Seconds()),
+	}, nil
+}
+
+// ListAdmins returns all admin user IDs.
+func (s *Service) ListAdmins(ctx context.Context) ([]string, error) {
+	return s.Store.ListAdmins(ctx)
+}
+
+// AddAdmin adds a user to the admin list.
+func (s *Service) AddAdmin(ctx context.Context, userID string) error {
+	return s.Store.AddAdmin(ctx, userID)
+}
+
+// RemoveAdmin removes a user from the admin list.
+func (s *Service) RemoveAdmin(ctx context.Context, userID string) error {
+	return s.Store.RemoveAdmin(ctx, userID)
+}
+
+// CreateClientKey creates a new client API key.
+func (s *Service) CreateClientKey(ctx context.Context, key store.ClientKey) error {
+	return s.Store.CreateClientKey(ctx, key)
+}
+
+// ListClientKeys returns all client keys.
+func (s *Service) ListClientKeys(ctx context.Context) ([]store.ClientKey, error) {
+	return s.Store.ListClientKeys(ctx)
+}
+
+// RevokeClientKey revokes a client key.
+func (s *Service) RevokeClientKey(ctx context.Context, keyHash string) error {
+	return s.Store.RevokeClientKey(ctx, keyHash)
+}
+
+// CreateGlobalCategory creates a global category.
+func (s *Service) CreateGlobalCategory(ctx context.Context, input GlobalCategoryInput) (models.GlobalCategory, error) {
+	now := time.Now().UnixMilli()
+	if input.ID == "" {
+		input.ID = id.NewShort()
+	}
+	if input.Created == 0 {
+		input.Created = now
+	}
+	category := models.GlobalCategory{
+		ID:        input.ID,
+		Label:     input.Label,
+		Created:   input.Created,
+		Default:   input.Default,
+		UpdatedAt: now,
+	}
+	return s.Store.UpsertGlobalCategory(ctx, category)
+}
+
+// UpdateGlobalCategory updates a global category.
+func (s *Service) UpdateGlobalCategory(ctx context.Context, categoryID string, patch GlobalCategoryPatch) (models.GlobalCategory, error) {
+	categories, err := s.Store.ListGlobalCategories(ctx, false)
+	if err != nil {
+		return models.GlobalCategory{}, err
+	}
+	var category *models.GlobalCategory
+	for i := range categories {
+		if categories[i].ID == categoryID {
+			category = &categories[i]
+			break
+		}
+	}
+	if category == nil {
+		return models.GlobalCategory{}, store.ErrNotFound
+	}
+
+	if patch.Label != nil {
+		category.Label = *patch.Label
+	}
+	if patch.Default != nil {
+		category.Default = patch.Default
+	}
+	category.UpdatedAt = time.Now().UnixMilli()
+
+	return s.Store.UpsertGlobalCategory(ctx, *category)
+}
+
+// DeleteGlobalCategory deletes a global category.
+func (s *Service) DeleteGlobalCategory(ctx context.Context, categoryID string) error {
+	updatedAt := time.Now().UnixMilli()
+	return s.Store.DeleteGlobalCategory(ctx, categoryID, updatedAt)
+}
+
+// CreateFactoryQuestion creates a factory question.
+func (s *Service) CreateFactoryQuestion(ctx context.Context, input FactoryQuestionInput) (models.FactoryQuestion, error) {
+	if input.ID == "" {
+		input.ID = id.NewShort()
+	}
+	question := models.FactoryQuestion{
+		ID:         input.ID,
+		Label:      input.Label,
+		Phrases:    input.Phrases,
+		Category:   input.Category,
+		Type:       input.Type,
+		OrderIndex: input.OrderIndex,
+	}
+	return s.Store.UpsertFactoryQuestion(ctx, question)
+}
+
+// UpdateFactoryQuestion updates a factory question.
+func (s *Service) UpdateFactoryQuestion(ctx context.Context, questionID string, patch FactoryQuestionPatch) (models.FactoryQuestion, error) {
+	questions, err := s.Store.ListFactoryQuestions(ctx)
+	if err != nil {
+		return models.FactoryQuestion{}, err
+	}
+	var question *models.FactoryQuestion
+	for i := range questions {
+		if questions[i].ID == questionID {
+			question = &questions[i]
+			break
+		}
+	}
+	if question == nil {
+		return models.FactoryQuestion{}, store.ErrNotFound
+	}
+
+	if patch.Label != nil {
+		question.Label = *patch.Label
+	}
+	if patch.Phrases != nil {
+		question.Phrases = patch.Phrases
+	}
+	if patch.Category != nil {
+		question.Category = *patch.Category
+	}
+	if patch.Type != nil {
+		question.Type = *patch.Type
+	}
+	if patch.OrderIndex != nil {
+		question.OrderIndex = *patch.OrderIndex
+	}
+
+	return s.Store.UpsertFactoryQuestion(ctx, *question)
+}
+
+// DeleteFactoryQuestion deletes a factory question.
+func (s *Service) DeleteFactoryQuestion(ctx context.Context, questionID string) error {
+	return s.Store.DeleteFactoryQuestion(ctx, questionID)
 }

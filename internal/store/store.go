@@ -3,11 +3,21 @@ package store
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/linkasu/linka.type-backend/internal/models"
 )
 
 var ErrNotFound = errors.New("not found")
+
+// ClientKey represents a client API key.
+type ClientKey struct {
+	KeyHash  string
+	ClientID string
+	Status   string
+	CreatedAt int64
+	RevokedAt *int64
+}
 
 // Store defines the core data operations backed by YDB.
 type Store interface {
@@ -26,14 +36,29 @@ type Store interface {
 	ListGlobalCategories(ctx context.Context, includeStatements bool) ([]models.GlobalCategory, error)
 	ListGlobalStatements(ctx context.Context, categoryID string) ([]models.Statement, error)
 	ImportGlobalCategory(ctx context.Context, userID, categoryID string, force bool) (string, error)
+	UpsertGlobalCategory(ctx context.Context, category models.GlobalCategory) (models.GlobalCategory, error)
+	DeleteGlobalCategory(ctx context.Context, categoryID string, updatedAt int64) error
 
 	ListFactoryQuestions(ctx context.Context) ([]models.FactoryQuestion, error)
+	UpsertFactoryQuestion(ctx context.Context, question models.FactoryQuestion) (models.FactoryQuestion, error)
+	DeleteFactoryQuestion(ctx context.Context, questionID string) error
 
 	IsAdmin(ctx context.Context, userID string) (bool, error)
 	DeleteUser(ctx context.Context, userID string, updatedAt int64) error
 
 	AppendChange(ctx context.Context, userID string, change models.ChangeEvent) error
 	ListChanges(ctx context.Context, userID, cursor string, limit int) (nextCursor string, changes []models.ChangeEvent, err error)
+
+	// Admin methods
+	CountUsers(ctx context.Context, since time.Time) (int64, error)
+	CountCategories(ctx context.Context, since time.Time) (int64, error)
+	CountStatements(ctx context.Context, since time.Time) (int64, error)
+	ListAdmins(ctx context.Context) ([]string, error)
+	AddAdmin(ctx context.Context, userID string) error
+	RemoveAdmin(ctx context.Context, userID string) error
+	CreateClientKey(ctx context.Context, key ClientKey) error
+	ListClientKeys(ctx context.Context) ([]ClientKey, error)
+	RevokeClientKey(ctx context.Context, keyHash string) error
 }
 
 // LegacyWriter mirrors writes to Firebase RTDB.

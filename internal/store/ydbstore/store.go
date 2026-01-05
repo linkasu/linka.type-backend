@@ -996,3 +996,385 @@ LIMIT 1;`)
 
 	return exists, nil
 }
+
+func (s *Store) CountUsers(ctx context.Context, since time.Time) (int64, error) {
+	sinceMs := since.UnixMilli()
+	query := s.withPrefix(`
+DECLARE $since AS Int64;
+SELECT COUNT(*) as cnt
+FROM users
+WHERE created_at >= $since AND deleted_at IS NULL;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$since", types.Int64Value(sinceMs)),
+	)
+
+	var count int64
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			return nil
+		}
+		if err := res.ScanNamed(named.Required("cnt", &count)); err != nil {
+			return err
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (s *Store) CountCategories(ctx context.Context, since time.Time) (int64, error) {
+	sinceMs := since.UnixMilli()
+	query := s.withPrefix(`
+DECLARE $since AS Int64;
+SELECT COUNT(*) as cnt
+FROM categories
+WHERE created_at >= $since AND deleted_at IS NULL;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$since", types.Int64Value(sinceMs)),
+	)
+
+	var count int64
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			return nil
+		}
+		if err := res.ScanNamed(named.Required("cnt", &count)); err != nil {
+			return err
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (s *Store) CountStatements(ctx context.Context, since time.Time) (int64, error) {
+	sinceMs := since.UnixMilli()
+	query := s.withPrefix(`
+DECLARE $since AS Int64;
+SELECT COUNT(*) as cnt
+FROM statements
+WHERE created_at >= $since AND deleted_at IS NULL;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$since", types.Int64Value(sinceMs)),
+	)
+
+	var count int64
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			return nil
+		}
+		if err := res.ScanNamed(named.Required("cnt", &count)); err != nil {
+			return err
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}
+
+func (s *Store) ListAdmins(ctx context.Context) ([]string, error) {
+	query := s.withPrefix(`
+SELECT user_id
+FROM admins
+ORDER BY user_id;`)
+
+	var admins []string
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var userID string
+			if err := res.ScanNamed(named.Required("user_id", &userID)); err != nil {
+				return err
+			}
+			admins = append(admins, userID)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return admins, nil
+}
+
+func (s *Store) AddAdmin(ctx context.Context, userID string) error {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+UPSERT INTO admins (user_id) VALUES ($user_id);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) RemoveAdmin(ctx context.Context, userID string) error {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DELETE FROM admins WHERE user_id = $user_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) CreateClientKey(ctx context.Context, key store.ClientKey) error {
+	query := s.withPrefix(`
+DECLARE $key_hash AS Utf8;
+DECLARE $client_id AS Utf8;
+DECLARE $status AS Utf8;
+DECLARE $created_at AS Int64;
+UPSERT INTO client_keys (key_hash, client_id, status, created_at, revoked_at)
+VALUES ($key_hash, $client_id, $status, $created_at, NULL);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$key_hash", types.UTF8Value(key.KeyHash)),
+		table.ValueParam("$client_id", types.UTF8Value(key.ClientID)),
+		table.ValueParam("$status", types.UTF8Value(key.Status)),
+		table.ValueParam("$created_at", types.Int64Value(key.CreatedAt)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) ListClientKeys(ctx context.Context) ([]store.ClientKey, error) {
+	query := s.withPrefix(`
+SELECT key_hash, client_id, status, created_at, revoked_at
+FROM client_keys
+ORDER BY created_at DESC;`)
+
+	var keys []store.ClientKey
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, nil)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				keyHash  string
+				clientID string
+				status   string
+				created  int64
+				revoked  *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("key_hash", &keyHash),
+				named.Required("client_id", &clientID),
+				named.Required("status", &status),
+				named.Required("created_at", &created),
+				named.Optional("revoked_at", &revoked),
+			); err != nil {
+				return err
+			}
+			keys = append(keys, store.ClientKey{
+				KeyHash:   keyHash,
+				ClientID:  clientID,
+				Status:    status,
+				CreatedAt: created,
+				RevokedAt: revoked,
+			})
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return keys, nil
+}
+
+func (s *Store) RevokeClientKey(ctx context.Context, keyHash string) error {
+	now := time.Now().UnixMilli()
+	query := s.withPrefix(`
+DECLARE $key_hash AS Utf8;
+DECLARE $revoked_at AS Int64;
+UPDATE client_keys
+SET status = 'revoked', revoked_at = $revoked_at
+WHERE key_hash = $key_hash;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$key_hash", types.UTF8Value(keyHash)),
+		table.ValueParam("$revoked_at", types.Int64Value(now)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) UpsertGlobalCategory(ctx context.Context, category models.GlobalCategory) (models.GlobalCategory, error) {
+	now := time.Now().UnixMilli()
+	if category.Created == 0 {
+		category.Created = now
+	}
+	if category.UpdatedAt == 0 {
+		category.UpdatedAt = now
+	}
+
+	query := s.withPrefix(`
+DECLARE $category_id AS Utf8;
+DECLARE $label AS Utf8;
+DECLARE $created_at AS Int64;
+DECLARE $is_default AS Bool?;
+DECLARE $updated_at AS Int64;
+UPSERT INTO global_categories (category_id, label, created_at, is_default, updated_at)
+VALUES ($category_id, $label, $created_at, $is_default, $updated_at);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$category_id", types.UTF8Value(category.ID)),
+		table.ValueParam("$label", types.UTF8Value(category.Label)),
+		table.ValueParam("$created_at", types.Int64Value(category.Created)),
+		table.ValueParam("$is_default", optionalBool(category.Default)),
+		table.ValueParam("$updated_at", types.Int64Value(category.UpdatedAt)),
+	)
+
+	err := s.execWrite(ctx, query, params)
+	if err != nil {
+		return models.GlobalCategory{}, err
+	}
+
+	return category, nil
+}
+
+func (s *Store) DeleteGlobalCategory(ctx context.Context, categoryID string, updatedAt int64) error {
+	if updatedAt == 0 {
+		updatedAt = time.Now().UnixMilli()
+	}
+
+	queries := []struct {
+		query  string
+		params *table.QueryParameters
+	}{
+		{
+			query: s.withPrefix(`
+DECLARE $category_id AS Utf8;
+DECLARE $deleted_at AS Int64;
+UPDATE global_categories
+SET deleted_at = $deleted_at, updated_at = $deleted_at
+WHERE category_id = $category_id;`),
+			params: table.NewQueryParameters(
+				table.ValueParam("$category_id", types.UTF8Value(categoryID)),
+				table.ValueParam("$deleted_at", types.Int64Value(updatedAt)),
+			),
+		},
+		{
+			query: s.withPrefix(`
+DECLARE $category_id AS Utf8;
+DECLARE $deleted_at AS Int64;
+UPDATE global_statements
+SET deleted_at = $deleted_at, updated_at = $deleted_at
+WHERE category_id = $category_id;`),
+			params: table.NewQueryParameters(
+				table.ValueParam("$category_id", types.UTF8Value(categoryID)),
+				table.ValueParam("$deleted_at", types.Int64Value(updatedAt)),
+			),
+		},
+	}
+
+	for _, item := range queries {
+		if err := s.execWrite(ctx, item.query, item.params); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Store) UpsertFactoryQuestion(ctx context.Context, question models.FactoryQuestion) (models.FactoryQuestion, error) {
+	phrasesJSON, err := json.Marshal(question.Phrases)
+	if err != nil {
+		return models.FactoryQuestion{}, err
+	}
+
+	query := s.withPrefix(`
+DECLARE $question_id AS Utf8;
+DECLARE $label AS Utf8;
+DECLARE $phrases AS JsonDocument;
+DECLARE $category AS Utf8;
+DECLARE $type AS Utf8;
+DECLARE $order_index AS Int64;
+UPSERT INTO factory_questions (question_id, label, phrases, category, type, order_index)
+VALUES ($question_id, $label, $phrases, $category, $type, $order_index);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$question_id", types.UTF8Value(question.ID)),
+		table.ValueParam("$label", types.UTF8Value(question.Label)),
+		table.ValueParam("$phrases", types.JSONDocumentValue(string(phrasesJSON))),
+		table.ValueParam("$category", types.UTF8Value(question.Category)),
+		table.ValueParam("$type", types.UTF8Value(question.Type)),
+		table.ValueParam("$order_index", types.Int64Value(int64(question.OrderIndex))),
+	)
+
+	err = s.execWrite(ctx, query, params)
+	if err != nil {
+		return models.FactoryQuestion{}, err
+	}
+
+	return question, nil
+}
+
+func (s *Store) DeleteFactoryQuestion(ctx context.Context, questionID string) error {
+	query := s.withPrefix(`
+DECLARE $question_id AS Utf8;
+DELETE FROM factory_questions
+WHERE question_id = $question_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$question_id", types.UTF8Value(questionID)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}

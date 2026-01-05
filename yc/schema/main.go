@@ -88,6 +88,14 @@ var schema = []string{
   updated_at Int64 NOT NULL,
   PRIMARY KEY (user_id, cursor)
 );`,
+	`CREATE TABLE IF NOT EXISTS client_keys (
+  key_hash Utf8 NOT NULL,
+  client_id Utf8 NOT NULL,
+  status Utf8 NOT NULL,
+  created_at Int64 NOT NULL,
+  revoked_at Optional<Int64>,
+  PRIMARY KEY (key_hash)
+);`,
 }
 
 func main() {
