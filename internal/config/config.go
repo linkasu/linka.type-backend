@@ -10,13 +10,14 @@ import (
 
 // Config aggregates configuration used by services.
 type Config struct {
-	Env      string
-	HTTP     HTTPConfig
-	Firebase FirebaseConfig
-	YDB      YDBConfig
-	Feature  FeatureConfig
-	TTS      TTSConfig
-	Sync     SyncConfig
+	Env       string
+	HTTP      HTTPConfig
+	Firebase  FirebaseConfig
+	YDB       YDBConfig
+	Feature   FeatureConfig
+	TTS       TTSConfig
+	Sync      SyncConfig
+	Predictor PredictorConfig
 }
 
 // HTTPConfig controls HTTP server behavior.
@@ -62,6 +63,11 @@ type SyncConfig struct {
 	StreamEnabled   bool
 	StreamPath      string
 	StreamReconnect time.Duration
+}
+
+// PredictorConfig controls Yandex Predictor API integration.
+type PredictorConfig struct {
+	APIKey string
 }
 
 // Load reads config from environment variables.
@@ -110,6 +116,10 @@ func Load() (Config, error) {
 		StreamEnabled:   getenvBool("SYNC_STREAM_ENABLED", false),
 		StreamPath:      getenv("SYNC_STREAM_PATH", "users"),
 		StreamReconnect: getenvDuration("SYNC_STREAM_RECONNECT", 5*time.Second),
+	}
+
+	cfg.Predictor = PredictorConfig{
+		APIKey: getenv("YANDEX_PREDICTOR_API_KEY", ""),
 	}
 
 	if cfg.Feature.CohortPercent < 0 || cfg.Feature.CohortPercent > 100 {

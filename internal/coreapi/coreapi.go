@@ -82,6 +82,8 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 				r.MethodFunc(http.MethodPost, "/tts", api.proxyTTS)
 				r.MethodFunc(http.MethodGet, "/tts", api.proxyTTS)
 			}
+
+			r.Get("/predictor", api.predictorComplete)
 		})
 	})
 
@@ -578,6 +580,65 @@ func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
 
 func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
 	api.proxyRequest(w, r, api.config.TTS.BaseURL+"/tts")
+}
+
+func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {
+	if api.config.Predictor.APIKey == "" {
+		httpapi.WriteError(w, http.StatusServiceUnavailable, "predictor_unavailable", "predictor api key not configured")
+		return
+	}
+
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_query", "q parameter is required")
+		return
+	}
+
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "ru"
+	}
+
+	limit := r.URL.Query().Get("limit")
+	if limit == "" {
+		limit = "5"
+	}
+
+	predictorURL := "https://predictor.yandex.net/api/v1/predict.json/complete?key=" +
+		url.QueryEscape(api.config.Predictor.APIKey) +
+		"&q=" + url.QueryEscape(query) +
+		"&lang=" + url.QueryEscape(lang) +
+		"&limit=" + url.QueryEscape(limit)
+
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, predictorURL, nil)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "predictor_failed", err.Error())
+		return
+	}
+
+	resp, err := api.httpClient.Do(req)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "predictor_failed", "failed to call yandex predictor")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		httpapi.WriteError(w, http.StatusBadGateway, "predictor_failed", "yandex predictor returned error")
+		return
+	}
+
+	var result struct {
+		Text      []string `json:"text"`
+		Pos       int      `json:"pos"`
+		EndOfWord bool     `json:"endOfWord"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "predictor_failed", "invalid predictor response")
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, result)
 }
 
 func (api *API) proxyRequest(w http.ResponseWriter, r *http.Request, target string) {
