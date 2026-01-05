@@ -100,6 +100,7 @@ paths:
         httpMethod: GET
         headers:
           Authorization: "$request.header.Authorization"
+        omitEmptyHeaders: true
       responses:
         "200":
           description: OK
