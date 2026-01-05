@@ -91,6 +91,204 @@ paths:
       responses:
         "200":
           description: OK
+  /v1/admin/stats:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/admins:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/admins/{user_id}:
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: DELETE
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/client-keys:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/client-keys/{key_hash}:
+    parameters:
+      - name: key_hash
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: DELETE
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/global/categories:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/global/categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: PATCH
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    delete:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: DELETE
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/factory/questions:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/admin/factory/questions/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: PATCH
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    delete:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: DELETE
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
   /v1/{path}:
     parameters:
       - name: path
