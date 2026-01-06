@@ -104,6 +104,87 @@ paths:
       responses:
         "200":
           description: OK
+  /v1/categories:
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/categories/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    patch:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: PATCH
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+    delete:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: DELETE
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
+  /v1/categories/{id}/statements:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: GET
+        headers:
+          Authorization: "$request.header.Authorization"
+      responses:
+        "200":
+          description: OK
   /v1/admin/stats:
     get:
       x-yc-apigateway-integration:
