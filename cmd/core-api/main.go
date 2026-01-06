@@ -29,6 +29,16 @@ func main() {
 	}
 	logger := logging.New("core-api", cfg.Env)
 
+	// Validate Firebase credentials are present
+	if cfg.Firebase.CredentialsJSON == "" && cfg.Firebase.CredentialsFile == "" {
+		logger.Error("firebase credentials are required: set FIREBASE_CREDENTIALS_JSON, FIREBASE_CREDENTIALS_B64, or FIREBASE_CREDENTIALS_FILE")
+		os.Exit(1)
+	}
+	if cfg.Firebase.ProjectID == "" {
+		logger.Error("FIREBASE_PROJECT_ID is required")
+		os.Exit(1)
+	}
+
 	fbClients, err := firebase.NewClients(ctx, cfg.Firebase)
 	if err != nil {
 		logger.Error("failed to init firebase", "error", err)

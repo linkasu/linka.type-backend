@@ -60,6 +60,6 @@ func credentialOptions(cfg config.FirebaseConfig) ([]option.ClientOption, error)
 	case cfg.CredentialsFile != "":
 		return []option.ClientOption{option.WithCredentialsFile(cfg.CredentialsFile)}, nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("firebase credentials are required: set FIREBASE_CREDENTIALS_JSON, FIREBASE_CREDENTIALS_B64, or FIREBASE_CREDENTIALS_FILE")
 	}
 }
