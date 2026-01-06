@@ -13,6 +13,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/coreapi"
 	"github.com/linkasu/linka.type-backend/internal/firebase"
+	"github.com/linkasu/linka.type-backend/internal/jwt"
 	"github.com/linkasu/linka.type-backend/internal/logging"
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/store/legacy"
@@ -44,7 +45,23 @@ func main() {
 		logger.Error("failed to init firebase", "error", err)
 		os.Exit(1)
 	}
-	verifier := auth.NewFirebaseVerifier(fbClients.Auth)
+	fbVerifier := auth.NewFirebaseVerifier(fbClients.Auth)
+
+	var jwtManager *jwt.Manager
+	var verifier auth.Verifier = fbVerifier
+
+	if cfg.JWT.Secret != "" {
+		jwtManager = jwt.NewManager(jwt.Config{
+			Secret:               cfg.JWT.Secret,
+			AccessTokenDuration:  cfg.JWT.AccessTokenDuration,
+			RefreshTokenDuration: cfg.JWT.RefreshTokenDuration,
+		})
+		jwtVerifier := auth.NewJWTVerifier(jwtManager)
+		verifier = auth.NewCompositeVerifier(jwtVerifier, fbVerifier)
+		logger.Info("jwt auth enabled", "access_duration", cfg.JWT.AccessTokenDuration, "refresh_duration", cfg.JWT.RefreshTokenDuration)
+	} else {
+		logger.Warn("jwt auth disabled, using firebase only (set JWT_SECRET to enable)")
+	}
 
 	ydbClient, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
@@ -77,7 +94,7 @@ func main() {
 		Feature:      cfg.Feature,
 	}
 
-	handler := coreapi.New(svc, verifier, fbClients.Auth, cfg)
+	handler := coreapi.New(svc, verifier, fbClients.Auth, jwtManager, cfg)
 
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,

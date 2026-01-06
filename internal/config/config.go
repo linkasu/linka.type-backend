@@ -18,6 +18,7 @@ type Config struct {
 	TTS       TTSConfig
 	Sync      SyncConfig
 	Predictor PredictorConfig
+	JWT       JWTConfig
 }
 
 // HTTPConfig controls HTTP server behavior.
@@ -70,6 +71,15 @@ type PredictorConfig struct {
 	APIKey string
 }
 
+// JWTConfig controls JWT token generation and validation.
+type JWTConfig struct {
+	Secret               string
+	AccessTokenDuration  time.Duration
+	RefreshTokenDuration time.Duration
+	CookieDomain         string
+	CookieSecure         bool
+}
+
 // Load reads config from environment variables.
 func Load() (Config, error) {
 	var cfg Config
@@ -120,6 +130,14 @@ func Load() (Config, error) {
 
 	cfg.Predictor = PredictorConfig{
 		APIKey: getenv("YANDEX_PREDICTOR_API_KEY", ""),
+	}
+
+	cfg.JWT = JWTConfig{
+		Secret:               getenv("JWT_SECRET", ""),
+		AccessTokenDuration:  getenvDuration("JWT_ACCESS_TOKEN_DURATION", time.Hour),
+		RefreshTokenDuration: getenvDuration("JWT_REFRESH_TOKEN_DURATION", 90*24*time.Hour),
+		CookieDomain:         getenv("JWT_COOKIE_DOMAIN", ""),
+		CookieSecure:         getenvBool("JWT_COOKIE_SECURE", cfg.Env != "dev"),
 	}
 
 	if cfg.Feature.CohortPercent < 0 || cfg.Feature.CohortPercent > 100 {

@@ -21,6 +21,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
+	"github.com/linkasu/linka.type-backend/internal/jwt"
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/store"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
@@ -31,16 +32,18 @@ type API struct {
 	svc        *service.Service
 	auth       auth.Verifier
 	fbAuth     *fbauth.Client
+	jwtManager *jwt.Manager
 	config     config.Config
 	httpClient *http.Client
 }
 
 // New builds the core API router.
-func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cfg config.Config) http.Handler {
+func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jwtManager *jwt.Manager, cfg config.Config) http.Handler {
 	api := &API{
 		svc:        svc,
 		auth:       verifier,
 		fbAuth:     fbAuth,
+		jwtManager: jwtManager,
 		config:     cfg,
 		httpClient: &http.Client{Timeout: 30 * time.Second},
 	}
@@ -58,6 +61,8 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, cf
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Post("/auth", api.authToken)
+		r.Post("/auth/refresh", api.authRefresh)
+		r.Post("/auth/logout", api.authLogout)
 		r.Group(func(r chi.Router) {
 			r.Use(httpmiddleware.Auth(verifier))
 			r.Get("/categories", api.listCategories)
@@ -593,12 +598,95 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "invalid auth response")
 		return
 	}
-	if authResp.IDToken == "" {
+	if authResp.IDToken == "" || authResp.LocalID == "" {
 		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "missing token in auth response")
 		return
 	}
 
+	if api.jwtManager != nil {
+		tokenPair, err := api.jwtManager.GenerateTokenPair(authResp.LocalID, authResp.Email)
+		if err != nil {
+			httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate tokens")
+			return
+		}
+		api.setRefreshTokenCookie(w, tokenPair.RefreshToken)
+		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+			"token": tokenPair.AccessToken,
+			"user": map[string]string{
+				"id":    authResp.LocalID,
+				"email": authResp.Email,
+			},
+		})
+		return
+	}
+
 	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"token": authResp.IDToken})
+}
+
+func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
+	if api.jwtManager == nil {
+		httpapi.WriteError(w, http.StatusServiceUnavailable, "jwt_unavailable", "jwt not configured")
+		return
+	}
+
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil || cookie.Value == "" {
+		httpapi.WriteError(w, http.StatusUnauthorized, "unauthorized", "missing refresh token")
+		return
+	}
+
+	claims, err := api.jwtManager.ValidateRefreshToken(cookie.Value)
+	if err != nil {
+		api.clearRefreshTokenCookie(w)
+		httpapi.WriteError(w, http.StatusUnauthorized, "unauthorized", "invalid refresh token")
+		return
+	}
+
+	accessToken, expiresAt, err := api.jwtManager.GenerateAccessToken(claims.UID, claims.Email)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate access token")
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+		"token":     accessToken,
+		"expiresAt": expiresAt.Unix(),
+		"user": map[string]string{
+			"id":    claims.UID,
+			"email": claims.Email,
+		},
+	})
+}
+
+func (api *API) authLogout(w http.ResponseWriter, r *http.Request) {
+	api.clearRefreshTokenCookie(w)
+	writeStatusOK(w)
+}
+
+func (api *API) setRefreshTokenCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		Path:     "/v1/auth",
+		MaxAge:   int(api.jwtManager.RefreshTokenDuration().Seconds()),
+		HttpOnly: true,
+		Secure:   api.config.JWT.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		Domain:   api.config.JWT.CookieDomain,
+	})
+}
+
+func (api *API) clearRefreshTokenCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/v1/auth",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   api.config.JWT.CookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		Domain:   api.config.JWT.CookieDomain,
+	})
 }
 
 func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
@@ -722,7 +810,13 @@ func writeStatusOK(w http.ResponseWriter) {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Max-Age", "86400")
@@ -743,7 +837,10 @@ type firebaseSignInRequest struct {
 }
 
 type firebaseSignInResponse struct {
-	IDToken string `json:"idToken"`
+	IDToken      string `json:"idToken"`
+	LocalID      string `json:"localId"`
+	Email        string `json:"email"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 type firebaseErrorResponse struct {
