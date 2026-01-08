@@ -15,7 +15,11 @@ All endpoints except `POST /v1/auth` require a bearer token (default: token from
 ## Auth
 - `POST /v1/auth` (open)
   - Body: `{email, password}`
-  - Returns: `{token}`
+  - Returns: `{token, user?}`
+
+- `POST /v1/auth/register` (open)
+  - Body: `{email, password}`
+  - Returns: `{token, user?}`
 
 ## Categories
 - `GET /v1/categories`

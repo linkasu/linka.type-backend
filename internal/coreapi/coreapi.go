@@ -61,6 +61,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Post("/auth", api.authToken)
+		r.Post("/auth/register", api.authRegister)
 		r.Post("/auth/refresh", api.authRefresh)
 		r.Post("/auth/logout", api.authLogout)
 		r.Group(func(r chi.Router) {
@@ -610,6 +611,11 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userPayload := map[string]string{
+		"id":    authResp.LocalID,
+		"email": authResp.Email,
+	}
+
 	if api.jwtManager != nil {
 		tokenPair, err := api.jwtManager.GenerateTokenPair(authResp.LocalID, authResp.Email)
 		if err != nil {
@@ -619,15 +625,103 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 		api.setRefreshTokenCookie(w, tokenPair.RefreshToken)
 		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
 			"token": tokenPair.AccessToken,
-			"user": map[string]string{
-				"id":    authResp.LocalID,
-				"email": authResp.Email,
-			},
+			"user":  userPayload,
 		})
 		return
 	}
 
-	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"token": authResp.IDToken})
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+		"token": authResp.IDToken,
+		"user":  userPayload,
+	})
+}
+
+func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Email == "" || req.Password == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "email and password are required")
+		return
+	}
+	apiKey := strings.TrimSpace(api.config.Firebase.APIKey)
+	if apiKey == "" {
+		httpapi.WriteError(w, http.StatusServiceUnavailable, "auth_unavailable", "firebase api key not configured")
+		return
+	}
+
+	payload := firebaseSignInRequest{
+		Email:             req.Email,
+		Password:          req.Password,
+		ReturnSecureToken: true,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "auth_failed", "failed to build auth request")
+		return
+	}
+
+	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + url.QueryEscape(apiKey)
+	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
+		return
+	}
+	authReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := api.httpClient.Do(authReq)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		message := firebaseErrorMessage(resp.Body)
+		status, code, msg := firebaseAuthError(message)
+		httpapi.WriteError(w, status, code, msg)
+		return
+	}
+
+	var authResp firebaseSignInResponse
+	if err := json.NewDecoder(resp.Body).Decode(&authResp); err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "invalid auth response")
+		return
+	}
+	if authResp.IDToken == "" || authResp.LocalID == "" {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "missing token in auth response")
+		return
+	}
+
+	userPayload := map[string]string{
+		"id":    authResp.LocalID,
+		"email": authResp.Email,
+	}
+
+	if api.jwtManager != nil {
+		tokenPair, err := api.jwtManager.GenerateTokenPair(authResp.LocalID, authResp.Email)
+		if err != nil {
+			httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate tokens")
+			return
+		}
+		api.setRefreshTokenCookie(w, tokenPair.RefreshToken)
+		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+			"token": tokenPair.AccessToken,
+			"user":  userPayload,
+		})
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+		"token": authResp.IDToken,
+		"user":  userPayload,
+	})
 }
 
 func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
@@ -872,6 +966,10 @@ func firebaseAuthError(message string) (int, string, string) {
 	switch message {
 	case "INVALID_PASSWORD", "EMAIL_NOT_FOUND":
 		return http.StatusUnauthorized, "invalid_credentials", "invalid email or password"
+	case "EMAIL_EXISTS":
+		return http.StatusConflict, "email_exists", "email already registered"
+	case "OPERATION_NOT_ALLOWED":
+		return http.StatusForbidden, "operation_not_allowed", "registration disabled"
 	case "USER_DISABLED":
 		return http.StatusForbidden, "user_disabled", "user disabled"
 	case "INVALID_EMAIL":
@@ -881,6 +979,9 @@ func firebaseAuthError(message string) (int, string, string) {
 	case "TOO_MANY_ATTEMPTS_TRY_LATER":
 		return http.StatusTooManyRequests, "rate_limited", "too many attempts, try later"
 	default:
+		if strings.HasPrefix(message, "WEAK_PASSWORD") {
+			return http.StatusBadRequest, "weak_password", "password is too weak"
+		}
 		return http.StatusBadGateway, "auth_failed", "firebase auth failed"
 	}
 }
@@ -993,11 +1094,11 @@ func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{
-		"api_key":     keyPlain,
-		"key_hash":    keyHash,
-		"client_id":   req.ClientID,
-		"status":      req.Status,
-		"created_at":  key.CreatedAt,
+		"api_key":    keyPlain,
+		"key_hash":   keyHash,
+		"client_id":  req.ClientID,
+		"status":     req.Status,
+		"created_at": key.CreatedAt,
 	})
 }
 
@@ -1142,11 +1243,11 @@ func (api *API) adminUpdateFactoryQuestion(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req struct {
-		Label      *string   `json:"label"`
-		Phrases    []string  `json:"phrases"`
-		Category   *string   `json:"category"`
-		Type       *string   `json:"type"`
-		OrderIndex *int      `json:"order_index"`
+		Label      *string  `json:"label"`
+		Phrases    []string `json:"phrases"`
+		Category   *string  `json:"category"`
+		Type       *string  `json:"type"`
+		OrderIndex *int     `json:"order_index"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
