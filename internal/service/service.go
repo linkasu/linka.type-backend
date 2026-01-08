@@ -13,6 +13,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/id"
 	"github.com/linkasu/linka.type-backend/internal/models"
 	"github.com/linkasu/linka.type-backend/internal/store"
+	ydbsdk "github.com/ydb-platform/ydb-go-sdk/v3"
 )
 
 // Service coordinates YDB and Firebase for dual-write and read-through.
@@ -52,9 +53,9 @@ type StatementPatch struct {
 
 // UserStatePatch captures user state updates.
 type UserStatePatch struct {
-	Inited     *bool
-	Quickes    []string
-	QuickesSet bool
+	Inited         *bool
+	Quickes        []string
+	QuickesSet     bool
 	Preferences    map[string]any
 	PreferencesSet bool
 }
@@ -398,6 +399,13 @@ func (s *Service) UpdateUserState(ctx context.Context, userID string, patch User
 	updatedAt := time.Now().UnixMilli()
 	updated, err := s.Store.SetUserState(ctx, userID, current, updatedAt)
 	if err != nil {
+		if s.LegacyWriter != nil && (ydbsdk.IsOperationErrorNotFoundError(err) || ydbsdk.IsOperationErrorSchemeError(err)) {
+			if err := s.LegacyWriter.SetUserState(ctx, userID, current); err != nil {
+				return current, err
+			}
+			current.Quickes = normalizeQuickes(current.Quickes)
+			return current, nil
+		}
 		return current, err
 	}
 
@@ -420,6 +428,12 @@ func (s *Service) SetQuickes(ctx context.Context, userID string, quickes []strin
 
 	updated, err := s.Store.SetQuickes(ctx, userID, quickes, updatedAt)
 	if err != nil {
+		if s.LegacyWriter != nil && (ydbsdk.IsOperationErrorNotFoundError(err) || ydbsdk.IsOperationErrorSchemeError(err)) {
+			if err := s.LegacyWriter.SetQuickes(ctx, userID, quickes); err != nil {
+				return nil, err
+			}
+			return quickes, nil
+		}
 		return nil, err
 	}
 	if s.LegacyWriter != nil {
@@ -837,11 +851,11 @@ func (s *Service) AdminStats(ctx context.Context, since time.Time) (map[string]i
 		return nil, err
 	}
 	return map[string]interface{}{
-		"total_users":     users,
+		"total_users":      users,
 		"total_categories": categories,
 		"total_statements": statements,
-		"since":           since.Format(time.RFC3339),
-		"window_seconds":  int(time.Since(since).Seconds()),
+		"since":            since.Format(time.RFC3339),
+		"window_seconds":   int(time.Since(since).Seconds()),
 	}, nil
 }
 
