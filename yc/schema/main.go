@@ -12,11 +12,12 @@ import (
 )
 
 var schema = []string{
-	`CREATE TABLE IF NOT EXISTS users (
+`CREATE TABLE IF NOT EXISTS users (
   user_id Utf8 NOT NULL,
   email Optional<Utf8>,
   created_at Int64 NOT NULL,
   inited Bool NOT NULL,
+  preferences JsonDocument,
   deleted_at Optional<Int64>,
   PRIMARY KEY (user_id)
 );`,

@@ -374,8 +374,15 @@ func (api *API) putUserState(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if patch.Inited == nil && !patch.QuickesSet {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "inited or quickes required")
+	if value, ok := raw["preferences"]; ok {
+		patch.PreferencesSet = true
+		if err := json.Unmarshal(value, &patch.Preferences); err != nil {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_preferences", err.Error())
+			return
+		}
+	}
+	if patch.Inited == nil && !patch.QuickesSet && !patch.PreferencesSet {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "inited, quickes, or preferences required")
 		return
 	}
 

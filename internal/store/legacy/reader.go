@@ -122,6 +122,9 @@ func (r *Reader) GetUserState(ctx context.Context, userID string) (models.UserSt
 		state.Inited = inited
 	}
 	state.Quickes = parseQuickes(raw["quickes"])
+	if preferences, ok := raw["preferences"].(map[string]any); ok {
+		state.Preferences = preferences
+	}
 
 	return state, nil
 }

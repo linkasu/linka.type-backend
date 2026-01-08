@@ -22,8 +22,9 @@ type Statement struct {
 
 // UserState combines onboarding and quick phrases.
 type UserState struct {
-	Inited  bool     `json:"inited"`
-	Quickes []string `json:"quickes"`
+	Inited      bool              `json:"inited"`
+	Quickes     []string          `json:"quickes"`
+	Preferences map[string]any    `json:"preferences,omitempty"`
 }
 
 // GlobalCategory mirrors global category definitions.

@@ -55,6 +55,8 @@ type UserStatePatch struct {
 	Inited     *bool
 	Quickes    []string
 	QuickesSet bool
+	Preferences    map[string]any
+	PreferencesSet bool
 }
 
 // QuestionInput captures onboarding question payloads.
@@ -379,6 +381,18 @@ func (s *Service) UpdateUserState(ctx context.Context, userID string, patch User
 	}
 	if patch.QuickesSet {
 		current.Quickes = normalizeQuickes(patch.Quickes)
+	}
+	if patch.PreferencesSet {
+		if patch.Preferences == nil {
+			current.Preferences = map[string]any{}
+		} else {
+			if current.Preferences == nil {
+				current.Preferences = map[string]any{}
+			}
+			for key, value := range patch.Preferences {
+				current.Preferences[key] = value
+			}
+		}
 	}
 
 	updatedAt := time.Now().UnixMilli()

@@ -64,6 +64,9 @@ func (w *Writer) SetUserState(ctx context.Context, userID string, state models.U
 	if state.Quickes != nil {
 		updates["quickes"] = state.Quickes
 	}
+	if state.Preferences != nil {
+		updates["preferences"] = state.Preferences
+	}
 	return ref.Update(ctx, updates)
 }
 

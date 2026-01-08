@@ -273,7 +273,7 @@ func (s *Store) GetUserState(ctx context.Context, userID string) (models.UserSta
 
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
-SELECT inited
+SELECT inited, preferences
 FROM users
 WHERE user_id = $user_id
 LIMIT 1;`)
@@ -293,11 +293,22 @@ LIMIT 1;`)
 			return err
 		}
 		if res.NextRow() {
-			var inited bool
-			if err := res.ScanNamed(named.Required("inited", &inited)); err != nil {
+			var (
+				inited      bool
+				preferences *string
+			)
+			if err := res.ScanNamed(
+				named.Required("inited", &inited),
+				named.Optional("preferences", &preferences),
+			); err != nil {
 				return err
 			}
 			state.Inited = inited
+			if preferences != nil && *preferences != "" {
+				if err := json.Unmarshal([]byte(*preferences), &state.Preferences); err != nil {
+					return err
+				}
+			}
 		}
 		return res.Err()
 	}, table.WithIdempotent())
@@ -327,18 +338,29 @@ func (s *Store) SetUserState(ctx context.Context, userID string, state models.Us
 		createdAt = updatedAt
 	}
 
+	preferencesJSON := "{}"
+	if state.Preferences != nil {
+		serialized, err := json.Marshal(state.Preferences)
+		if err != nil {
+			return state, err
+		}
+		preferencesJSON = string(serialized)
+	}
+
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
 DECLARE $created_at AS Int64;
 DECLARE $inited AS Bool;
+DECLARE $preferences AS JsonDocument;
 DECLARE $deleted_at AS Int64?;
-UPSERT INTO users (user_id, created_at, inited, deleted_at)
-VALUES ($user_id, $created_at, $inited, $deleted_at);`)
+UPSERT INTO users (user_id, created_at, inited, preferences, deleted_at)
+VALUES ($user_id, $created_at, $inited, $preferences, $deleted_at);`)
 
 	params := table.NewQueryParameters(
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$created_at", types.Int64Value(createdAt)),
 		table.ValueParam("$inited", types.BoolValue(state.Inited)),
+		table.ValueParam("$preferences", types.JSONDocumentValue(preferencesJSON)),
 		table.ValueParam("$deleted_at", types.NullValue(types.TypeInt64)),
 	)
 
