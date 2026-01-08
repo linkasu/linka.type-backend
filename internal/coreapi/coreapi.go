@@ -22,6 +22,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
 	"github.com/linkasu/linka.type-backend/internal/jwt"
+	"github.com/linkasu/linka.type-backend/internal/models"
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/store"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
@@ -133,6 +134,9 @@ func (api *API) listCategories(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusInternalServerError, "categories_failed", err.Error())
 		return
 	}
+	if categories == nil {
+		categories = []models.Category{}
+	}
 	httpapi.WriteJSON(w, http.StatusOK, categories)
 }
 
@@ -237,6 +241,9 @@ func (api *API) listStatements(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpapi.WriteError(w, http.StatusInternalServerError, "statements_failed", err.Error())
 		return
+	}
+	if statements == nil {
+		statements = []models.Statement{}
 	}
 	httpapi.WriteJSON(w, http.StatusOK, statements)
 }
@@ -348,6 +355,12 @@ func (api *API) getUserState(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusInternalServerError, "state_failed", err.Error())
 		return
 	}
+	if state.Quickes == nil {
+		state.Quickes = []string{}
+	}
+	if state.Preferences == nil {
+		state.Preferences = map[string]any{}
+	}
 	httpapi.WriteJSON(w, http.StatusOK, state)
 }
 
@@ -405,6 +418,9 @@ func (api *API) getQuickes(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_failed", err.Error())
 		return
 	}
+	if state.Quickes == nil {
+		state.Quickes = []string{}
+	}
 	httpapi.WriteJSON(w, http.StatusOK, state.Quickes)
 }
 
@@ -444,6 +460,9 @@ func (api *API) listGlobalCategories(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed", err.Error())
 		return
 	}
+	if categories == nil {
+		categories = []models.GlobalCategory{}
+	}
 	httpapi.WriteJSON(w, http.StatusOK, categories)
 }
 
@@ -461,6 +480,9 @@ func (api *API) listGlobalStatements(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpapi.WriteError(w, http.StatusInternalServerError, "global_statements_failed", err.Error())
 		return
+	}
+	if statements == nil {
+		statements = []models.Statement{}
 	}
 	httpapi.WriteJSON(w, http.StatusOK, statements)
 }
@@ -500,6 +522,9 @@ func (api *API) listFactoryQuestions(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed", err.Error())
 		return
+	}
+	if questions == nil {
+		questions = []models.FactoryQuestion{}
 	}
 	httpapi.WriteJSON(w, http.StatusOK, questions)
 }
