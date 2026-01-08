@@ -91,6 +91,16 @@ paths:
       responses:
         "200":
           description: OK
+  /v1/auth/register:
+    post:
+      x-yc-apigateway-integration:
+        type: serverless_containers
+        container_id: "{{CORE_API_CONTAINER_ID}}"
+        service_account_id: "{{SERVICE_ACCOUNT_ID}}"
+        httpMethod: POST
+      responses:
+        "200":
+          description: OK
   /v1/auth/refresh:
     post:
       x-yc-apigateway-integration:
@@ -480,4 +490,3 @@ paths:
       responses:
         "200":
           description: OK
-
