@@ -399,7 +399,7 @@ func (s *Service) UpdateUserState(ctx context.Context, userID string, patch User
 	updatedAt := time.Now().UnixMilli()
 	updated, err := s.Store.SetUserState(ctx, userID, current, updatedAt)
 	if err != nil {
-		if s.LegacyWriter != nil && (ydbsdk.IsOperationErrorNotFoundError(err) || ydbsdk.IsOperationErrorSchemeError(err)) {
+		if s.LegacyWriter != nil && isYDBNotFound(err) {
 			if err := s.LegacyWriter.SetUserState(ctx, userID, current); err != nil {
 				return current, err
 			}
@@ -428,7 +428,7 @@ func (s *Service) SetQuickes(ctx context.Context, userID string, quickes []strin
 
 	updated, err := s.Store.SetQuickes(ctx, userID, quickes, updatedAt)
 	if err != nil {
-		if s.LegacyWriter != nil && (ydbsdk.IsOperationErrorNotFoundError(err) || ydbsdk.IsOperationErrorSchemeError(err)) {
+		if s.LegacyWriter != nil && isYDBNotFound(err) {
 			if err := s.LegacyWriter.SetQuickes(ctx, userID, quickes); err != nil {
 				return nil, err
 			}
@@ -680,6 +680,16 @@ func (s *Service) OnboardingPhrases(ctx context.Context, userID string, question
 
 func (s *Service) useYDB(userID string) bool {
 	return feature.UseYDB(userID, s.Feature)
+}
+
+func isYDBNotFound(err error) bool {
+	if err == nil {
+		return false
+	}
+	if ydbsdk.IsOperationErrorNotFoundError(err) || ydbsdk.IsOperationErrorSchemeError(err) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "not found")
 }
 
 func (s *Service) appendChange(ctx context.Context, userID, entityType, entityID, op string, payload any, updatedAt int64) error {
