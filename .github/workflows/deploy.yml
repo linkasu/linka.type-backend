@@ -43,6 +43,8 @@ jobs:
       SYNC_STREAM_ENABLED: ${{ vars.SYNC_STREAM_ENABLED }}
       SYNC_STREAM_PATH: ${{ vars.SYNC_STREAM_PATH }}
       SYNC_STREAM_RECONNECT: ${{ vars.SYNC_STREAM_RECONNECT }}
+      API_GATEWAY_ID: ${{ vars.API_GATEWAY_ID }}
+      API_GATEWAY_NAME: ${{ vars.API_GATEWAY_NAME }}
       IMAGE_TAG: latest
       YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
     steps:
@@ -124,6 +126,27 @@ jobs:
           FIREBASE_PROJECT_ID="${FIREBASE_PROJECT_ID}" FIREBASE_DATABASE_URL="${FIREBASE_DATABASE_URL}" FIREBASE_CREDENTIALS_B64="${FIREBASE_CREDENTIALS_B64}" \
           SYNC_POLL_INTERVAL="${SYNC_POLL_INTERVAL}" SYNC_STREAM_ENABLED="${SYNC_STREAM_ENABLED}" SYNC_STREAM_PATH="${SYNC_STREAM_PATH}" SYNC_STREAM_RECONNECT="${SYNC_STREAM_RECONNECT}" \
           ./scripts/deploy-sync-worker.sh
+
+      - name: Update API Gateway
+        run: |
+          set -euo pipefail
+          : "${FOLDER_ID:?Missing FOLDER_ID}"
+          : "${SERVICE_ACCOUNT_ID:?Missing SERVICE_ACCOUNT_ID}"
+          CORE_API_CONTAINER_NAME="${CORE_API_CONTAINER_NAME:-linka-core-api}"
+          API_GATEWAY_NAME="${API_GATEWAY_NAME:-linka-type-gw}"
+          CORE_API_CONTAINER_ID=$(yc serverless container get --name "${CORE_API_CONTAINER_NAME}" --folder-id "${FOLDER_ID}" --format json | jq -r '.id')
+          if [ -z "${CORE_API_CONTAINER_ID}" ] || [ "${CORE_API_CONTAINER_ID}" = "null" ]; then
+            echo "Failed to resolve CORE_API_CONTAINER_ID." >&2
+            exit 1
+          fi
+          sed -e "s/{{SERVICE_ACCOUNT_ID}}/${SERVICE_ACCOUNT_ID}/g" \
+              -e "s/{{CORE_API_CONTAINER_ID}}/${CORE_API_CONTAINER_ID}/g" \
+              yc/api-gateway.yaml > /tmp/api-gateway.yaml
+          if [ -n "${API_GATEWAY_ID:-}" ]; then
+            yc serverless api-gateway update "${API_GATEWAY_ID}" --spec /tmp/api-gateway.yaml
+          else
+            yc serverless api-gateway update --name "${API_GATEWAY_NAME}" --spec /tmp/api-gateway.yaml
+          fi
 
       - name: Smoke test core-api
         run: |
