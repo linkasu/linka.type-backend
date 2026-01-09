@@ -128,8 +128,12 @@ func Load() (Config, error) {
 		StreamReconnect: getenvDuration("SYNC_STREAM_RECONNECT", 5*time.Second),
 	}
 
+	predictorKey := getenv("YANDEX_PREDICTOR_API_KEY", "")
+	if predictorKey == "" {
+		predictorKey = getenv("PREDICTOR_API_KEY", "")
+	}
 	cfg.Predictor = PredictorConfig{
-		APIKey: getenv("YANDEX_PREDICTOR_API_KEY", ""),
+		APIKey: predictorKey,
 	}
 
 	cfg.JWT = JWTConfig{
