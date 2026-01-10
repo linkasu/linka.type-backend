@@ -1865,7 +1865,7 @@ WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL;`)
 		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
 	)
 
-	var total int64
+	var total uint64
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
 		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
@@ -1885,8 +1885,7 @@ WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL;`)
 	if err != nil {
 		return 0, err
 	}
-
-	return total, nil
+	return int64(total), nil
 }
 
 func (s *Store) UpsertDialogMessage(ctx context.Context, userID string, message models.DialogMessage) (models.DialogMessage, error) {
@@ -2071,7 +2070,7 @@ WHERE user_id = $user_id AND status = $status;`)
 		table.ValueParam("$status", types.UTF8Value(status)),
 	)
 
-	var total int64
+	var total uint64
 	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
 		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
 		if err != nil {
@@ -2091,8 +2090,7 @@ WHERE user_id = $user_id AND status = $status;`)
 	if err != nil {
 		return 0, err
 	}
-
-	return total, nil
+	return int64(total), nil
 }
 
 func (s *Store) UpsertDialogSuggestion(ctx context.Context, userID string, suggestion models.DialogSuggestion) (models.DialogSuggestion, error) {
