@@ -8,6 +8,7 @@ type Category struct {
 	Label     string `json:"label"`
 	Created   int64  `json:"created"`
 	Default   *bool  `json:"default,omitempty"`
+	AIUse     bool   `json:"aiUse,omitempty"`
 	UpdatedAt int64  `json:"updated_at,omitempty"`
 }
 
@@ -18,6 +19,52 @@ type Statement struct {
 	Text       string `json:"text"`
 	Created    int64  `json:"created"`
 	UpdatedAt  int64  `json:"updated_at,omitempty"`
+}
+
+// DialogChat represents a chat session for dialog helper.
+type DialogChat struct {
+	ID            string `json:"id"`
+	Title         string `json:"title"`
+	Created       int64  `json:"created"`
+	UpdatedAt     int64  `json:"updated_at,omitempty"`
+	LastMessageAt int64  `json:"last_message_at,omitempty"`
+	MessageCount  int64  `json:"message_count,omitempty"`
+}
+
+// DialogMessage stores dialog history for a chat.
+type DialogMessage struct {
+	ID        string `json:"id"`
+	ChatID    string `json:"chatId"`
+	Role      string `json:"role"`
+	Content   string `json:"content"`
+	Source    string `json:"source,omitempty"`
+	Created   int64  `json:"created"`
+	UpdatedAt int64  `json:"updated_at,omitempty"`
+}
+
+// DialogSuggestion is a suggested phrase for the user.
+type DialogSuggestion struct {
+	ID         string  `json:"id"`
+	ChatID     string  `json:"chatId,omitempty"`
+	MessageID  string  `json:"messageId,omitempty"`
+	Text       string  `json:"text"`
+	Status     string  `json:"status"`
+	CategoryID *string `json:"categoryId,omitempty"`
+	Created    int64   `json:"created"`
+	UpdatedAt  int64   `json:"updated_at,omitempty"`
+}
+
+// DialogSuggestionJob is a background job for generating suggestions.
+type DialogSuggestionJob struct {
+	ID        string  `json:"id"`
+	UserID    string  `json:"userId"`
+	ChatID    string  `json:"chatId"`
+	MessageID string  `json:"messageId"`
+	Status    string  `json:"status"`
+	Attempts  int     `json:"attempts"`
+	LastError *string `json:"lastError,omitempty"`
+	Created   int64   `json:"created"`
+	UpdatedAt int64   `json:"updated_at,omitempty"`
 }
 
 // UserState combines onboarding and quick phrases.

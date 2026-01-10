@@ -25,12 +25,13 @@ var schema = []string{
   user_id Utf8 NOT NULL,
   PRIMARY KEY (user_id)
 );`,
-	`CREATE TABLE IF NOT EXISTS categories (
+`CREATE TABLE IF NOT EXISTS categories (
   user_id Utf8 NOT NULL,
   category_id Utf8 NOT NULL,
   label Utf8 NOT NULL,
   created_at Int64 NOT NULL,
   is_default Optional<Bool>,
+  ai_use Optional<Bool>,
   updated_at Int64 NOT NULL,
   deleted_at Optional<Int64>,
   PRIMARY KEY (user_id, category_id)
@@ -96,6 +97,53 @@ var schema = []string{
   created_at Int64 NOT NULL,
   revoked_at Optional<Int64>,
   PRIMARY KEY (key_hash)
+);`,
+	`CREATE TABLE IF NOT EXISTS dialog_chats (
+  user_id Utf8 NOT NULL,
+  chat_id Utf8 NOT NULL,
+  title Utf8 NOT NULL,
+  created_at Int64 NOT NULL,
+  updated_at Int64 NOT NULL,
+  last_message_at Optional<Int64>,
+  message_count Optional<Int64>,
+  deleted_at Optional<Int64>,
+  PRIMARY KEY (user_id, chat_id)
+);`,
+	`CREATE TABLE IF NOT EXISTS dialog_messages (
+  user_id Utf8 NOT NULL,
+  chat_id Utf8 NOT NULL,
+  message_id Utf8 NOT NULL,
+  role Utf8 NOT NULL,
+  content Utf8 NOT NULL,
+  source Optional<Utf8>,
+  created_at Int64 NOT NULL,
+  updated_at Int64 NOT NULL,
+  deleted_at Optional<Int64>,
+  PRIMARY KEY (user_id, chat_id, message_id)
+);`,
+	`CREATE TABLE IF NOT EXISTS dialog_suggestions (
+  user_id Utf8 NOT NULL,
+  suggestion_id Utf8 NOT NULL,
+  chat_id Optional<Utf8>,
+  message_id Optional<Utf8>,
+  text Utf8 NOT NULL,
+  status Utf8 NOT NULL,
+  category_id Optional<Utf8>,
+  created_at Int64 NOT NULL,
+  updated_at Int64 NOT NULL,
+  PRIMARY KEY (user_id, suggestion_id)
+);`,
+	`CREATE TABLE IF NOT EXISTS dialog_suggestion_jobs (
+  job_id Utf8 NOT NULL,
+  user_id Utf8 NOT NULL,
+  chat_id Utf8 NOT NULL,
+  message_id Utf8 NOT NULL,
+  status Utf8 NOT NULL,
+  attempts Int64 NOT NULL,
+  last_error Optional<Utf8>,
+  created_at Int64 NOT NULL,
+  updated_at Int64 NOT NULL,
+  PRIMARY KEY (job_id)
 );`,
 }
 

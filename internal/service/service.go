@@ -9,6 +9,7 @@ import (
 
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/defaults"
+	"github.com/linkasu/linka.type-backend/internal/dialoghelper"
 	"github.com/linkasu/linka.type-backend/internal/feature"
 	"github.com/linkasu/linka.type-backend/internal/id"
 	"github.com/linkasu/linka.type-backend/internal/models"
@@ -22,6 +23,7 @@ type Service struct {
 	LegacyWriter store.LegacyWriter
 	LegacyReader store.LegacyReader
 	Feature      config.FeatureConfig
+	DialogHelper *dialoghelper.Client
 }
 
 // CategoryInput captures category creation payload.
@@ -30,12 +32,14 @@ type CategoryInput struct {
 	Label   string
 	Created int64
 	Default *bool
+	AIUse   bool
 }
 
 // CategoryPatch captures category updates.
 type CategoryPatch struct {
 	Label   *string
 	Default *bool
+	AIUse   *bool
 }
 
 // StatementInput captures statement creation payload.
@@ -149,6 +153,7 @@ func (s *Service) CreateCategory(ctx context.Context, userID string, input Categ
 		Label:     input.Label,
 		Created:   input.Created,
 		Default:   input.Default,
+		AIUse:     input.AIUse,
 		UpdatedAt: now,
 	}
 
@@ -180,6 +185,9 @@ func (s *Service) UpdateCategory(ctx context.Context, userID, categoryID string,
 	}
 	if patch.Default != nil {
 		category.Default = patch.Default
+	}
+	if patch.AIUse != nil {
+		category.AIUse = *patch.AIUse
 	}
 	category.UpdatedAt = time.Now().UnixMilli()
 

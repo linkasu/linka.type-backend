@@ -15,7 +15,7 @@
 
 ### categories
 - PK: (`user_id`, `category_id`)
-- Fields: `label`, `created_at`, `is_default`, `updated_at`, `deleted_at`
+- Fields: `label`, `created_at`, `is_default`, `ai_use`, `updated_at`, `deleted_at`
 
 ### statements
 - PK: (`user_id`, `category_id`, `statement_id`)
@@ -42,3 +42,19 @@
 - PK: (`user_id`, `cursor`)
 - Fields: `entity_type`, `entity_id`, `op`, `payload` (JSON), `updated_at`
 - `cursor` is an opaque, monotonically sortable value (ULID or counter).
+
+### dialog_chats
+- PK: (`user_id`, `chat_id`)
+- Fields: `title`, `created_at`, `updated_at`, `last_message_at`, `message_count`, `deleted_at`
+
+### dialog_messages
+- PK: (`user_id`, `chat_id`, `message_id`)
+- Fields: `role`, `content`, `source`, `created_at`, `updated_at`, `deleted_at`
+
+### dialog_suggestions
+- PK: (`user_id`, `suggestion_id`)
+- Fields: `chat_id`, `message_id`, `text`, `status`, `category_id`, `created_at`, `updated_at`
+
+### dialog_suggestion_jobs
+- PK: `job_id`
+- Fields: `user_id`, `chat_id`, `message_id`, `status`, `attempts`, `last_error`, `created_at`, `updated_at`

@@ -30,6 +30,7 @@ type firebaseCategory struct {
 	Label      string                       `json:"label"`
 	Created    int64                        `json:"created"`
 	Default    *bool                        `json:"default,omitempty"`
+	AIUse      *bool                        `json:"aiUse,omitempty"`
 	Statements map[string]firebaseStatement `json:"statements,omitempty"`
 }
 
@@ -77,6 +78,7 @@ func (r *Reader) FetchUserData(ctx context.Context, userID string) ([]models.Cat
 			Label:     cat.Label,
 			Created:   created,
 			Default:   cat.Default,
+			AIUse:     cat.AIUse != nil && *cat.AIUse,
 			UpdatedAt: created,
 		})
 

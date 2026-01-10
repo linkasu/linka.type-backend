@@ -21,6 +21,11 @@
 - `FEATURE_COHORT_PERCENT` - 0-100 for `cohort` mode
 - `TTS_PROXY_ENABLED` - enable `/v1/tts` and `/v1/voices`
 - `TTS_BASE_URL` - defaults to `https://tts.linka.su`
+- `DIALOG_HELPER_URL` - dialog-helper API base URL
+- `DIALOG_HELPER_API_KEY` - API key for dialog-helper
+- `DIALOG_HELPER_TIMEOUT` - dialog-helper request timeout (default `20s`)
+- `DIALOG_HELPER_MAX_AUDIO_BYTES` - max audio upload size (default `8MB`)
+- `DIALOG_WORKER_INTERVAL` - dialog suggestion worker interval (default `15s`)
 - `SYNC_POLL_INTERVAL` - sync-worker interval (default `5s`)
 - `SYNC_STREAM_ENABLED` - enable RTDB streaming (default `false`)
 - `SYNC_STREAM_PATH` - RTDB path for streaming (default `users`)

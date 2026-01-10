@@ -28,6 +28,7 @@ func (w *Writer) UpsertCategory(ctx context.Context, userID string, category mod
 		"id":      category.ID,
 		"label":   category.Label,
 		"created": category.Created,
+		"aiUse":   category.AIUse,
 	}
 	if category.Default != nil {
 		payload["default"] = *category.Default

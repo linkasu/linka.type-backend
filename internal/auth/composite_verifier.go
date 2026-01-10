@@ -25,3 +25,4 @@ func (v *CompositeVerifier) Verify(ctx context.Context, token string) (User, err
 	return User{}, ErrUnauthorized
 }
 
+

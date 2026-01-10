@@ -27,7 +27,7 @@ func New(client *ydb.Client) *Store {
 func (s *Store) ListCategories(ctx context.Context, userID string) ([]models.Category, error) {
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
-SELECT category_id, label, created_at, is_default, updated_at
+SELECT category_id, label, created_at, is_default, ai_use, updated_at
 FROM categories
 WHERE user_id = $user_id AND deleted_at IS NULL
 ORDER BY created_at;`)
@@ -54,6 +54,7 @@ ORDER BY created_at;`)
 				created   int64
 				updated   *int64
 				isDefault *bool
+				aiUse     *bool
 			)
 			if err := res.ScanNamed(
 				named.Required("category_id", &id),
@@ -61,6 +62,7 @@ ORDER BY created_at;`)
 				named.Required("created_at", &created),
 				named.Optional("updated_at", &updated),
 				named.Optional("is_default", &isDefault),
+				named.Optional("ai_use", &aiUse),
 			); err != nil {
 				return err
 			}
@@ -69,6 +71,9 @@ ORDER BY created_at;`)
 				Label:   label,
 				Created: created,
 				Default: isDefault,
+			}
+			if aiUse != nil {
+				cat.AIUse = *aiUse
 			}
 			if updated != nil {
 				cat.UpdatedAt = *updated
@@ -102,8 +107,9 @@ DECLARE $label AS Utf8;
 DECLARE $created_at AS Int64;
 DECLARE $is_default AS Bool?;
 DECLARE $updated_at AS Int64;
-UPSERT INTO categories (user_id, category_id, label, created_at, is_default, updated_at)
-VALUES ($user_id, $category_id, $label, $created_at, $is_default, $updated_at);`)
+DECLARE $ai_use AS Bool?;
+UPSERT INTO categories (user_id, category_id, label, created_at, is_default, ai_use, updated_at)
+VALUES ($user_id, $category_id, $label, $created_at, $is_default, $ai_use, $updated_at);`)
 
 	params := table.NewQueryParameters(
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
@@ -111,6 +117,7 @@ VALUES ($user_id, $category_id, $label, $created_at, $is_default, $updated_at);`
 		table.ValueParam("$label", types.UTF8Value(category.Label)),
 		table.ValueParam("$created_at", types.Int64Value(category.Created)),
 		table.ValueParam("$is_default", optionalBool(category.Default)),
+		table.ValueParam("$ai_use", optionalBool(&category.AIUse)),
 		table.ValueParam("$updated_at", types.Int64Value(category.UpdatedAt)),
 	)
 
@@ -156,6 +163,68 @@ ORDER BY created_at;`)
 	params := table.NewQueryParameters(
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$category_id", types.UTF8Value(categoryID)),
+	)
+
+	var out []models.Statement
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id      string
+				catID   string
+				text    string
+				created int64
+				updated *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("statement_id", &id),
+				named.Required("category_id", &catID),
+				named.Required("text", &text),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+			); err != nil {
+				return err
+			}
+			stmt := models.Statement{
+				ID:         id,
+				CategoryID: catID,
+				Text:       text,
+				Created:    created,
+			}
+			if updated != nil {
+				stmt.UpdatedAt = *updated
+			} else {
+				stmt.UpdatedAt = created
+			}
+			out = append(out, stmt)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) ListAllStatements(ctx context.Context, userID string) ([]models.Statement, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+SELECT statement_id, category_id, text, created_at, updated_at
+FROM statements
+WHERE user_id = $user_id AND deleted_at IS NULL
+ORDER BY created_at;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
 	)
 
 	var out []models.Statement
@@ -891,6 +960,27 @@ func optionalBool(val *bool) types.Value {
 	return types.OptionalValue(types.BoolValue(*val))
 }
 
+func optionalInt64(val int64) types.Value {
+	if val == 0 {
+		return types.NullValue(types.TypeInt64)
+	}
+	return types.OptionalValue(types.Int64Value(val))
+}
+
+func optionalString(val string) types.Value {
+	if val == "" {
+		return types.NullValue(types.TypeUTF8)
+	}
+	return types.OptionalValue(types.UTF8Value(val))
+}
+
+func optionalStringPtr(val *string) types.Value {
+	if val == nil || *val == "" {
+		return types.NullValue(types.TypeUTF8)
+	}
+	return types.OptionalValue(types.UTF8Value(*val))
+}
+
 func (s *Store) getUserCreatedAt(ctx context.Context, userID string) (int64, error) {
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
@@ -1396,6 +1486,809 @@ WHERE question_id = $question_id;`)
 
 	params := table.NewQueryParameters(
 		table.ValueParam("$question_id", types.UTF8Value(questionID)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) ListDialogChats(ctx context.Context, userID string) ([]models.DialogChat, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+SELECT chat_id, title, created_at, updated_at, last_message_at, message_count
+FROM dialog_chats
+WHERE user_id = $user_id AND deleted_at IS NULL
+ORDER BY updated_at DESC;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+	)
+
+	var out []models.DialogChat
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id            string
+				title         string
+				created       int64
+				updated       *int64
+				lastMessageAt *int64
+				messageCount  *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("chat_id", &id),
+				named.Required("title", &title),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+				named.Optional("last_message_at", &lastMessageAt),
+				named.Optional("message_count", &messageCount),
+			); err != nil {
+				return err
+			}
+			chat := models.DialogChat{
+				ID:      id,
+				Title:   title,
+				Created: created,
+			}
+			if updated != nil {
+				chat.UpdatedAt = *updated
+			} else {
+				chat.UpdatedAt = created
+			}
+			if lastMessageAt != nil {
+				chat.LastMessageAt = *lastMessageAt
+			}
+			if messageCount != nil {
+				chat.MessageCount = *messageCount
+			}
+			out = append(out, chat)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) GetDialogChat(ctx context.Context, userID, chatID string) (models.DialogChat, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+SELECT chat_id, title, created_at, updated_at, last_message_at, message_count
+FROM dialog_chats
+WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL
+LIMIT 1;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+	)
+
+	var out models.DialogChat
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			return store.ErrNotFound
+		}
+
+		var (
+			id            string
+			title         string
+			created       int64
+			updated       *int64
+			lastMessageAt *int64
+			messageCount  *int64
+		)
+		if err := res.ScanNamed(
+			named.Required("chat_id", &id),
+			named.Required("title", &title),
+			named.Required("created_at", &created),
+			named.Optional("updated_at", &updated),
+			named.Optional("last_message_at", &lastMessageAt),
+			named.Optional("message_count", &messageCount),
+		); err != nil {
+			return err
+		}
+		out = models.DialogChat{
+			ID:      id,
+			Title:   title,
+			Created: created,
+		}
+		if updated != nil {
+			out.UpdatedAt = *updated
+		} else {
+			out.UpdatedAt = created
+		}
+		if lastMessageAt != nil {
+			out.LastMessageAt = *lastMessageAt
+		}
+		if messageCount != nil {
+			out.MessageCount = *messageCount
+		}
+
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return models.DialogChat{}, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) UpsertDialogChat(ctx context.Context, userID string, chat models.DialogChat) (models.DialogChat, error) {
+	now := time.Now().UnixMilli()
+	if chat.Created == 0 {
+		chat.Created = now
+	}
+	if chat.UpdatedAt == 0 {
+		chat.UpdatedAt = now
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $title AS Utf8;
+DECLARE $created_at AS Int64;
+DECLARE $updated_at AS Int64;
+DECLARE $last_message_at AS Int64?;
+DECLARE $message_count AS Int64?;
+UPSERT INTO dialog_chats (user_id, chat_id, title, created_at, updated_at, last_message_at, message_count)
+VALUES ($user_id, $chat_id, $title, $created_at, $updated_at, $last_message_at, $message_count);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chat.ID)),
+		table.ValueParam("$title", types.UTF8Value(chat.Title)),
+		table.ValueParam("$created_at", types.Int64Value(chat.Created)),
+		table.ValueParam("$updated_at", types.Int64Value(chat.UpdatedAt)),
+		table.ValueParam("$last_message_at", optionalInt64(chat.LastMessageAt)),
+		table.ValueParam("$message_count", optionalInt64(chat.MessageCount)),
+	)
+
+	if err := s.execWrite(ctx, query, params); err != nil {
+		return models.DialogChat{}, err
+	}
+
+	return chat, nil
+}
+
+func (s *Store) DeleteDialogChat(ctx context.Context, userID, chatID string, updatedAt int64) error {
+	if updatedAt == 0 {
+		updatedAt = time.Now().UnixMilli()
+	}
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $updated_at AS Int64;
+UPDATE dialog_chats
+SET deleted_at = $updated_at, updated_at = $updated_at
+WHERE user_id = $user_id AND chat_id = $chat_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+		table.ValueParam("$updated_at", types.Int64Value(updatedAt)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) ListDialogMessages(ctx context.Context, userID, chatID string, limit int, before int64) ([]models.DialogMessage, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $before AS Int64;
+DECLARE $limit AS Int64;
+SELECT message_id, role, content, source, created_at, updated_at
+FROM dialog_messages
+WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL
+  AND ($before = 0 OR created_at < $before)
+ORDER BY created_at DESC
+LIMIT $limit;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+		table.ValueParam("$before", types.Int64Value(before)),
+		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+	)
+
+	var out []models.DialogMessage
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id      string
+				role    string
+				content string
+				source  *string
+				created int64
+				updated *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("message_id", &id),
+				named.Required("role", &role),
+				named.Required("content", &content),
+				named.Optional("source", &source),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+			); err != nil {
+				return err
+			}
+			msg := models.DialogMessage{
+				ID:      id,
+				ChatID:  chatID,
+				Role:    role,
+				Content: content,
+				Created: created,
+			}
+			if source != nil {
+				msg.Source = *source
+			}
+			if updated != nil {
+				msg.UpdatedAt = *updated
+			} else {
+				msg.UpdatedAt = created
+			}
+			out = append(out, msg)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	for i, j := 0, len(out)-1; i < j; i, j = i+1, j-1 {
+		out[i], out[j] = out[j], out[i]
+	}
+
+	return out, nil
+}
+
+func (s *Store) ListOldestDialogMessages(ctx context.Context, userID, chatID string, limit int) ([]models.DialogMessage, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $limit AS Int64;
+SELECT message_id, role, content, source, created_at, updated_at
+FROM dialog_messages
+WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL
+ORDER BY created_at ASC
+LIMIT $limit;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+	)
+
+	var out []models.DialogMessage
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id      string
+				role    string
+				content string
+				source  *string
+				created int64
+				updated *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("message_id", &id),
+				named.Required("role", &role),
+				named.Required("content", &content),
+				named.Optional("source", &source),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+			); err != nil {
+				return err
+			}
+			msg := models.DialogMessage{
+				ID:      id,
+				ChatID:  chatID,
+				Role:    role,
+				Content: content,
+				Created: created,
+			}
+			if source != nil {
+				msg.Source = *source
+			}
+			if updated != nil {
+				msg.UpdatedAt = *updated
+			} else {
+				msg.UpdatedAt = created
+			}
+			out = append(out, msg)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) CountDialogMessages(ctx context.Context, userID, chatID string) (int64, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+SELECT COUNT(*) AS total
+FROM dialog_messages
+WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+	)
+
+	var total int64
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			total = 0
+			return nil
+		}
+		return res.ScanNamed(named.Required("total", &total))
+	}, table.WithIdempotent())
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+func (s *Store) UpsertDialogMessage(ctx context.Context, userID string, message models.DialogMessage) (models.DialogMessage, error) {
+	now := time.Now().UnixMilli()
+	if message.Created == 0 {
+		message.Created = now
+	}
+	if message.UpdatedAt == 0 {
+		message.UpdatedAt = now
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $message_id AS Utf8;
+DECLARE $role AS Utf8;
+DECLARE $content AS Utf8;
+DECLARE $source AS Utf8?;
+DECLARE $created_at AS Int64;
+DECLARE $updated_at AS Int64;
+UPSERT INTO dialog_messages (user_id, chat_id, message_id, role, content, source, created_at, updated_at)
+VALUES ($user_id, $chat_id, $message_id, $role, $content, $source, $created_at, $updated_at);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(message.ChatID)),
+		table.ValueParam("$message_id", types.UTF8Value(message.ID)),
+		table.ValueParam("$role", types.UTF8Value(message.Role)),
+		table.ValueParam("$content", types.UTF8Value(message.Content)),
+		table.ValueParam("$source", optionalString(message.Source)),
+		table.ValueParam("$created_at", types.Int64Value(message.Created)),
+		table.ValueParam("$updated_at", types.Int64Value(message.UpdatedAt)),
+	)
+
+	if err := s.execWrite(ctx, query, params); err != nil {
+		return models.DialogMessage{}, err
+	}
+
+	return message, nil
+}
+
+func (s *Store) DeleteDialogMessage(ctx context.Context, userID, chatID, messageID string, updatedAt int64) error {
+	if updatedAt == 0 {
+		updatedAt = time.Now().UnixMilli()
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $message_id AS Utf8;
+DECLARE $updated_at AS Int64;
+UPDATE dialog_messages
+SET deleted_at = $updated_at, updated_at = $updated_at
+WHERE user_id = $user_id AND chat_id = $chat_id AND message_id = $message_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+		table.ValueParam("$message_id", types.UTF8Value(messageID)),
+		table.ValueParam("$updated_at", types.Int64Value(updatedAt)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) DeleteDialogMessagesByChat(ctx context.Context, userID, chatID string, updatedAt int64) error {
+	if updatedAt == 0 {
+		updatedAt = time.Now().UnixMilli()
+	}
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $updated_at AS Int64;
+UPDATE dialog_messages
+SET deleted_at = $updated_at, updated_at = $updated_at
+WHERE user_id = $user_id AND chat_id = $chat_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
+		table.ValueParam("$updated_at", types.Int64Value(updatedAt)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) ListDialogSuggestions(ctx context.Context, userID string, status string, limit int) ([]models.DialogSuggestion, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 200
+	}
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $status AS Utf8;
+DECLARE $limit AS Int64;
+SELECT suggestion_id, chat_id, message_id, text, status, category_id, created_at, updated_at
+FROM dialog_suggestions
+WHERE user_id = $user_id AND status = $status
+ORDER BY created_at DESC
+LIMIT $limit;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$status", types.UTF8Value(status)),
+		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+	)
+
+	var out []models.DialogSuggestion
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id        string
+				chatID    *string
+				messageID *string
+				text      string
+				statusVal string
+				category  *string
+				created   int64
+				updated   *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("suggestion_id", &id),
+				named.Optional("chat_id", &chatID),
+				named.Optional("message_id", &messageID),
+				named.Required("text", &text),
+				named.Required("status", &statusVal),
+				named.Optional("category_id", &category),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+			); err != nil {
+				return err
+			}
+			suggestion := models.DialogSuggestion{
+				ID:      id,
+				Text:    text,
+				Status:  statusVal,
+				Created: created,
+			}
+			if chatID != nil {
+				suggestion.ChatID = *chatID
+			}
+			if messageID != nil {
+				suggestion.MessageID = *messageID
+			}
+			if category != nil {
+				suggestion.CategoryID = category
+			}
+			if updated != nil {
+				suggestion.UpdatedAt = *updated
+			} else {
+				suggestion.UpdatedAt = created
+			}
+			out = append(out, suggestion)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) CountDialogSuggestions(ctx context.Context, userID string, status string) (int64, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $status AS Utf8;
+SELECT COUNT(*) AS total
+FROM dialog_suggestions
+WHERE user_id = $user_id AND status = $status;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$status", types.UTF8Value(status)),
+	)
+
+	var total int64
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if !res.NextRow() {
+			total = 0
+			return nil
+		}
+		return res.ScanNamed(named.Required("total", &total))
+	}, table.WithIdempotent())
+	if err != nil {
+		return 0, err
+	}
+
+	return total, nil
+}
+
+func (s *Store) UpsertDialogSuggestion(ctx context.Context, userID string, suggestion models.DialogSuggestion) (models.DialogSuggestion, error) {
+	now := time.Now().UnixMilli()
+	if suggestion.Created == 0 {
+		suggestion.Created = now
+	}
+	if suggestion.UpdatedAt == 0 {
+		suggestion.UpdatedAt = now
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $suggestion_id AS Utf8;
+DECLARE $chat_id AS Utf8?;
+DECLARE $message_id AS Utf8?;
+DECLARE $text AS Utf8;
+DECLARE $status AS Utf8;
+DECLARE $category_id AS Utf8?;
+DECLARE $created_at AS Int64;
+DECLARE $updated_at AS Int64;
+UPSERT INTO dialog_suggestions (user_id, suggestion_id, chat_id, message_id, text, status, category_id, created_at, updated_at)
+VALUES ($user_id, $suggestion_id, $chat_id, $message_id, $text, $status, $category_id, $created_at, $updated_at);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$suggestion_id", types.UTF8Value(suggestion.ID)),
+		table.ValueParam("$chat_id", optionalString(suggestion.ChatID)),
+		table.ValueParam("$message_id", optionalString(suggestion.MessageID)),
+		table.ValueParam("$text", types.UTF8Value(suggestion.Text)),
+		table.ValueParam("$status", types.UTF8Value(suggestion.Status)),
+		table.ValueParam("$category_id", optionalStringPtr(suggestion.CategoryID)),
+		table.ValueParam("$created_at", types.Int64Value(suggestion.Created)),
+		table.ValueParam("$updated_at", types.Int64Value(suggestion.UpdatedAt)),
+	)
+
+	if err := s.execWrite(ctx, query, params); err != nil {
+		return models.DialogSuggestion{}, err
+	}
+
+	return suggestion, nil
+}
+
+func (s *Store) DeleteDialogSuggestion(ctx context.Context, userID, suggestionID string) error {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $suggestion_id AS Utf8;
+DELETE FROM dialog_suggestions
+WHERE user_id = $user_id AND suggestion_id = $suggestion_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$suggestion_id", types.UTF8Value(suggestionID)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) ListDialogSuggestionJobs(ctx context.Context, status string, limit int) ([]models.DialogSuggestionJob, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 100
+	}
+	query := s.withPrefix(`
+DECLARE $status AS Utf8;
+DECLARE $limit AS Int64;
+SELECT job_id, user_id, chat_id, message_id, status, attempts, last_error, created_at, updated_at
+FROM dialog_suggestion_jobs
+WHERE status = $status
+ORDER BY created_at
+LIMIT $limit;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$status", types.UTF8Value(status)),
+		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+	)
+
+	var out []models.DialogSuggestionJob
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		for res.NextRow() {
+			var (
+				id        string
+				userID    string
+				chatID    string
+				messageID string
+				statusVal string
+				attempts  int64
+				lastError *string
+				created   int64
+				updated   *int64
+			)
+			if err := res.ScanNamed(
+				named.Required("job_id", &id),
+				named.Required("user_id", &userID),
+				named.Required("chat_id", &chatID),
+				named.Required("message_id", &messageID),
+				named.Required("status", &statusVal),
+				named.Required("attempts", &attempts),
+				named.Optional("last_error", &lastError),
+				named.Required("created_at", &created),
+				named.Optional("updated_at", &updated),
+			); err != nil {
+				return err
+			}
+			job := models.DialogSuggestionJob{
+				ID:        id,
+				UserID:    userID,
+				ChatID:    chatID,
+				MessageID: messageID,
+				Status:    statusVal,
+				Attempts:  int(attempts),
+				Created:   created,
+			}
+			if lastError != nil {
+				job.LastError = lastError
+			}
+			if updated != nil {
+				job.UpdatedAt = *updated
+			} else {
+				job.UpdatedAt = created
+			}
+			out = append(out, job)
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return nil, err
+	}
+
+	return out, nil
+}
+
+func (s *Store) UpsertDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error {
+	now := time.Now().UnixMilli()
+	if job.Created == 0 {
+		job.Created = now
+	}
+	if job.UpdatedAt == 0 {
+		job.UpdatedAt = now
+	}
+
+	query := s.withPrefix(`
+DECLARE $job_id AS Utf8;
+DECLARE $user_id AS Utf8;
+DECLARE $chat_id AS Utf8;
+DECLARE $message_id AS Utf8;
+DECLARE $status AS Utf8;
+DECLARE $attempts AS Int64;
+DECLARE $last_error AS Utf8?;
+DECLARE $created_at AS Int64;
+DECLARE $updated_at AS Int64;
+UPSERT INTO dialog_suggestion_jobs (job_id, user_id, chat_id, message_id, status, attempts, last_error, created_at, updated_at)
+VALUES ($job_id, $user_id, $chat_id, $message_id, $status, $attempts, $last_error, $created_at, $updated_at);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$job_id", types.UTF8Value(job.ID)),
+		table.ValueParam("$user_id", types.UTF8Value(job.UserID)),
+		table.ValueParam("$chat_id", types.UTF8Value(job.ChatID)),
+		table.ValueParam("$message_id", types.UTF8Value(job.MessageID)),
+		table.ValueParam("$status", types.UTF8Value(job.Status)),
+		table.ValueParam("$attempts", types.Int64Value(int64(job.Attempts))),
+		table.ValueParam("$last_error", optionalStringPtr(job.LastError)),
+		table.ValueParam("$created_at", types.Int64Value(job.Created)),
+		table.ValueParam("$updated_at", types.Int64Value(job.UpdatedAt)),
+	)
+
+	return s.execWrite(ctx, query, params)
+}
+
+func (s *Store) UpdateDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error {
+	job.UpdatedAt = time.Now().UnixMilli()
+
+	query := s.withPrefix(`
+DECLARE $job_id AS Utf8;
+DECLARE $status AS Utf8;
+DECLARE $attempts AS Int64;
+DECLARE $last_error AS Utf8?;
+DECLARE $updated_at AS Int64;
+UPDATE dialog_suggestion_jobs
+SET status = $status, attempts = $attempts, last_error = $last_error, updated_at = $updated_at
+WHERE job_id = $job_id;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$job_id", types.UTF8Value(job.ID)),
+		table.ValueParam("$status", types.UTF8Value(job.Status)),
+		table.ValueParam("$attempts", types.Int64Value(int64(job.Attempts))),
+		table.ValueParam("$last_error", optionalStringPtr(job.LastError)),
+		table.ValueParam("$updated_at", types.Int64Value(job.UpdatedAt)),
 	)
 
 	return s.execWrite(ctx, query, params)

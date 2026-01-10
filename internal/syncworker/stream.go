@@ -269,11 +269,13 @@ func (w *Worker) applyUserSnapshot(ctx context.Context, userID string, raw map[s
 func (w *Worker) upsertCategoryFromMap(ctx context.Context, userID, categoryID string, raw map[string]any) error {
 	now := time.Now().UnixMilli()
 	categoryID = str(raw["id"], categoryID)
+	aiUse := boolPtrFrom(raw["aiUse"])
 	category := models.Category{
 		ID:        categoryID,
 		Label:     str(raw["label"], ""),
 		Created:   int64From(raw["created"], now),
 		Default:   boolPtrFrom(raw["default"]),
+		AIUse:     aiUse != nil && *aiUse,
 		UpdatedAt: now,
 	}
 

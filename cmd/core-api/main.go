@@ -12,6 +12,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/auth"
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/coreapi"
+	"github.com/linkasu/linka.type-backend/internal/dialoghelper"
 	"github.com/linkasu/linka.type-backend/internal/firebase"
 	"github.com/linkasu/linka.type-backend/internal/jwt"
 	"github.com/linkasu/linka.type-backend/internal/logging"
@@ -92,6 +93,7 @@ func main() {
 		LegacyWriter: legacyWriter,
 		LegacyReader: legacyReader,
 		Feature:      cfg.Feature,
+		DialogHelper: dialoghelper.New(cfg.Dialog.BaseURL, cfg.Dialog.APIKey, cfg.Dialog.Timeout),
 	}
 
 	handler := coreapi.New(svc, verifier, fbClients.Auth, jwtManager, cfg)

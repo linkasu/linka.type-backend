@@ -23,15 +23,15 @@ All endpoints except `POST /v1/auth` require a bearer token (default: token from
 
 ## Categories
 - `GET /v1/categories`
-  - Returns: `[{id, label, created, default?, updated_at?}]`
+  - Returns: `[{id, label, created, default?, aiUse?, updated_at?}]`
 
 - `POST /v1/categories`
-  - Body: `{id?, label, created?, default?}`
-  - Returns: `{id, label, created, default?, updated_at}`
+  - Body: `{id?, label, created?, default?, aiUse?}`
+  - Returns: `{id, label, created, default?, aiUse?, updated_at}`
 
 - `PATCH /v1/categories/{id}`
-  - Body: `{label?, default?}`
-  - Returns: `{id, label, created, default?, updated_at}`
+  - Body: `{label?, default?, aiUse?}`
+  - Returns: `{id, label, created, default?, aiUse?, updated_at}`
 
 - `DELETE /v1/categories/{id}`
   - Returns: `{status:"ok"}`
@@ -104,3 +104,33 @@ All endpoints except `POST /v1/auth` require a bearer token (default: token from
 ## Optional TTS proxy
 - `POST /v1/tts` -> `https://tts.linka.su/tts`
 - `GET /v1/voices` -> `https://tts.linka.su/voices`
+
+## Dialog helper
+- `GET /v1/dialog/chats`
+  - Returns: `[{id, title, created, updated_at?, last_message_at?, message_count?}]`
+
+- `POST /v1/dialog/chats`
+  - Body: `{title?}`
+  - Returns: `{id, title, created, updated_at}`
+
+- `DELETE /v1/dialog/chats/{id}`
+  - Returns: `{status:"ok"}`
+
+- `GET /v1/dialog/chats/{id}/messages?limit=&before=`
+  - Returns: `[{id, chatId, role, content, source?, created, updated_at?}]`
+
+- `POST /v1/dialog/chats/{id}/messages`
+  - JSON body: `{role, content, created?, source?, includeSuggestions?}`
+  - Multipart body: `payload` JSON string + `audio` file
+  - Returns: `{message:{...}, transcript?, suggestions?}`
+
+- `GET /v1/dialog/suggestions?status=pending&limit=200`
+  - Returns: `[{id, chatId?, messageId?, text, status, categoryId?, created, updated_at?}]`
+
+- `POST /v1/dialog/suggestions/apply`
+  - Body: `{items:[{id, categoryId?, categoryLabel?}]}`
+  - Returns: `{created:[{categoryId, statementId}], applied:[id]}`
+
+- `POST /v1/dialog/suggestions/dismiss`
+  - Body: `{ids:[id]}`
+  - Returns: `{status:"ok"}`

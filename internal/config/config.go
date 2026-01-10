@@ -18,6 +18,8 @@ type Config struct {
 	TTS       TTSConfig
 	Sync      SyncConfig
 	Predictor PredictorConfig
+	Dialog    DialogHelperConfig
+	DialogWorker DialogWorkerConfig
 	JWT       JWTConfig
 }
 
@@ -69,6 +71,19 @@ type SyncConfig struct {
 // PredictorConfig controls Yandex Predictor API integration.
 type PredictorConfig struct {
 	APIKey string
+}
+
+// DialogHelperConfig controls dialog-helper integration.
+type DialogHelperConfig struct {
+	BaseURL       string
+	APIKey        string
+	MaxAudioBytes int64
+	Timeout       time.Duration
+}
+
+// DialogWorkerConfig controls dialog suggestion worker behavior.
+type DialogWorkerConfig struct {
+	PollInterval time.Duration
 }
 
 // JWTConfig controls JWT token generation and validation.
@@ -134,6 +149,17 @@ func Load() (Config, error) {
 	}
 	cfg.Predictor = PredictorConfig{
 		APIKey: predictorKey,
+	}
+
+	cfg.Dialog = DialogHelperConfig{
+		BaseURL:       getenv("DIALOG_HELPER_URL", ""),
+		APIKey:        getenv("DIALOG_HELPER_API_KEY", ""),
+		MaxAudioBytes: int64(getenvInt("DIALOG_HELPER_MAX_AUDIO_BYTES", 8*1024*1024)),
+		Timeout:       getenvDuration("DIALOG_HELPER_TIMEOUT", 20*time.Second),
+	}
+
+	cfg.DialogWorker = DialogWorkerConfig{
+		PollInterval: getenvDuration("DIALOG_WORKER_INTERVAL", 15*time.Second),
 	}
 
 	cfg.JWT = JWTConfig{

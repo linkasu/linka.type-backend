@@ -26,6 +26,7 @@ type Store interface {
 	DeleteCategory(ctx context.Context, userID, categoryID string, updatedAt int64) error
 
 	ListStatements(ctx context.Context, userID, categoryID string) ([]models.Statement, error)
+	ListAllStatements(ctx context.Context, userID string) ([]models.Statement, error)
 	UpsertStatement(ctx context.Context, userID string, statement models.Statement) (models.Statement, error)
 	DeleteStatement(ctx context.Context, userID, categoryID, statementID string, updatedAt int64) error
 
@@ -59,6 +60,28 @@ type Store interface {
 	CreateClientKey(ctx context.Context, key ClientKey) error
 	ListClientKeys(ctx context.Context) ([]ClientKey, error)
 	RevokeClientKey(ctx context.Context, keyHash string) error
+
+	// Dialog helper data
+	ListDialogChats(ctx context.Context, userID string) ([]models.DialogChat, error)
+	GetDialogChat(ctx context.Context, userID, chatID string) (models.DialogChat, error)
+	UpsertDialogChat(ctx context.Context, userID string, chat models.DialogChat) (models.DialogChat, error)
+	DeleteDialogChat(ctx context.Context, userID, chatID string, updatedAt int64) error
+
+	ListDialogMessages(ctx context.Context, userID, chatID string, limit int, before int64) ([]models.DialogMessage, error)
+	ListOldestDialogMessages(ctx context.Context, userID, chatID string, limit int) ([]models.DialogMessage, error)
+	CountDialogMessages(ctx context.Context, userID, chatID string) (int64, error)
+	UpsertDialogMessage(ctx context.Context, userID string, message models.DialogMessage) (models.DialogMessage, error)
+	DeleteDialogMessage(ctx context.Context, userID, chatID, messageID string, updatedAt int64) error
+	DeleteDialogMessagesByChat(ctx context.Context, userID, chatID string, updatedAt int64) error
+
+	ListDialogSuggestions(ctx context.Context, userID string, status string, limit int) ([]models.DialogSuggestion, error)
+	CountDialogSuggestions(ctx context.Context, userID string, status string) (int64, error)
+	UpsertDialogSuggestion(ctx context.Context, userID string, suggestion models.DialogSuggestion) (models.DialogSuggestion, error)
+	DeleteDialogSuggestion(ctx context.Context, userID, suggestionID string) error
+
+	ListDialogSuggestionJobs(ctx context.Context, status string, limit int) ([]models.DialogSuggestionJob, error)
+	UpsertDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error
+	UpdateDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error
 }
 
 // LegacyWriter mirrors writes to Firebase RTDB.

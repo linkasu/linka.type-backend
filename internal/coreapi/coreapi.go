@@ -98,6 +98,17 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			}
 
 			r.Get("/predictor", api.predictorComplete)
+
+			r.Route("/dialog", func(r chi.Router) {
+				r.Get("/chats", api.listDialogChats)
+				r.Post("/chats", api.createDialogChat)
+				r.Delete("/chats/{id}", api.deleteDialogChat)
+				r.Get("/chats/{id}/messages", api.listDialogMessages)
+				r.Post("/chats/{id}/messages", api.createDialogMessage)
+				r.Get("/suggestions", api.listDialogSuggestions)
+				r.Post("/suggestions/apply", api.applyDialogSuggestions)
+				r.Post("/suggestions/dismiss", api.dismissDialogSuggestions)
+			})
 		})
 
 		r.Route("/admin", func(r chi.Router) {
@@ -150,6 +161,7 @@ func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
 		Label   string `json:"label"`
 		Created int64  `json:"created"`
 		Default *bool  `json:"default"`
+		AIUse   *bool  `json:"aiUse"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
@@ -165,6 +177,7 @@ func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
 		Label:   req.Label,
 		Created: req.Created,
 		Default: req.Default,
+		AIUse:   req.AIUse != nil && *req.AIUse,
 	})
 	if err != nil {
 		httpapi.WriteError(w, http.StatusInternalServerError, "create_category_failed", err.Error())
@@ -187,19 +200,21 @@ func (api *API) patchCategory(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Label   *string `json:"label"`
 		Default *bool   `json:"default"`
+		AIUse   *bool   `json:"aiUse"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
 		return
 	}
-	if req.Label == nil && req.Default == nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "label or default is required")
+	if req.Label == nil && req.Default == nil && req.AIUse == nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "label, default, or aiUse is required")
 		return
 	}
 
 	category, err := api.svc.UpdateCategory(r.Context(), user.UID, categoryID, service.CategoryPatch{
 		Label:   req.Label,
 		Default: req.Default,
+		AIUse:   req.AIUse,
 	})
 	if err != nil {
 		httpapi.WriteError(w, http.StatusInternalServerError, "update_category_failed", err.Error())
