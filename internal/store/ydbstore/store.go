@@ -1700,7 +1700,7 @@ func (s *Store) ListDialogMessages(ctx context.Context, userID, chatID string, l
 DECLARE $user_id AS Utf8;
 DECLARE $chat_id AS Utf8;
 DECLARE $before AS Int64;
-DECLARE $limit AS Int64;
+DECLARE $limit AS Uint64;
 SELECT message_id, role, content, source, created_at, updated_at
 FROM dialog_messages
 WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL
@@ -1712,7 +1712,7 @@ LIMIT $limit;`)
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
 		table.ValueParam("$before", types.Int64Value(before)),
-		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+		table.ValueParam("$limit", types.Uint64Value(uint64(limit))),
 	)
 
 	var out []models.DialogMessage
@@ -1783,7 +1783,7 @@ func (s *Store) ListOldestDialogMessages(ctx context.Context, userID, chatID str
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
 DECLARE $chat_id AS Utf8;
-DECLARE $limit AS Int64;
+DECLARE $limit AS Uint64;
 SELECT message_id, role, content, source, created_at, updated_at
 FROM dialog_messages
 WHERE user_id = $user_id AND chat_id = $chat_id AND deleted_at IS NULL
@@ -1793,7 +1793,7 @@ LIMIT $limit;`)
 	params := table.NewQueryParameters(
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$chat_id", types.UTF8Value(chatID)),
-		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+		table.ValueParam("$limit", types.Uint64Value(uint64(limit))),
 	)
 
 	var out []models.DialogMessage
@@ -1980,7 +1980,7 @@ func (s *Store) ListDialogSuggestions(ctx context.Context, userID string, status
 	query := s.withPrefix(`
 DECLARE $user_id AS Utf8;
 DECLARE $status AS Utf8;
-DECLARE $limit AS Int64;
+DECLARE $limit AS Uint64;
 SELECT suggestion_id, chat_id, message_id, text, status, category_id, created_at, updated_at
 FROM dialog_suggestions
 WHERE user_id = $user_id AND status = $status
@@ -1990,7 +1990,7 @@ LIMIT $limit;`)
 	params := table.NewQueryParameters(
 		table.ValueParam("$user_id", types.UTF8Value(userID)),
 		table.ValueParam("$status", types.UTF8Value(status)),
-		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+		table.ValueParam("$limit", types.Uint64Value(uint64(limit))),
 	)
 
 	var out []models.DialogSuggestion
@@ -2157,7 +2157,7 @@ func (s *Store) ListDialogSuggestionJobs(ctx context.Context, status string, lim
 	}
 	query := s.withPrefix(`
 DECLARE $status AS Utf8;
-DECLARE $limit AS Int64;
+DECLARE $limit AS Uint64;
 SELECT job_id, user_id, chat_id, message_id, status, attempts, last_error, created_at, updated_at
 FROM dialog_suggestion_jobs
 WHERE status = $status
@@ -2166,7 +2166,7 @@ LIMIT $limit;`)
 
 	params := table.NewQueryParameters(
 		table.ValueParam("$status", types.UTF8Value(status)),
-		table.ValueParam("$limit", types.Int64Value(int64(limit))),
+		table.ValueParam("$limit", types.Uint64Value(uint64(limit))),
 	)
 
 	var out []models.DialogSuggestionJob
