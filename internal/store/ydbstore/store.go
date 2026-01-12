@@ -2291,3 +2291,97 @@ WHERE job_id = $job_id;`)
 
 	return s.execWrite(ctx, query, params)
 }
+
+func (s *Store) GetUsageLimit(ctx context.Context, userID, month string) (models.UsageLimit, error) {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $month AS Utf8;
+SELECT inference_count, max_limit, updated_at
+FROM usage_limits
+WHERE user_id = $user_id AND month = $month
+LIMIT 1;`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$month", types.UTF8Value(month)),
+	)
+
+	var usage models.UsageLimit
+	usage.UserID = userID
+	usage.Month = month
+
+	err := s.client.Table().Do(ctx, func(ctx context.Context, sess table.Session) error {
+		_, res, err := sess.Execute(ctx, table.OnlineReadOnlyTxControl(), query, params)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+		if err := res.NextResultSetErr(ctx); err != nil {
+			return err
+		}
+		if res.NextRow() {
+			var count, limit int64
+			var updatedAt int64
+			if err := res.ScanNamed(
+				named.Required("inference_count", &count),
+				named.Required("max_limit", &limit),
+				named.Required("updated_at", &updatedAt),
+			); err != nil {
+				return err
+			}
+			usage.InferenceCount = count
+			usage.Limit = limit
+			usage.UpdatedAt = updatedAt
+		}
+		return res.Err()
+	}, table.WithIdempotent())
+	if err != nil {
+		return models.UsageLimit{}, err
+	}
+
+	return usage, nil
+}
+
+func (s *Store) IncrementUsage(ctx context.Context, userID, month string, defaultLimit int64) (models.UsageLimit, error) {
+	now := time.Now().UnixMilli()
+
+	existing, err := s.GetUsageLimit(ctx, userID, month)
+	if err != nil {
+		return models.UsageLimit{}, err
+	}
+
+	newCount := existing.InferenceCount + 1
+	limit := existing.Limit
+	if limit == 0 {
+		limit = defaultLimit
+	}
+
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $month AS Utf8;
+DECLARE $inference_count AS Int64;
+DECLARE $max_limit AS Int64;
+DECLARE $updated_at AS Int64;
+UPSERT INTO usage_limits (user_id, month, inference_count, max_limit, updated_at)
+VALUES ($user_id, $month, $inference_count, $max_limit, $updated_at);`)
+
+	params := table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$month", types.UTF8Value(month)),
+		table.ValueParam("$inference_count", types.Int64Value(newCount)),
+		table.ValueParam("$max_limit", types.Int64Value(limit)),
+		table.ValueParam("$updated_at", types.Int64Value(now)),
+	)
+
+	if err := s.execWrite(ctx, query, params); err != nil {
+		return models.UsageLimit{}, err
+	}
+
+	return models.UsageLimit{
+		UserID:         userID,
+		Month:          month,
+		InferenceCount: newCount,
+		Limit:          limit,
+		UpdatedAt:      now,
+	}, nil
+}

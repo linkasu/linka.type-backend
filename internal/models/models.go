@@ -103,3 +103,12 @@ type ChangeEvent struct {
 	UpdatedAt  int64           `json:"updated_at"`
 	Cursor     string          `json:"cursor,omitempty"`
 }
+
+// UsageLimit tracks monthly inference usage per user.
+type UsageLimit struct {
+	UserID         string `json:"userId"`
+	Month          string `json:"month"` // YYYY-MM format
+	InferenceCount int64  `json:"inferenceCount"`
+	Limit          int64  `json:"limit"`
+	UpdatedAt      int64  `json:"updated_at,omitempty"`
+}

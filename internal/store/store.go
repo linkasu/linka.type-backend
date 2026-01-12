@@ -82,6 +82,10 @@ type Store interface {
 	ListDialogSuggestionJobs(ctx context.Context, status string, limit int) ([]models.DialogSuggestionJob, error)
 	UpsertDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error
 	UpdateDialogSuggestionJob(ctx context.Context, job models.DialogSuggestionJob) error
+
+	// Usage limits
+	GetUsageLimit(ctx context.Context, userID, month string) (models.UsageLimit, error)
+	IncrementUsage(ctx context.Context, userID, month string, defaultLimit int64) (models.UsageLimit, error)
 }
 
 // LegacyWriter mirrors writes to Firebase RTDB.

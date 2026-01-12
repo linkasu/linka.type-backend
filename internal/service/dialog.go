@@ -22,7 +22,10 @@ const (
 	maxDialogHistoryItems = 64
 	maxBiographyChars     = 1800
 	maxStatementsPerCat   = 12
+	defaultMonthlyLimit   = 100
 )
+
+var ErrUsageLimitExceeded = errors.New("monthly inference limit exceeded")
 
 type DialogChatInput struct {
 	Title string
@@ -148,6 +151,20 @@ func (s *Service) CreateDialogMessage(ctx context.Context, userID, chatID string
 			return DialogMessageResult{}, errors.New("dialog helper not configured for audio")
 		}
 		if dialogEnabled {
+			// Check monthly usage limit
+			month := time.Now().Format("2006-01")
+			usage, err := s.Store.GetUsageLimit(ctx, userID, month)
+			if err != nil {
+				return DialogMessageResult{}, err
+			}
+			limit := usage.Limit
+			if limit == 0 {
+				limit = defaultMonthlyLimit
+			}
+			if usage.InferenceCount >= limit {
+				return DialogMessageResult{}, ErrUsageLimitExceeded
+			}
+
 			history, err := s.buildDialogHistory(ctx, userID, chatID, role, content, audio != nil)
 			if err != nil {
 				return DialogMessageResult{}, err
@@ -171,6 +188,9 @@ func (s *Service) CreateDialogMessage(ctx context.Context, userID, chatID string
 			if resp.Transcript != nil {
 				transcript = resp.Transcript
 			}
+
+			// Increment usage counter
+			_, _ = s.Store.IncrementUsage(ctx, userID, month, defaultMonthlyLimit)
 		}
 	}
 
@@ -199,8 +219,9 @@ func (s *Service) CreateDialogMessage(ctx context.Context, userID, chatID string
 		return DialogMessageResult{}, err
 	}
 
-	if role == "speaker" {
-		_ = s.enqueueDialogSuggestionJob(ctx, userID, chatID, stored.ID)
+	// Save suggestions immediately (no more double inference via worker)
+	if len(suggestions) > 0 {
+		_ = s.saveInlineSuggestions(ctx, userID, chatID, stored.ID, suggestions)
 	}
 
 	return DialogMessageResult{
@@ -381,18 +402,53 @@ func (s *Service) trimDialogMessages(ctx context.Context, userID, chatID string)
 	return nil
 }
 
-func (s *Service) enqueueDialogSuggestionJob(ctx context.Context, userID, chatID, messageID string) error {
-	job := models.DialogSuggestionJob{
-		ID:        id.New(),
-		UserID:    userID,
-		ChatID:    chatID,
-		MessageID: messageID,
-		Status:    "pending",
-		Attempts:  0,
-		Created:   time.Now().UnixMilli(),
+func (s *Service) saveInlineSuggestions(ctx context.Context, userID, chatID, messageID string, suggestions []string) error {
+	now := time.Now().UnixMilli()
+
+	// Get existing texts to avoid duplicates
+	existingTexts := make(map[string]struct{})
+
+	// Check statements
+	statements, _ := s.Store.ListAllStatements(ctx, userID)
+	for _, stmt := range statements {
+		existingTexts[strings.ToLower(strings.TrimSpace(stmt.Text))] = struct{}{}
 	}
-	job.UpdatedAt = job.Created
-	return s.Store.UpsertDialogSuggestionJob(ctx, job)
+
+	// Check existing suggestions
+	for _, status := range []string{"pending", "accepted", "dismissed"} {
+		existing, _ := s.Store.ListDialogSuggestions(ctx, userID, status, maxDialogSuggestions)
+		for _, sug := range existing {
+			existingTexts[strings.ToLower(strings.TrimSpace(sug.Text))] = struct{}{}
+		}
+	}
+
+	// Save new unique suggestions
+	for _, text := range suggestions {
+		text = strings.TrimSpace(text)
+		if text == "" {
+			continue
+		}
+		normalized := strings.ToLower(text)
+		if _, exists := existingTexts[normalized]; exists {
+			continue
+		}
+		existingTexts[normalized] = struct{}{}
+
+		suggestion := models.DialogSuggestion{
+			ID:        id.New(),
+			ChatID:    chatID,
+			MessageID: messageID,
+			Text:      text,
+			Status:    "pending",
+			Created:   now,
+			UpdatedAt: now,
+		}
+		if _, err := s.Store.UpsertDialogSuggestion(ctx, userID, suggestion); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *Service) buildDialogHistory(ctx context.Context, userID, chatID, role, content string, hasAudio bool) ([]dialoghelper.DialogMessage, error) {

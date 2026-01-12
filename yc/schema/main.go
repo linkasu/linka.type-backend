@@ -145,6 +145,14 @@ var schema = []string{
   updated_at Int64 NOT NULL,
   PRIMARY KEY (job_id)
 );`,
+	`CREATE TABLE IF NOT EXISTS usage_limits (
+  user_id Utf8 NOT NULL,
+  month Utf8 NOT NULL,
+  inference_count Int64 NOT NULL,
+  max_limit Int64 NOT NULL,
+  updated_at Int64 NOT NULL,
+  PRIMARY KEY (user_id, month)
+);`,
 }
 
 func main() {
