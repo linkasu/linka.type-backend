@@ -84,6 +84,8 @@ type DialogHelperConfig struct {
 // DialogWorkerConfig controls dialog suggestion worker behavior.
 type DialogWorkerConfig struct {
 	PollInterval time.Duration
+	FolderID     string
+	ModelURI     string
 }
 
 // JWTConfig controls JWT token generation and validation.
@@ -160,6 +162,8 @@ func Load() (Config, error) {
 
 	cfg.DialogWorker = DialogWorkerConfig{
 		PollInterval: getenvDuration("DIALOG_WORKER_INTERVAL", 15*time.Second),
+		FolderID:     getenv("YC_FOLDER_ID", ""),
+		ModelURI:     getenv("YC_GPT_MODEL_URI", ""),
 	}
 
 	cfg.JWT = JWTConfig{

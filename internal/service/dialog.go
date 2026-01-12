@@ -219,9 +219,14 @@ func (s *Service) CreateDialogMessage(ctx context.Context, userID, chatID string
 		return DialogMessageResult{}, err
 	}
 
-	// Save suggestions immediately (no more double inference via worker)
+	// Save quick suggestions for persistence across page reloads
 	if len(suggestions) > 0 {
 		_ = s.saveInlineSuggestions(ctx, userID, chatID, stored.ID, suggestions)
+	}
+
+	// Queue background job for bio analysis (extracts facts from dialog)
+	if role == "speaker" {
+		_ = s.enqueueDialogSuggestionJob(ctx, userID, chatID, stored.ID)
 	}
 
 	return DialogMessageResult{
@@ -449,6 +454,20 @@ func (s *Service) saveInlineSuggestions(ctx context.Context, userID, chatID, mes
 	}
 
 	return nil
+}
+
+func (s *Service) enqueueDialogSuggestionJob(ctx context.Context, userID, chatID, messageID string) error {
+	job := models.DialogSuggestionJob{
+		ID:        id.New(),
+		UserID:    userID,
+		ChatID:    chatID,
+		MessageID: messageID,
+		Status:    "pending",
+		Attempts:  0,
+		Created:   time.Now().UnixMilli(),
+	}
+	job.UpdatedAt = job.Created
+	return s.Store.UpsertDialogSuggestionJob(ctx, job)
 }
 
 func (s *Service) buildDialogHistory(ctx context.Context, userID, chatID, role, content string, hasAudio bool) ([]dialoghelper.DialogMessage, error) {

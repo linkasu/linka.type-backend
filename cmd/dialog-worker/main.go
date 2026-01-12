@@ -9,8 +9,8 @@ import (
 	"syscall"
 
 	"github.com/linkasu/linka.type-backend/internal/config"
-	"github.com/linkasu/linka.type-backend/internal/dialoghelper"
 	"github.com/linkasu/linka.type-backend/internal/dialogworker"
+	"github.com/linkasu/linka.type-backend/internal/gpt"
 	"github.com/linkasu/linka.type-backend/internal/logging"
 	"github.com/linkasu/linka.type-backend/internal/store/ydbstore"
 	"github.com/linkasu/linka.type-backend/internal/ydb"
@@ -35,8 +35,8 @@ func main() {
 		_ = ydbClient.Close(ctx)
 	}()
 
-	dialogClient := dialoghelper.New(cfg.Dialog.BaseURL, cfg.Dialog.APIKey, cfg.Dialog.Timeout)
-	worker := dialogworker.New(ydbstore.New(ydbClient), dialogClient, logger)
+	gptClient := gpt.NewClient(cfg.DialogWorker.FolderID, cfg.DialogWorker.ModelURI)
+	worker := dialogworker.New(ydbstore.New(ydbClient), gptClient, logger)
 
 	errCh := make(chan error, 1)
 	go func() {

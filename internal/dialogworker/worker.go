@@ -8,7 +8,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/linkasu/linka.type-backend/internal/dialoghelper"
+	"github.com/linkasu/linka.type-backend/internal/gpt"
 	"github.com/linkasu/linka.type-backend/internal/id"
 	"github.com/linkasu/linka.type-backend/internal/models"
 	"github.com/linkasu/linka.type-backend/internal/store"
@@ -24,17 +24,17 @@ const (
 
 type Worker struct {
 	store  store.Store
-	client *dialoghelper.Client
+	gpt    *gpt.Client
 	logger *slog.Logger
 }
 
-func New(store store.Store, client *dialoghelper.Client, logger *slog.Logger) *Worker {
+func New(store store.Store, gptClient *gpt.Client, logger *slog.Logger) *Worker {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Worker{
 		store:  store,
-		client: client,
+		gpt:    gptClient,
 		logger: logger,
 	}
 }
@@ -60,7 +60,7 @@ func (w *Worker) Run(ctx context.Context, interval time.Duration) error {
 }
 
 func (w *Worker) process(ctx context.Context) error {
-	if w.client == nil || !w.client.Available() {
+	if w.gpt == nil || !w.gpt.Available() {
 		return nil
 	}
 
@@ -103,9 +103,9 @@ func (w *Worker) processJob(ctx context.Context, job models.DialogSuggestionJob)
 		return nil
 	}
 
-	history := make([]dialoghelper.DialogMessage, 0, len(messages))
+	history := make([]gpt.DialogMessage, 0, len(messages))
 	for _, msg := range messages {
-		history = append(history, dialoghelper.DialogMessage{
+		history = append(history, gpt.DialogMessage{
 			Role:    msg.Role,
 			Content: msg.Content,
 		})
@@ -116,20 +116,13 @@ func (w *Worker) processJob(ctx context.Context, job models.DialogSuggestionJob)
 		return err
 	}
 
-	resp, err := w.client.Infer(ctx, dialoghelper.InferPayload{
-		DisabledPersonBiography: bio,
-		Messages:                history,
-		Language:                "ru-RU",
-		UserID:                  job.UserID,
-		DialogID:                job.ChatID,
-		StepID:                  job.ID,
-	}, nil)
+	// Analyze dialog to extract user facts for bio
+	result, err := w.gpt.Analyze(ctx, bio, history)
 	if err != nil {
 		return err
 	}
 
-	candidates := normalizeSuggestions(resp.Response)
-	if len(candidates) == 0 {
+	if len(result.Facts) == 0 {
 		return nil
 	}
 
@@ -147,7 +140,7 @@ func (w *Worker) processJob(ctx context.Context, job models.DialogSuggestionJob)
 	}
 
 	added := 0
-	for _, text := range candidates {
+	for _, text := range result.Facts {
 		if added >= available || added >= maxSuggestionBatch {
 			break
 		}
