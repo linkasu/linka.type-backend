@@ -23,9 +23,16 @@ optional_vars=(
   DIALOG_HELPER_TIMEOUT
   DIALOG_HELPER_MAX_AUDIO_BYTES
   DIALOG_WORKER_INTERVAL
+  YC_FOLDER_ID
+  YC_GPT_MODEL_URI
   ENV
   LOG_LEVEL
 )
+
+# Pass FOLDER_ID as YC_FOLDER_ID for GPT client if not explicitly set
+if [[ -z "${YC_FOLDER_ID:-}" ]]; then
+  export YC_FOLDER_ID="${FOLDER_ID}"
+fi
 
 for var in "${optional_vars[@]}"; do
   value="${!var:-}"
