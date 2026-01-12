@@ -224,10 +224,11 @@ func (s *Service) CreateDialogMessage(ctx context.Context, userID, chatID string
 		_ = s.saveInlineSuggestions(ctx, userID, chatID, stored.ID, suggestions)
 	}
 
+	// TODO: Bio analysis disabled - needs prompt tuning
 	// Queue background job for bio analysis (extracts facts from dialog)
-	if role == "speaker" {
-		_ = s.enqueueDialogSuggestionJob(ctx, userID, chatID, stored.ID)
-	}
+	// if role == "speaker" {
+	// 	_ = s.enqueueDialogSuggestionJob(ctx, userID, chatID, stored.ID)
+	// }
 
 	return DialogMessageResult{
 		Message:     stored,
