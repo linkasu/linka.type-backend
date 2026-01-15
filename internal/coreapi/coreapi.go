@@ -61,11 +61,17 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 	r.Handle("/assets/*", assetsHandler())
 
 	r.Route("/v1", func(r chi.Router) {
-		r.Post("/auth", api.authToken)
-		r.Post("/auth/register", api.authRegister)
-		r.Post("/auth/refresh", api.authRefresh)
-		r.Post("/auth/logout", api.authLogout)
+		// Auth endpoints with stricter rate limiting (5 req/min)
 		r.Group(func(r chi.Router) {
+			r.Use(AuthRateLimiter.Middleware)
+			r.Post("/auth", api.authToken)
+			r.Post("/auth/register", api.authRegister)
+			r.Post("/auth/refresh", api.authRefresh)
+			r.Post("/auth/logout", api.authLogout)
+		})
+		// Protected endpoints with general rate limiting (100 req/min)
+		r.Group(func(r chi.Router) {
+			r.Use(APIRateLimiter.Middleware)
 			r.Use(httpmiddleware.Auth(verifier))
 			r.Get("/categories", api.listCategories)
 			r.Post("/categories", api.createCategory)
@@ -849,15 +855,36 @@ func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_query", "q parameter is required")
 		return
 	}
+	// Validate query length (max 200 chars)
+	if len(query) > 200 {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_query", "query too long (max 200 chars)")
+		return
+	}
 
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
 		lang = "ru"
 	}
+	// Validate lang parameter
+	if lang != "ru" && lang != "en" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_lang", "lang must be 'ru' or 'en'")
+		return
+	}
 
 	limit := r.URL.Query().Get("limit")
 	if limit == "" {
 		limit = "5"
+	}
+	// Validate limit parameter (1-100)
+	limitNum := 5
+	if limit != "" {
+		if n, err := parseIntInRange(limit, 1, 100); err == nil {
+			limitNum = n
+			limit = fmt.Sprintf("%d", limitNum)
+		} else {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_limit", "limit must be between 1 and 100")
+			return
+		}
 	}
 
 	predictorURL := "https://predictor.yandex.net/api/v1/predict.json/complete?key=" +
@@ -934,7 +961,8 @@ func mustUser(w http.ResponseWriter, r *http.Request) auth.User {
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-	body := http.MaxBytesReader(w, r.Body, 2<<20)
+	// Limit body size to 64KB to prevent DoS attacks
+	body := http.MaxBytesReader(w, r.Body, 64*1024)
 	dec := json.NewDecoder(body)
 	if err := dec.Decode(dst); err != nil {
 		if errors.Is(err, io.EOF) {
@@ -945,20 +973,39 @@ func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
 	return nil
 }
 
+// parseIntInRange parses a string as int and validates it's within the given range
+func parseIntInRange(s string, min, max int) (int, error) {
+	var n int
+	if _, err := fmt.Sscanf(s, "%d", &n); err != nil {
+		return 0, err
+	}
+	if n < min || n > max {
+		return 0, fmt.Errorf("value %d out of range [%d, %d]", n, min, max)
+	}
+	return n, nil
+}
+
 func writeStatusOK(w http.ResponseWriter) {
 	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+}
+
+// allowedOrigins is a whitelist of allowed CORS origins
+var allowedOrigins = map[string]bool{
+	"https://linka.su":     true,
+	"https://www.linka.su": true,
+	"https://bbak2usvd9decvtc8sfm.containers.yandexcloud.net": true,
+	"http://localhost:3000":  true,
+	"https://localhost:3000": true,
 }
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
-		if origin != "" {
+		if origin != "" && allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
-		} else {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
 		}
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id, X-Auth-Token")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Max-Age", "86400")
 		if r.Method == http.MethodOptions {
