@@ -66,6 +66,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Use(AuthRateLimiter.Middleware)
 			r.Post("/auth", api.authToken)
 			r.Post("/auth/register", api.authRegister)
+			r.Post("/auth/reset", api.authResetPassword)
 			r.Post("/auth/refresh", api.authRefresh)
 			r.Post("/auth/logout", api.authLogout)
 		})
@@ -768,6 +769,59 @@ func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
 		"token": authResp.IDToken,
 		"user":  userPayload,
 	})
+}
+
+func (api *API) authResetPassword(w http.ResponseWriter, r *http.Request) {
+	if api.config.Firebase.APIKey == "" {
+		httpapi.WriteError(w, http.StatusServiceUnavailable, "auth_unavailable", "firebase api key not configured")
+		return
+	}
+
+	var req struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "invalid request body")
+		return
+	}
+	if strings.TrimSpace(req.Email) == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "email is required")
+		return
+	}
+
+	payload := map[string]string{
+		"requestType": "PASSWORD_RESET",
+		"email":       req.Email,
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusInternalServerError, "auth_failed", "failed to build auth request")
+		return
+	}
+
+	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + url.QueryEscape(api.config.Firebase.APIKey)
+	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
+		return
+	}
+	authReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := api.httpClient.Do(authReq)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		message := firebaseErrorMessage(resp.Body)
+		status, code, msg := firebaseAuthError(message)
+		httpapi.WriteError(w, status, code, msg)
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
 func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {

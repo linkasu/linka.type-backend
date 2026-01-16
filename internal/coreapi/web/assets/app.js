@@ -17,6 +17,12 @@
       body: JSON.stringify({ email: "user@example.com", password: "secret" }, null, 2)
     },
     {
+      label: "POST /v1/auth/reset",
+      method: "POST",
+      path: "/v1/auth/reset",
+      body: JSON.stringify({ email: "user@example.com" }, null, 2)
+    },
+    {
       label: "GET /v1/categories",
       method: "GET",
       path: "/v1/categories",

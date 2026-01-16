@@ -11,7 +11,7 @@ https://backend.linka.su
 ```
 
 ## Аутентификация
-Все запросы (кроме `POST /v1/auth`) требуют токен доступа.
+Все запросы (кроме `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/reset`) требуют токен доступа.
 По умолчанию используйте токен, полученный через открытый backend-эндпоинт `POST /v1/auth` (email + пароль).
 
 Пример получения токена:
@@ -20,6 +20,14 @@ curl -sS -X POST \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"secret"}' \
   https://backend.linka.su/v1/auth
+```
+
+Сброс пароля:
+```bash
+curl -sS -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com"}' \
+  https://backend.linka.su/v1/auth/reset
 ```
 
 ## Health

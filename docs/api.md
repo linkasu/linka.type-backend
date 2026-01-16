@@ -1,6 +1,6 @@
 # API v1
 
-All endpoints except `POST /v1/auth` require a bearer token (default: token from `POST /v1/auth`).
+All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, and `POST /v1/auth/reset` require a bearer token (default: token from `POST /v1/auth`).
 
 ## Conventions
 - Timestamps are epoch milliseconds (int64).
@@ -20,6 +20,10 @@ All endpoints except `POST /v1/auth` require a bearer token (default: token from
 - `POST /v1/auth/register` (open)
   - Body: `{email, password}`
   - Returns: `{token, user?}`
+
+- `POST /v1/auth/reset` (open)
+  - Body: `{email}`
+  - Returns: `{status:"ok"}`
 
 ## Categories
 - `GET /v1/categories`
@@ -56,11 +60,11 @@ All endpoints except `POST /v1/auth` require a bearer token (default: token from
 
 ## User state
 - `GET /v1/user/state`
-  - Returns: `{inited: bool, quickes: [string, ...]}`
+  - Returns: `{inited: bool, quickes: [string, ...], preferences?: object}`
 
 - `PUT /v1/user/state`
-  - Body: `{inited?, quickes?}`
-  - Returns: `{inited: bool, quickes: [string, ...]}`
+  - Body: `{inited?, quickes?, preferences?}`
+  - Returns: `{inited: bool, quickes: [string, ...], preferences?: object}`
 
 - `GET /v1/quickes`
   - Returns: `[string, ...]`
