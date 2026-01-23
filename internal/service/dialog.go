@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/linkasu/linka.type-backend/internal/dialoghelper"
 	"github.com/linkasu/linka.type-backend/internal/id"
@@ -19,6 +20,8 @@ const (
 	maxDialogMessages     = 200
 	maxDialogSuggestions  = 200
 	maxDialogHistoryItems = 64
+	maxBiographyChars     = 1800
+	maxStatementsPerCat   = 12
 	defaultMonthlyLimit   = 100
 )
 
@@ -507,6 +510,7 @@ func (s *Service) buildDialogBiography(ctx context.Context, userID string) (stri
 	}
 
 	lines := make([]string, 0)
+	currentLen := 0
 
 	for _, cat := range categories {
 		if !cat.AIUse {
@@ -521,6 +525,9 @@ func (s *Service) buildDialogBiography(ctx context.Context, userID string) (stri
 		}
 		texts := make([]string, 0, len(statements))
 		for _, stmt := range statements {
+			if len(texts) >= maxStatementsPerCat {
+				break
+			}
 			text := strings.TrimSpace(stmt.Text)
 			if text != "" {
 				texts = append(texts, text)
@@ -533,7 +540,12 @@ func (s *Service) buildDialogBiography(ctx context.Context, userID string) (stri
 		if line == "" {
 			continue
 		}
+		lineLen := utf8.RuneCountInString(line)
+		if currentLen+lineLen > maxBiographyChars {
+			break
+		}
 		lines = append(lines, line)
+		currentLen += lineLen
 	}
 
 	return strings.Join(lines, "\n"), nil
