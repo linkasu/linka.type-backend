@@ -312,10 +312,7 @@ func (api *API) createStatement(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
-		"status":    "ok",
-		"statement": statement,
-	})
+	httpapi.WriteJSON(w, http.StatusOK, statement)
 }
 
 func (api *API) patchStatement(w http.ResponseWriter, r *http.Request) {
