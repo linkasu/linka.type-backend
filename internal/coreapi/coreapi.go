@@ -86,6 +86,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 
 			r.Get("/user/state", api.getUserState)
 			r.Put("/user/state", api.putUserState)
+			r.Post("/user/bootstrap", api.bootstrapUser)
 			r.Get("/quickes", api.getQuickes)
 			r.Put("/quickes", api.putQuickes)
 
@@ -427,6 +428,53 @@ func (api *API) putUserState(w http.ResponseWriter, r *http.Request) {
 	httpapi.WriteJSON(w, http.StatusOK, state)
 }
 
+func (api *API) bootstrapUser(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+
+	var req struct {
+		MergeStrategy    string `json:"mergeStrategy"`
+		ClientSnapshotID string `json:"clientSnapshotId"`
+		Snapshot         struct {
+			Categories  []models.Category  `json:"categories"`
+			Statements  []models.Statement `json:"statements"`
+			Quickes     []string           `json:"quickes"`
+			Inited      bool               `json:"inited"`
+			Preferences map[string]any     `json:"preferences"`
+		} `json:"snapshot"`
+	}
+
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		return
+	}
+
+	result, err := api.svc.BootstrapUserData(r.Context(), user.UID, service.UserBootstrapSnapshot{
+		Categories:  req.Snapshot.Categories,
+		Statements:  req.Snapshot.Statements,
+		Quickes:     req.Snapshot.Quickes,
+		Inited:      req.Snapshot.Inited,
+		Preferences: req.Snapshot.Preferences,
+	}, req.MergeStrategy)
+	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "merge strategy") {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_merge_strategy", err.Error())
+			return
+		}
+		httpapi.WriteError(w, http.StatusInternalServerError, "bootstrap_failed", err.Error())
+		return
+	}
+
+	httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+		"status":    "ok",
+		"imported":  result.Imported,
+		"conflicts": result.Conflicts,
+		"idMap":     result.IDMap,
+	})
+}
+
 func (api *API) getQuickes(w http.ResponseWriter, r *http.Request) {
 	user := mustUser(w, r)
 	if user.UID == "" {
@@ -666,6 +714,14 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 			httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate tokens")
 			return
 		}
+		if isNativeClient(r) {
+			httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+				"token":        tokenPair.AccessToken,
+				"refreshToken": tokenPair.RefreshToken,
+				"user":         userPayload,
+			})
+			return
+		}
 		api.setRefreshTokenCookie(w, tokenPair.RefreshToken)
 		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
 			"token": tokenPair.AccessToken,
@@ -754,6 +810,14 @@ func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
 			httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate tokens")
 			return
 		}
+		if isNativeClient(r) {
+			httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+				"token":        tokenPair.AccessToken,
+				"refreshToken": tokenPair.RefreshToken,
+				"user":         userPayload,
+			})
+			return
+		}
 		api.setRefreshTokenCookie(w, tokenPair.RefreshToken)
 		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
 			"token": tokenPair.AccessToken,
@@ -827,16 +891,54 @@ func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil || cookie.Value == "" {
+	nativeClient := isNativeClient(r)
+
+	refreshToken := ""
+	if nativeClient {
+		var req struct {
+			RefreshToken string `json:"refreshToken"`
+		}
+		if err := decodeJSON(w, r, &req); err != nil {
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+			return
+		}
+		refreshToken = strings.TrimSpace(req.RefreshToken)
+	} else {
+		cookie, err := r.Cookie("refresh_token")
+		if err == nil {
+			refreshToken = strings.TrimSpace(cookie.Value)
+		}
+	}
+
+	if refreshToken == "" {
 		httpapi.WriteError(w, http.StatusUnauthorized, "unauthorized", "missing refresh token")
 		return
 	}
 
-	claims, err := api.jwtManager.ValidateRefreshToken(cookie.Value)
+	claims, err := api.jwtManager.ValidateRefreshToken(refreshToken)
 	if err != nil {
-		api.clearRefreshTokenCookie(w)
+		if !nativeClient {
+			api.clearRefreshTokenCookie(w)
+		}
 		httpapi.WriteError(w, http.StatusUnauthorized, "unauthorized", "invalid refresh token")
+		return
+	}
+
+	if nativeClient {
+		tokenPair, err := api.jwtManager.GenerateTokenPair(claims.UID, claims.Email)
+		if err != nil {
+			httpapi.WriteError(w, http.StatusInternalServerError, "token_failed", "failed to generate tokens")
+			return
+		}
+		httpapi.WriteJSON(w, http.StatusOK, map[string]any{
+			"token":        tokenPair.AccessToken,
+			"refreshToken": tokenPair.RefreshToken,
+			"expiresAt":    tokenPair.ExpiresAt.Unix(),
+			"user": map[string]string{
+				"id":    claims.UID,
+				"email": claims.Email,
+			},
+		})
 		return
 	}
 
@@ -857,7 +959,9 @@ func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) authLogout(w http.ResponseWriter, r *http.Request) {
-	api.clearRefreshTokenCookie(w)
+	if !isNativeClient(r) {
+		api.clearRefreshTokenCookie(w)
+	}
 	writeStatusOK(w)
 }
 
@@ -1040,13 +1144,20 @@ func writeStatusOK(w http.ResponseWriter) {
 	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
+func isNativeClient(r *http.Request) bool {
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Client-Type")), "native")
+}
+
 // allowedOrigins is a whitelist of allowed CORS origins
 var allowedOrigins = map[string]bool{
 	"https://linka.su":     true,
 	"https://www.linka.su": true,
 	"https://bbak2usvd9decvtc8sfm.containers.yandexcloud.net": true,
-	"http://localhost:3000":  true,
-	"https://localhost:3000": true,
+	"http://localhost:3000":                                   true,
+	"https://localhost:3000":                                  true,
+	"tauri://localhost":                                       true,
+	"http://tauri.localhost":                                  true,
+	"https://tauri.localhost":                                 true,
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

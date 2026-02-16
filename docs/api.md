@@ -16,10 +16,17 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, and `POST /v1/au
 - `POST /v1/auth` (open)
   - Body: `{email, password}`
   - Returns: `{token, user?}`
+  - Native clients (`X-Client-Type: native`) also receive `{refreshToken}` in JSON.
 
 - `POST /v1/auth/register` (open)
   - Body: `{email, password}`
   - Returns: `{token, user?}`
+  - Native clients (`X-Client-Type: native`) also receive `{refreshToken}` in JSON.
+
+- `POST /v1/auth/refresh` (open)
+  - Web: refresh token is read from httpOnly cookie.
+  - Native: body `{refreshToken}` with `X-Client-Type: native`.
+  - Returns: `{token, user, expiresAt}` and for native also `{refreshToken}`.
 
 - `POST /v1/auth/reset` (open)
   - Body: `{email}`
@@ -65,6 +72,12 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, and `POST /v1/au
 - `PUT /v1/user/state`
   - Body: `{inited?, quickes?, preferences?}`
   - Returns: `{inited: bool, quickes: [string, ...], preferences?: object}`
+
+- `POST /v1/user/bootstrap`
+  - Body:
+    - `mergeStrategy` (optional, default `local_wins`)
+    - `snapshot`: `{categories, statements, quickes, inited, preferences}`
+  - Returns: `{status:"ok", imported:{...}, conflicts, idMap}`
 
 - `GET /v1/quickes`
   - Returns: `[string, ...]`

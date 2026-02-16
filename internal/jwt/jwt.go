@@ -75,9 +75,10 @@ func (m *Manager) GenerateTokenPair(uid, email string) (TokenPair, error) {
 	}
 
 	refreshClaims := Claims{
-		UID:  uid,
-		Type: "refresh",
-		JTI:  jti,
+		UID:   uid,
+		Email: email,
+		Type:  "refresh",
+		JTI:   jti,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(m.refreshTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -168,5 +169,3 @@ func generateJTI() (string, error) {
 	}
 	return hex.EncodeToString(bytes), nil
 }
-
-

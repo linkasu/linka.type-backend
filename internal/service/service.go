@@ -64,6 +64,30 @@ type UserStatePatch struct {
 	PreferencesSet bool
 }
 
+// UserBootstrapSnapshot carries local guest data for account bootstrap.
+type UserBootstrapSnapshot struct {
+	Categories  []models.Category
+	Statements  []models.Statement
+	Quickes     []string
+	Inited      bool
+	Preferences map[string]any
+}
+
+// UserBootstrapResult describes imported entities.
+type UserBootstrapResult struct {
+	Imported struct {
+		Categories  int
+		Statements  int
+		Quickes     bool
+		Preferences bool
+		Inited      bool
+	}
+	Conflicts int
+	IDMap     struct {
+		Categories map[string]string
+	}
+}
+
 // QuestionInput captures onboarding question payloads.
 type QuestionInput struct {
 	UID        string   `json:"uid"`
@@ -455,6 +479,135 @@ func (s *Service) SetQuickes(ctx context.Context, userID string, quickes []strin
 	return updated, nil
 }
 
+// BootstrapUserData imports a local snapshot into the user's cloud account.
+func (s *Service) BootstrapUserData(
+	ctx context.Context,
+	userID string,
+	snapshot UserBootstrapSnapshot,
+	mergeStrategy string,
+) (UserBootstrapResult, error) {
+	if mergeStrategy == "" {
+		mergeStrategy = "local_wins"
+	}
+	if mergeStrategy != "local_wins" {
+		return UserBootstrapResult{}, errors.New("unsupported merge strategy")
+	}
+
+	result := UserBootstrapResult{}
+	result.IDMap.Categories = make(map[string]string)
+
+	existingCategories, err := s.ListCategories(ctx, userID)
+	if err != nil {
+		return result, err
+	}
+
+	categoryByLabel := make(map[string]models.Category, len(existingCategories))
+	for _, category := range existingCategories {
+		categoryByLabel[normalizeLabel(category.Label)] = category
+	}
+
+	snapshotCategoryLabelByID := make(map[string]string, len(snapshot.Categories))
+	for _, category := range snapshot.Categories {
+		label := strings.TrimSpace(category.Label)
+		if label == "" {
+			continue
+		}
+		snapshotCategoryLabelByID[category.ID] = label
+		normalizedLabel := normalizeLabel(label)
+
+		if existing, ok := categoryByLabel[normalizedLabel]; ok {
+			if category.ID != "" {
+				result.IDMap.Categories[category.ID] = existing.ID
+			}
+			continue
+		}
+
+		created, err := s.CreateCategory(ctx, userID, CategoryInput{
+			Label:   label,
+			Created: category.Created,
+			Default: category.Default,
+			AIUse:   category.AIUse,
+		})
+		if err != nil {
+			return result, err
+		}
+
+		categoryByLabel[normalizedLabel] = created
+		result.Imported.Categories++
+		if category.ID != "" {
+			result.IDMap.Categories[category.ID] = created.ID
+		}
+	}
+
+	existingStatements, err := s.Store.ListAllStatements(ctx, userID)
+	if err != nil {
+		return result, err
+	}
+
+	existingStatementKeys := make(map[string]struct{}, len(existingStatements))
+	for _, statement := range existingStatements {
+		existingStatementKeys[statementDedupKey(statement.CategoryID, statement.Text)] = struct{}{}
+	}
+
+	for _, statement := range snapshot.Statements {
+		text := strings.TrimSpace(statement.Text)
+		if text == "" {
+			continue
+		}
+
+		resolvedCategoryID := statement.CategoryID
+		if mapped, ok := result.IDMap.Categories[statement.CategoryID]; ok {
+			resolvedCategoryID = mapped
+		} else if label, ok := snapshotCategoryLabelByID[statement.CategoryID]; ok {
+			if resolved, exists := categoryByLabel[normalizeLabel(label)]; exists {
+				resolvedCategoryID = resolved.ID
+			}
+		}
+
+		if strings.TrimSpace(resolvedCategoryID) == "" {
+			continue
+		}
+
+		key := statementDedupKey(resolvedCategoryID, text)
+		if _, exists := existingStatementKeys[key]; exists {
+			continue
+		}
+
+		_, err := s.CreateStatement(ctx, userID, StatementInput{
+			CategoryID: resolvedCategoryID,
+			Text:       text,
+			Created:    statement.Created,
+		})
+		if err != nil {
+			return result, err
+		}
+		existingStatementKeys[key] = struct{}{}
+		result.Imported.Statements++
+	}
+
+	patch := UserStatePatch{
+		Inited: &snapshot.Inited,
+	}
+	result.Imported.Inited = true
+
+	if snapshot.Preferences != nil {
+		patch.PreferencesSet = true
+		patch.Preferences = snapshot.Preferences
+		result.Imported.Preferences = true
+	}
+	if len(snapshot.Quickes) > 0 {
+		patch.QuickesSet = true
+		patch.Quickes = snapshot.Quickes
+		result.Imported.Quickes = true
+	}
+
+	if _, err := s.UpdateUserState(ctx, userID, patch); err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
 // ListGlobalCategories returns global categories (optionally seeded from Firebase).
 func (s *Service) ListGlobalCategories(ctx context.Context, includeStatements bool) ([]models.GlobalCategory, error) {
 	categories, err := s.Store.ListGlobalCategories(ctx, includeStatements)
@@ -838,6 +991,14 @@ func normalizeQuickes(quickes []string) []string {
 		}
 	}
 	return out
+}
+
+func normalizeLabel(label string) string {
+	return strings.ToLower(strings.TrimSpace(label))
+}
+
+func statementDedupKey(categoryID, text string) string {
+	return strings.TrimSpace(categoryID) + "|" + strings.ToLower(strings.TrimSpace(text))
 }
 
 func filterStatements(statements []models.Statement, categoryID string) []models.Statement {
