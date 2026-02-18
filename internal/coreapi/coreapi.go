@@ -70,6 +70,15 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Post("/auth/refresh", api.authRefresh)
 			r.Post("/auth/logout", api.authLogout)
 		})
+
+		// Public endpoints with general rate limiting (no auth required).
+		if cfg.TTS.ProxyEnabled {
+			r.Group(func(r chi.Router) {
+				r.Use(APIRateLimiter.Middleware)
+				r.Get("/voices", api.proxyVoices)
+			})
+		}
+
 		// Protected endpoints with general rate limiting (100 req/min)
 		r.Group(func(r chi.Router) {
 			r.Use(APIRateLimiter.Middleware)
@@ -100,7 +109,6 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Post("/user/delete", api.deleteUser)
 
 			if cfg.TTS.ProxyEnabled {
-				r.Get("/voices", api.proxyVoices)
 				r.MethodFunc(http.MethodPost, "/tts", api.proxyTTS)
 				r.MethodFunc(http.MethodGet, "/tts", api.proxyTTS)
 			}

@@ -11,7 +11,7 @@ https://backend.linka.su
 ```
 
 ## Аутентификация
-Все запросы (кроме `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/reset`) требуют токен доступа.
+Все запросы (кроме `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/reset`, `GET /v1/voices`) требуют токен доступа.
 По умолчанию используйте токен, полученный через открытый backend-эндпоинт `POST /v1/auth` (email + пароль).
 
 Пример получения токена:
@@ -142,6 +142,8 @@ WS /v1/stream?cursor=...
 GET /v1/voices
 POST /v1/tts
 ```
+
+`GET /v1/voices` доступен без токена. `POST /v1/tts` требует bearer token.
 
 ## Формат ошибок
 ```

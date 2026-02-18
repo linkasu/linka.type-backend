@@ -1,6 +1,6 @@
 # API v1
 
-All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, and `POST /v1/auth/reset` require a bearer token (default: token from `POST /v1/auth`).
+All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/reset`, and `GET /v1/voices` require a bearer token (default: token from `POST /v1/auth`).
 
 ## Conventions
 - Timestamps are epoch milliseconds (int64).
@@ -119,8 +119,8 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, and `POST /v1/au
     - `{type:"heartbeat", cursor}`
 
 ## Optional TTS proxy
-- `POST /v1/tts` -> `https://tts.linka.su/tts`
-- `GET /v1/voices` -> `https://tts.linka.su/voices`
+- `GET /v1/voices` (open) -> `https://tts.linka.su/voices`
+- `POST /v1/tts` (requires auth) -> `https://tts.linka.su/tts`
 
 ## Dialog helper
 - `GET /v1/dialog/chats`
