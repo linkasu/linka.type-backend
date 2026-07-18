@@ -22,14 +22,14 @@ func main() {
 	ctx := context.Background()
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("failed to load config", "error", err)
+		slog.Error("failed to load config", "error_code", "config_invalid")
 		os.Exit(1)
 	}
 	logger := logging.New("sync-worker", cfg.Env)
 
 	fbClients, err := firebase.NewClients(ctx, cfg.Firebase)
 	if err != nil {
-		logger.Error("failed to init firebase", "error", err)
+		logger.Error("failed to init firebase", "error_code", "firebase_init_failed")
 		os.Exit(1)
 	}
 	if fbClients.DB == nil {
@@ -39,7 +39,7 @@ func main() {
 
 	ydbClient, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
-		logger.Error("failed to init ydb", "error", err)
+		logger.Error("failed to init ydb", "error_code", "ydb_init_failed")
 		os.Exit(1)
 	}
 	defer func() {
@@ -48,7 +48,7 @@ func main() {
 
 	legacyReader, err := legacy.NewReader(fbClients.DB)
 	if err != nil {
-		logger.Error("failed to init legacy reader", "error", err)
+		logger.Error("failed to init legacy reader", "error_code", "legacy_reader_init_failed")
 		os.Exit(1)
 	}
 
@@ -57,7 +57,7 @@ func main() {
 		var tokenSource oauth2.TokenSource
 		tokenSource, err = firebase.TokenSource(ctx, cfg.Firebase)
 		if err != nil {
-			logger.Error("failed to init firebase token source", "error", err)
+			logger.Error("failed to init firebase token source", "error_code", "firebase_token_source_failed")
 			os.Exit(1)
 		}
 		worker.EnableStream(cfg.Firebase.DatabaseURL, tokenSource, cfg.Sync.StreamPath, cfg.Sync.StreamReconnect)
@@ -80,7 +80,7 @@ func main() {
 		logger.Info("shutdown requested")
 	case err := <-errCh:
 		if err != nil && !errors.Is(err, context.Canceled) {
-			logger.Error("sync-worker failed", "error", err)
+			logger.Error("sync-worker failed", "error_code", "sync_worker_failed")
 		}
 	}
 }

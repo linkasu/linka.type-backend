@@ -2,6 +2,7 @@ package coreapi
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +20,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/auth"
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
+	"github.com/linkasu/linka.type-backend/internal/httpclient"
 	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
 	"github.com/linkasu/linka.type-backend/internal/jwt"
 	"github.com/linkasu/linka.type-backend/internal/models"
@@ -28,30 +29,35 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/userctx"
 )
 
+const passwordResetMinDuration = 500 * time.Millisecond
+
 // API wires HTTP handlers for core-api.
 type API struct {
-	svc        *service.Service
-	auth       auth.Verifier
-	fbAuth     *fbauth.Client
-	jwtManager *jwt.Manager
-	config     config.Config
-	httpClient *http.Client
+	svc                *service.Service
+	auth               auth.Verifier
+	fbAuth             *fbauth.Client
+	jwtManager         *jwt.Manager
+	config             config.Config
+	httpClient         *http.Client
+	passwordResetDelay time.Duration
 }
 
 // New builds the core API router.
 func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jwtManager *jwt.Manager, cfg config.Config) http.Handler {
 	api := &API{
-		svc:        svc,
-		auth:       verifier,
-		fbAuth:     fbAuth,
-		jwtManager: jwtManager,
-		config:     cfg,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		svc:                svc,
+		auth:               verifier,
+		fbAuth:             fbAuth,
+		jwtManager:         jwtManager,
+		config:             cfg,
+		httpClient:         &http.Client{Timeout: 30 * time.Second},
+		passwordResetDelay: passwordResetMinDuration,
 	}
 
 	r := chi.NewRouter()
 	r.Use(corsMiddleware)
 	r.Use(httpmiddleware.RequestID)
+	r.Use(httpmiddleware.Recovery(nil))
 
 	r.Get("/", serveWebFile("index.html", "text/html; charset=utf-8"))
 	r.Get("/client.md", serveWebFile("client.md", "text/markdown; charset=utf-8"))
@@ -147,6 +153,12 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Delete("/factory/questions/{id}", api.adminDeleteFactoryQuestion)
 		})
 	})
+	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
+		httpapi.WriteError(w, http.StatusNotFound, "not_found")
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
+		httpapi.WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+	})
 
 	return r
 }
@@ -158,7 +170,7 @@ func (api *API) listCategories(w http.ResponseWriter, r *http.Request) {
 	}
 	categories, err := api.svc.ListCategories(r.Context(), user.UID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "categories_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "categories_failed")
 		return
 	}
 	if categories == nil {
@@ -180,7 +192,7 @@ func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
 		AIUse   *bool  `json:"aiUse"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.Label) == "" {
@@ -196,7 +208,7 @@ func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
 		AIUse:   req.AIUse != nil && *req.AIUse,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_category_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, category)
@@ -219,7 +231,7 @@ func (api *API) patchCategory(w http.ResponseWriter, r *http.Request) {
 		AIUse   *bool   `json:"aiUse"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if req.Label == nil && req.Default == nil && req.AIUse == nil {
@@ -233,7 +245,7 @@ func (api *API) patchCategory(w http.ResponseWriter, r *http.Request) {
 		AIUse:   req.AIUse,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "update_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_category_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, category)
@@ -251,7 +263,7 @@ func (api *API) deleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.DeleteCategory(r.Context(), user.UID, categoryID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_category_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -270,7 +282,7 @@ func (api *API) listStatements(w http.ResponseWriter, r *http.Request) {
 
 	statements, err := api.svc.ListStatements(r.Context(), user.UID, categoryID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "statements_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "statements_failed")
 		return
 	}
 	if statements == nil {
@@ -292,13 +304,13 @@ func (api *API) createStatement(w http.ResponseWriter, r *http.Request) {
 		Questions  []service.QuestionInput `json:"questions"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
 	if len(req.Questions) > 0 {
 		if _, err := api.svc.OnboardingPhrases(r.Context(), user.UID, req.Questions); err != nil {
-			httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed", err.Error())
+			httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed")
 			return
 		}
 		writeStatusOK(w)
@@ -317,7 +329,7 @@ func (api *API) createStatement(w http.ResponseWriter, r *http.Request) {
 		Created:    req.Created,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_statement_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_statement_failed")
 		return
 	}
 
@@ -339,7 +351,7 @@ func (api *API) patchStatement(w http.ResponseWriter, r *http.Request) {
 		Text *string `json:"text"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if req.Text == nil {
@@ -349,7 +361,7 @@ func (api *API) patchStatement(w http.ResponseWriter, r *http.Request) {
 
 	statement, err := api.svc.UpdateStatement(r.Context(), user.UID, statementID, service.StatementPatch{Text: req.Text})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "update_statement_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_statement_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, statement)
@@ -367,7 +379,7 @@ func (api *API) deleteStatement(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.DeleteStatement(r.Context(), user.UID, statementID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_statement_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_statement_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -380,7 +392,7 @@ func (api *API) getUserState(w http.ResponseWriter, r *http.Request) {
 	}
 	state, err := api.svc.GetUserState(r.Context(), user.UID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "state_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "state_failed")
 		return
 	}
 	if state.Quickes == nil {
@@ -399,27 +411,27 @@ func (api *API) putUserState(w http.ResponseWriter, r *http.Request) {
 	}
 	var raw map[string]json.RawMessage
 	if err := decodeJSON(w, r, &raw); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	var patch service.UserStatePatch
 	if value, ok := raw["inited"]; ok {
 		if err := json.Unmarshal(value, &patch.Inited); err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_inited", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_inited")
 			return
 		}
 	}
 	if value, ok := raw["quickes"]; ok {
 		patch.QuickesSet = true
 		if err := json.Unmarshal(value, &patch.Quickes); err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_quickes", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_quickes")
 			return
 		}
 	}
 	if value, ok := raw["preferences"]; ok {
 		patch.PreferencesSet = true
 		if err := json.Unmarshal(value, &patch.Preferences); err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_preferences", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_preferences")
 			return
 		}
 	}
@@ -430,7 +442,7 @@ func (api *API) putUserState(w http.ResponseWriter, r *http.Request) {
 
 	state, err := api.svc.UpdateUserState(r.Context(), user.UID, patch)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "state_update_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "state_update_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, state)
@@ -455,7 +467,7 @@ func (api *API) bootstrapUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
@@ -468,10 +480,10 @@ func (api *API) bootstrapUser(w http.ResponseWriter, r *http.Request) {
 	}, req.MergeStrategy)
 	if err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "merge strategy") {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_merge_strategy", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_merge_strategy")
 			return
 		}
-		httpapi.WriteError(w, http.StatusInternalServerError, "bootstrap_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "bootstrap_failed")
 		return
 	}
 
@@ -490,7 +502,7 @@ func (api *API) getQuickes(w http.ResponseWriter, r *http.Request) {
 	}
 	state, err := api.svc.GetUserState(r.Context(), user.UID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_failed")
 		return
 	}
 	if state.Quickes == nil {
@@ -508,7 +520,7 @@ func (api *API) putQuickes(w http.ResponseWriter, r *http.Request) {
 		Quickes []string `json:"quickes"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if len(req.Quickes) == 0 {
@@ -518,7 +530,7 @@ func (api *API) putQuickes(w http.ResponseWriter, r *http.Request) {
 
 	quickes, err := api.svc.SetQuickes(r.Context(), user.UID, req.Quickes)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_update_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "quickes_update_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, quickes)
@@ -532,7 +544,7 @@ func (api *API) listGlobalCategories(w http.ResponseWriter, r *http.Request) {
 	includeStatements := r.URL.Query().Get("include_statements") == "true"
 	categories, err := api.svc.ListGlobalCategories(r.Context(), includeStatements)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed")
 		return
 	}
 	if categories == nil {
@@ -553,7 +565,7 @@ func (api *API) listGlobalStatements(w http.ResponseWriter, r *http.Request) {
 	}
 	statements, err := api.svc.ListGlobalStatements(r.Context(), categoryID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "global_statements_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_statements_failed")
 		return
 	}
 	if statements == nil {
@@ -572,7 +584,7 @@ func (api *API) importGlobal(w http.ResponseWriter, r *http.Request) {
 		Force      bool   `json:"force"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.CategoryID) == "" {
@@ -582,7 +594,7 @@ func (api *API) importGlobal(w http.ResponseWriter, r *http.Request) {
 
 	status, err := api.svc.ImportGlobalCategory(r.Context(), user.UID, req.CategoryID, req.Force)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "import_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "import_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, map[string]any{"status": status})
@@ -595,7 +607,7 @@ func (api *API) listFactoryQuestions(w http.ResponseWriter, r *http.Request) {
 	}
 	questions, err := api.svc.ListFactoryQuestions(r.Context())
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed")
 		return
 	}
 	if questions == nil {
@@ -613,7 +625,7 @@ func (api *API) onboardingPhrases(w http.ResponseWriter, r *http.Request) {
 		Questions []service.QuestionInput `json:"questions"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if len(req.Questions) == 0 {
@@ -622,7 +634,7 @@ func (api *API) onboardingPhrases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := api.svc.OnboardingPhrases(r.Context(), user.UID, req.Questions); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "onboarding_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -639,7 +651,7 @@ func (api *API) deleteUser(w http.ResponseWriter, r *http.Request) {
 	_ = decodeJSON(w, r, &req)
 
 	if err := api.svc.DeleteUser(r.Context(), user.UID, req.DeleteFirebase); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_failed")
 		return
 	}
 	if req.DeleteFirebase && api.fbAuth != nil {
@@ -654,7 +666,7 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	req.Email = strings.TrimSpace(req.Email)
@@ -682,7 +694,7 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + url.QueryEscape(apiKey)
 	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed")
 		return
 	}
 	authReq.Header.Set("Content-Type", "application/json")
@@ -692,7 +704,7 @@ func (api *API) authToken(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
 		return
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		message := firebaseErrorMessage(resp.Body)
@@ -750,7 +762,7 @@ func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	req.Email = strings.TrimSpace(req.Email)
@@ -778,7 +790,7 @@ func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
 	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + url.QueryEscape(apiKey)
 	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed")
 		return
 	}
 	authReq.Header.Set("Content-Type", "application/json")
@@ -788,7 +800,7 @@ func (api *API) authRegister(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
 		return
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		message := firebaseErrorMessage(resp.Body)
@@ -857,40 +869,33 @@ func (api *API) authResetPassword(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "email is required")
 		return
 	}
+	started := time.Now()
+	delay := api.passwordResetDelay
+	if delay <= 0 {
+		delay = passwordResetMinDuration
+	}
 
 	payload := map[string]string{
 		"requestType": "PASSWORD_RESET",
 		"email":       req.Email,
 	}
-	body, err := json.Marshal(payload)
-	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "auth_failed", "failed to build auth request")
-		return
-	}
+	body, _ := json.Marshal(payload)
 
 	endpoint := "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=" + url.QueryEscape(api.config.Firebase.APIKey)
-	authReq, err := http.NewRequestWithContext(r.Context(), http.MethodPost, endpoint, bytes.NewReader(body))
-	if err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "auth_failed", err.Error())
-		return
-	}
+	resetCtx, cancel := context.WithTimeout(r.Context(), delay)
+	defer cancel()
+	authReq, _ := http.NewRequestWithContext(resetCtx, http.MethodPost, endpoint, bytes.NewReader(body))
 	authReq.Header.Set("Content-Type", "application/json")
 
 	resp, err := api.httpClient.Do(authReq)
-	if err != nil {
-		httpapi.WriteError(w, http.StatusBadGateway, "auth_failed", "firebase auth request failed")
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		message := firebaseErrorMessage(resp.Body)
-		status, code, msg := firebaseAuthError(message)
-		httpapi.WriteError(w, status, code, msg)
-		return
+	if err == nil && resp != nil {
+		httpclient.DrainAndClose(resp.Body)
 	}
 
-	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+	if remaining := delay - time.Since(started); remaining > 0 {
+		time.Sleep(remaining)
+	}
+	httpapi.WriteJSON(w, http.StatusAccepted, map[string]string{"status": "accepted"})
 }
 
 func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
@@ -907,7 +912,7 @@ func (api *API) authRefresh(w http.ResponseWriter, r *http.Request) {
 			RefreshToken string `json:"refreshToken"`
 		}
 		if err := decodeJSON(w, r, &req); err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 			return
 		}
 		refreshToken = strings.TrimSpace(req.RefreshToken)
@@ -1058,7 +1063,7 @@ func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {
 
 	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, predictorURL, nil)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "predictor_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "predictor_failed")
 		return
 	}
 
@@ -1067,7 +1072,7 @@ func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, http.StatusBadGateway, "predictor_failed", "failed to call yandex predictor")
 		return
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		httpapi.WriteError(w, http.StatusBadGateway, "predictor_failed", "yandex predictor returned error")
@@ -1093,17 +1098,21 @@ func (api *API) proxyRequest(w http.ResponseWriter, r *http.Request, target stri
 	}
 	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, r.Body)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed")
 		return
 	}
 	req.Header = r.Header.Clone()
 
 	resp, err := api.httpClient.Do(req)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
 		return
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+		httpapi.WriteError(w, resp.StatusCode, "proxy_failed")
+		return
+	}
 
 	for key, values := range resp.Header {
 		for _, value := range values {
@@ -1160,6 +1169,9 @@ func isNativeClient(r *http.Request) bool {
 var allowedOrigins = map[string]bool{
 	"https://linka.su":     true,
 	"https://www.linka.su": true,
+	"https://type.linka.su": true,
+	"https://linkatype.web.app": true,
+	"https://linkatype.firebaseapp.com": true,
 	"https://bbak2usvd9decvtc8sfm.containers.yandexcloud.net": true,
 	"http://localhost:3000":                                   true,
 	"https://localhost:3000":                                  true,
@@ -1256,7 +1268,7 @@ func (api *API) adminStats(w http.ResponseWriter, r *http.Request) {
 
 	stats, err := api.svc.AdminStats(r.Context(), since)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "stats_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "stats_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, stats)
@@ -1265,7 +1277,7 @@ func (api *API) adminStats(w http.ResponseWriter, r *http.Request) {
 func (api *API) adminListAdmins(w http.ResponseWriter, r *http.Request) {
 	admins, err := api.svc.ListAdmins(r.Context())
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "admins_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "admins_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": admins})
@@ -1276,7 +1288,7 @@ func (api *API) adminAddAdmin(w http.ResponseWriter, r *http.Request) {
 		UserID string `json:"user_id"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.UserID) == "" {
@@ -1285,7 +1297,7 @@ func (api *API) adminAddAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.AddAdmin(r.Context(), req.UserID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "add_admin_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "add_admin_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -1299,7 +1311,7 @@ func (api *API) adminRemoveAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.RemoveAdmin(r.Context(), userID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "remove_admin_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "remove_admin_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -1308,7 +1320,7 @@ func (api *API) adminRemoveAdmin(w http.ResponseWriter, r *http.Request) {
 func (api *API) adminListClientKeys(w http.ResponseWriter, r *http.Request) {
 	keys, err := api.svc.ListClientKeys(r.Context())
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "keys_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "keys_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, map[string]interface{}{"items": keys})
@@ -1320,7 +1332,7 @@ func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
 		Status   string `json:"status"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.ClientID) == "" {
@@ -1333,7 +1345,7 @@ func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
 
 	keyPlain, keyHash, err := generateClientKey()
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "key_generation_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_generation_failed")
 		return
 	}
 
@@ -1345,8 +1357,7 @@ func (api *API) adminCreateClientKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.CreateClientKey(r.Context(), key); err != nil {
-		log.Printf("CreateClientKey error: %v", err)
-		httpapi.WriteError(w, http.StatusInternalServerError, "key_create_failed", fmt.Sprintf("failed to create client key: %v", err))
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_create_failed")
 		return
 	}
 
@@ -1367,7 +1378,7 @@ func (api *API) adminRevokeClientKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := api.svc.RevokeClientKey(r.Context(), keyHash); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "key_revoke_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "key_revoke_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -1376,7 +1387,7 @@ func (api *API) adminRevokeClientKey(w http.ResponseWriter, r *http.Request) {
 func (api *API) adminListGlobalCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := api.svc.ListGlobalCategories(r.Context(), true)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "global_categories_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, categories)
@@ -1389,7 +1400,7 @@ func (api *API) adminCreateGlobalCategory(w http.ResponseWriter, r *http.Request
 		Default *bool  `json:"default"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.Label) == "" {
@@ -1403,7 +1414,7 @@ func (api *API) adminCreateGlobalCategory(w http.ResponseWriter, r *http.Request
 		Default: req.Default,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_global_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_global_category_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, category)
@@ -1421,7 +1432,7 @@ func (api *API) adminUpdateGlobalCategory(w http.ResponseWriter, r *http.Request
 		Default *bool   `json:"default"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
@@ -1430,7 +1441,7 @@ func (api *API) adminUpdateGlobalCategory(w http.ResponseWriter, r *http.Request
 		Default: req.Default,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "update_global_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_global_category_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, category)
@@ -1444,7 +1455,7 @@ func (api *API) adminDeleteGlobalCategory(w http.ResponseWriter, r *http.Request
 	}
 
 	if err := api.svc.DeleteGlobalCategory(r.Context(), categoryID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_global_category_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_global_category_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -1453,7 +1464,7 @@ func (api *API) adminDeleteGlobalCategory(w http.ResponseWriter, r *http.Request
 func (api *API) adminListFactoryQuestions(w http.ResponseWriter, r *http.Request) {
 	questions, err := api.svc.ListFactoryQuestions(r.Context())
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "questions_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, questions)
@@ -1469,7 +1480,7 @@ func (api *API) adminCreateFactoryQuestion(w http.ResponseWriter, r *http.Reques
 		OrderIndex int      `json:"order_index"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if strings.TrimSpace(req.Label) == "" {
@@ -1486,7 +1497,7 @@ func (api *API) adminCreateFactoryQuestion(w http.ResponseWriter, r *http.Reques
 		OrderIndex: req.OrderIndex,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_question_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_question_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, question)
@@ -1507,7 +1518,7 @@ func (api *API) adminUpdateFactoryQuestion(w http.ResponseWriter, r *http.Reques
 		OrderIndex *int     `json:"order_index"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
@@ -1519,7 +1530,7 @@ func (api *API) adminUpdateFactoryQuestion(w http.ResponseWriter, r *http.Reques
 		OrderIndex: req.OrderIndex,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "update_question_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "update_question_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, question)
@@ -1533,7 +1544,7 @@ func (api *API) adminDeleteFactoryQuestion(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := api.svc.DeleteFactoryQuestion(r.Context(), questionID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_question_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_question_failed")
 		return
 	}
 	writeStatusOK(w)

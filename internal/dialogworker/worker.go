@@ -15,11 +15,14 @@ import (
 )
 
 const (
-	maxHistoryMessages   = 64
-	maxBiographyChars    = 1800
-	maxStatementsPerCat  = 12
-	maxSuggestionBatch   = 10
-	maxSuggestionStorage = 200
+	maxHistoryMessages    = 64
+	maxBiographyChars     = 1800
+	maxStatementsPerCat   = 12
+	maxSuggestionBatch    = 10
+	maxSuggestionStorage  = 200
+	dialogJobFailedCode   = "dialog_job_failed"
+	dialogJobTimeoutCode  = "dialog_job_timeout"
+	dialogJobCanceledCode = "dialog_job_canceled"
 )
 
 type Worker struct {
@@ -48,7 +51,7 @@ func (w *Worker) Run(ctx context.Context, interval time.Duration) error {
 
 	for {
 		if err := w.process(ctx); err != nil {
-			w.logger.Error("dialog worker cycle failed", "error", err)
+			w.logger.Error("dialog worker cycle failed", "error_code", "dialog_worker_cycle_failed")
 		}
 
 		select {
@@ -73,16 +76,16 @@ func (w *Worker) process(ctx context.Context) error {
 		job.Attempts++
 		job.Status = "processing"
 		if err := w.store.UpdateDialogSuggestionJob(ctx, job); err != nil {
-			w.logger.Warn("failed to mark job processing", "job_id", job.ID, "error", err)
+			w.logger.Warn("failed to mark job processing", "job_id", job.ID, "error_code", "dialog_job_update_failed")
 			continue
 		}
 
 		if err := w.processJob(ctx, job); err != nil {
-			errMsg := err.Error()
+			errMsg := dialogJobErrorCode(err)
 			job.Status = "failed"
 			job.LastError = &errMsg
 			_ = w.store.UpdateDialogSuggestionJob(ctx, job)
-			w.logger.Warn("failed to process job", "job_id", job.ID, "error", err)
+			w.logger.Warn("failed to process job", "job_id", job.ID, "error_code", errMsg)
 			continue
 		}
 
@@ -254,4 +257,14 @@ func normalizeSuggestions(items []string) []string {
 
 func normalizeText(value string) string {
 	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func dialogJobErrorCode(err error) string {
+	if errors.Is(err, context.Canceled) {
+		return dialogJobCanceledCode
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return dialogJobTimeoutCode
+	}
+	return dialogJobFailedCode
 }

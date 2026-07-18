@@ -20,7 +20,7 @@ func main() {
 	ctx := context.Background()
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("failed to load config", "error", err)
+		slog.Error("failed to load config", "error_code", "config_invalid")
 		os.Exit(1)
 	}
 
@@ -28,7 +28,7 @@ func main() {
 
 	ydbClient, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
-		logger.Error("failed to init ydb", "error", err)
+		logger.Error("failed to init ydb", "error_code", "ydb_init_failed")
 		os.Exit(1)
 	}
 	defer func() {
@@ -52,7 +52,7 @@ func main() {
 	select {
 	case <-shutdownCh:
 		logger.Info("shutdown requested")
-	case err := <-errCh:
-		logger.Error("dialog-worker failed", "error", err)
+	case <-errCh:
+		logger.Error("dialog-worker failed", "error_code", "dialog_worker_failed")
 	}
 }

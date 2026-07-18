@@ -109,8 +109,8 @@ paths:
         service_account_id: "{{SERVICE_ACCOUNT_ID}}"
         httpMethod: POST
       responses:
-        "200":
-          description: OK
+        "202":
+          description: Accepted without revealing account existence
   /v1/auth/refresh:
     post:
       x-yc-apigateway-integration:

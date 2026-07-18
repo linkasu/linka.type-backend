@@ -32,7 +32,7 @@ func (api *API) listDialogChats(w http.ResponseWriter, r *http.Request) {
 	}
 	chats, err := api.svc.ListDialogChats(r.Context(), user.UID)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_chats_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_chats_failed")
 		return
 	}
 	if chats == nil {
@@ -50,7 +50,7 @@ func (api *API) createDialogChat(w http.ResponseWriter, r *http.Request) {
 		Title string `json:"title"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil && !errors.Is(err, io.EOF) {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
@@ -58,7 +58,7 @@ func (api *API) createDialogChat(w http.ResponseWriter, r *http.Request) {
 		Title: req.Title,
 	})
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_chat_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_chat_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, chat)
@@ -75,7 +75,7 @@ func (api *API) deleteDialogChat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := api.svc.DeleteDialogChat(r.Context(), user.UID, chatID); err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "delete_chat_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "delete_chat_failed")
 		return
 	}
 	writeStatusOK(w)
@@ -96,7 +96,7 @@ func (api *API) listDialogMessages(w http.ResponseWriter, r *http.Request) {
 
 	messages, err := api.svc.ListDialogMessages(r.Context(), user.UID, chatID, limit, before)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_messages_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_messages_failed")
 		return
 	}
 	if messages == nil {
@@ -120,7 +120,7 @@ func (api *API) createDialogMessage(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(contentType, "multipart/form-data") {
 		payload, audio, err := api.readDialogMultipart(w, r)
 		if err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", err.Error())
+			httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload")
 			return
 		}
 		result, err := api.svc.CreateDialogMessage(r.Context(), user.UID, chatID, service.DialogMessageInput{
@@ -131,7 +131,7 @@ func (api *API) createDialogMessage(w http.ResponseWriter, r *http.Request) {
 			IncludeSuggestions: payload.IncludeSuggestions,
 		}, audio)
 		if err != nil {
-			httpapi.WriteError(w, http.StatusInternalServerError, "create_dialog_message_failed", err.Error())
+			httpapi.WriteError(w, http.StatusInternalServerError, "create_dialog_message_failed")
 			return
 		}
 		httpapi.WriteJSON(w, http.StatusOK, result)
@@ -140,7 +140,7 @@ func (api *API) createDialogMessage(w http.ResponseWriter, r *http.Request) {
 
 	var req dialogMessagePayload
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 
@@ -152,7 +152,7 @@ func (api *API) createDialogMessage(w http.ResponseWriter, r *http.Request) {
 		IncludeSuggestions: req.IncludeSuggestions,
 	}, nil)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "create_dialog_message_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "create_dialog_message_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, result)
@@ -171,7 +171,7 @@ func (api *API) listDialogSuggestions(w http.ResponseWriter, r *http.Request) {
 
 	suggestions, err := api.svc.ListDialogSuggestions(r.Context(), user.UID, status, limit)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_suggestions_failed", err.Error())
+		httpapi.WriteError(w, http.StatusInternalServerError, "dialog_suggestions_failed")
 		return
 	}
 	if suggestions == nil {
@@ -189,12 +189,12 @@ func (api *API) applyDialogSuggestions(w http.ResponseWriter, r *http.Request) {
 		Items []service.DialogSuggestionApplyItem `json:"items"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	result, err := api.svc.ApplyDialogSuggestions(r.Context(), user.UID, req.Items)
 	if err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "apply_suggestions_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "apply_suggestions_failed")
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, result)
@@ -209,11 +209,11 @@ func (api *API) dismissDialogSuggestions(w http.ResponseWriter, r *http.Request)
 		IDs []string `json:"ids"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
 	if err := api.svc.DismissDialogSuggestions(r.Context(), user.UID, req.IDs); err != nil {
-		httpapi.WriteError(w, http.StatusBadRequest, "dismiss_suggestions_failed", err.Error())
+		httpapi.WriteError(w, http.StatusBadRequest, "dismiss_suggestions_failed")
 		return
 	}
 	writeStatusOK(w)

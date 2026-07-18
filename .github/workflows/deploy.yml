@@ -1,9 +1,10 @@
 name: Deploy
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 concurrency:
   group: deploy-main
@@ -11,6 +12,10 @@ concurrency:
 
 jobs:
   deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -52,11 +57,18 @@ jobs:
       DIALOG_WORKER_CONTAINER_NAME: ${{ vars.DIALOG_WORKER_CONTAINER_NAME }}
       API_GATEWAY_ID: ${{ vars.API_GATEWAY_ID }}
       API_GATEWAY_NAME: ${{ vars.API_GATEWAY_NAME }}
-      IMAGE_TAG: latest
+      IMAGE_TAG: ${{ github.event.workflow_run.head_sha }}
+      RELEASE_SHA: ${{ github.event.workflow_run.head_sha }}
       YC_SERVICE_ACCOUNT_KEY: ${{ secrets.YC_SERVICE_ACCOUNT_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+
+      - name: Verify release revision
+        run: test "$(git rev-parse HEAD)" = "${RELEASE_SHA}"
 
       - name: Install yc CLI
         run: |

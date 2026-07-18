@@ -12,7 +12,7 @@ import (
 )
 
 var schema = []string{
-`CREATE TABLE IF NOT EXISTS users (
+	`CREATE TABLE IF NOT EXISTS users (
   user_id Utf8 NOT NULL,
   email Optional<Utf8>,
   created_at Int64 NOT NULL,
@@ -25,7 +25,7 @@ var schema = []string{
   user_id Utf8 NOT NULL,
   PRIMARY KEY (user_id)
 );`,
-`CREATE TABLE IF NOT EXISTS categories (
+	`CREATE TABLE IF NOT EXISTS categories (
   user_id Utf8 NOT NULL,
   category_id Utf8 NOT NULL,
   label Utf8 NOT NULL,
@@ -161,13 +161,13 @@ func main() {
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "config load: %v\n", err)
+		fmt.Fprintln(os.Stderr, "config load failed")
 		os.Exit(1)
 	}
 
 	client, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ydb init: %v\n", err)
+		fmt.Fprintln(os.Stderr, "ydb init failed")
 		os.Exit(1)
 	}
 	defer client.Close(ctx)
@@ -178,7 +178,7 @@ func main() {
 			return sess.ExecuteSchemeQuery(ctx, query)
 		}, table.WithIdempotent())
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "schema apply failed: %v\n", err)
+			fmt.Fprintln(os.Stderr, "schema apply failed")
 			os.Exit(1)
 		}
 	}

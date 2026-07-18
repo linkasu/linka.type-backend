@@ -12,6 +12,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"github.com/linkasu/linka.type-backend/internal/httpmiddleware"
 	"github.com/linkasu/linka.type-backend/internal/models"
+	"github.com/linkasu/linka.type-backend/internal/requestid"
 	"github.com/linkasu/linka.type-backend/internal/store"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
 	"nhooyr.io/websocket"
@@ -28,10 +29,17 @@ func New(store store.Store, verifier auth.Verifier) http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(httpmiddleware.RequestID)
+	r.Use(httpmiddleware.Recovery(nil))
 	r.Use(httpmiddleware.Auth(verifier))
 
 	r.Get("/v1/changes", s.longPoll)
 	r.Get("/v1/stream", s.stream)
+	r.NotFound(func(w http.ResponseWriter, _ *http.Request) {
+		httpapi.WriteError(w, http.StatusNotFound, "not_found")
+	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, _ *http.Request) {
+		httpapi.WriteError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+	})
 
 	return r
 }
@@ -51,7 +59,7 @@ func (s *Server) longPoll(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		nextCursor, changes, err := s.store.ListChanges(ctx, user.UID, cursor, limit)
 		if err != nil {
-			httpapi.WriteError(w, http.StatusInternalServerError, "changes_failed", err.Error())
+			httpapi.WriteError(w, http.StatusInternalServerError, "changes_failed")
 			return
 		}
 		if len(changes) > 0 {
@@ -99,6 +107,7 @@ func (s *Server) stream(w http.ResponseWriter, r *http.Request) {
 
 		nextCursor, changes, err := s.store.ListChanges(ctx, user.UID, cursor, limit)
 		if err != nil {
+			_ = writeWS(ctx, conn, httpapi.NewError("changes_failed", requestid.FromContext(ctx)))
 			_ = conn.Close(websocket.StatusInternalError, "changes_failed")
 			return
 		}

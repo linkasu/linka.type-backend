@@ -10,13 +10,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/linkasu/linka.type-backend/internal/httpclient"
 )
 
 const (
-	yandexLLMEndpoint   = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-	metadataURL         = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
-	metadataHeaderKey   = "Metadata-Flavor"
-	metadataHeaderVal   = "Google"
+	yandexLLMEndpoint = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+	metadataURL       = "http://169.254.169.254/computeMetadata/v1/instance/service-accounts/default/token"
+	metadataHeaderKey = "Metadata-Flavor"
+	metadataHeaderVal = "Google"
 )
 
 // AnalyzePrompt is the system prompt for extracting user facts from dialog
@@ -107,7 +109,7 @@ func (c *Client) Analyze(ctx context.Context, biography string, messages []Dialo
 	if err != nil {
 		return AnalyzeResult{}, err
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return AnalyzeResult{}, fmt.Errorf("llm request failed: %d", resp.StatusCode)
@@ -154,7 +156,7 @@ func (c *Client) getToken(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return "", errors.New("metadata token request failed")

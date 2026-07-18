@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/linkasu/linka.type-backend/internal/httpapi"
 	"golang.org/x/time/rate"
 )
 
@@ -69,7 +70,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 		ip := getClientIP(r)
 		limiter := rl.getLimiter(ip)
 		if !limiter.Allow() {
-			http.Error(w, `{"error":{"code":"rate_limited","message":"too many requests"}}`, http.StatusTooManyRequests)
+			httpapi.WriteError(w, http.StatusTooManyRequests, "rate_limited")
 			return
 		}
 		next.ServeHTTP(w, r)

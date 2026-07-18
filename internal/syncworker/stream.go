@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/linkasu/linka.type-backend/internal/defaults"
+	"github.com/linkasu/linka.type-backend/internal/httpclient"
 	"github.com/linkasu/linka.type-backend/internal/id"
 	"github.com/linkasu/linka.type-backend/internal/models"
 	"golang.org/x/oauth2"
@@ -32,7 +32,7 @@ func (w *Worker) runStream(ctx context.Context) {
 	for {
 		err := w.streamOnce(ctx)
 		if err != nil && !errors.Is(err, context.Canceled) {
-			slog.Error("rtdb stream error", "error", err)
+			slog.Error("rtdb stream error", "error_code", "rtdb_stream_failed")
 		}
 		select {
 		case <-ctx.Done():
@@ -60,12 +60,11 @@ func (w *Worker) streamOnce(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("stream status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+		httpclient.DrainAndClose(resp.Body)
+		return fmt.Errorf("stream request failed: status %d", resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)

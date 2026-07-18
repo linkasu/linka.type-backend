@@ -22,21 +22,21 @@ func main() {
 	ctx := context.Background()
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("failed to load config", "error", err)
+		slog.Error("failed to load config", "error_code", "config_invalid")
 		os.Exit(1)
 	}
 	logger := logging.New("realtime", cfg.Env)
 
 	fbClients, err := firebase.NewClients(ctx, cfg.Firebase)
 	if err != nil {
-		logger.Error("failed to init firebase", "error", err)
+		logger.Error("failed to init firebase", "error_code", "firebase_init_failed")
 		os.Exit(1)
 	}
 	verifier := auth.NewFirebaseVerifier(fbClients.Auth)
 
 	ydbClient, err := ydb.New(ctx, cfg.YDB)
 	if err != nil {
-		logger.Error("failed to init ydb", "error", err)
+		logger.Error("failed to init ydb", "error_code", "ydb_init_failed")
 		os.Exit(1)
 	}
 	defer func() {
@@ -59,7 +59,7 @@ func main() {
 	go func() {
 		logger.Info("realtime listening", "addr", cfg.HTTP.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("server error", "error", err)
+			logger.Error("server error", "error_code", "http_server_failed")
 			os.Exit(1)
 		}
 	}()
@@ -70,7 +70,7 @@ func main() {
 	ctxTimeout, cancel := context.WithTimeout(ctx, cfg.HTTP.ShutdownTimeout)
 	defer cancel()
 	if err := srv.Shutdown(ctxTimeout); err != nil {
-		logger.Error("shutdown failed", "error", err)
+		logger.Error("shutdown failed", "error_code", "http_shutdown_failed")
 	}
 	logger.Info("shutdown complete")
 }

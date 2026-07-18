@@ -14,6 +14,7 @@
 - `WS /v1/stream?cursor=...`
 - On connect, the server streams backlog then pushes new changes.
 - Heartbeats are sent every 25s when idle.
+- Processing failures are sent as `{error_code, request_id, error: {code}}` before the connection closes.
 
 ## Ordering guarantees
 - Per-user order follows `cursor`.

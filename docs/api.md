@@ -9,8 +9,13 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/r
 - IDs may be client-provided or server-generated.
 - Error shape:
   ```json
-  {"error": {"code": "unauthorized", "message": "..."}}
+  {
+    "error_code": "unauthorized",
+    "request_id": "01...",
+    "error": {"code": "unauthorized"}
+  }
   ```
+  `error.code` is a compatibility alias. Error details are not exposed; use `request_id` for support correlation.
 
 ## Auth
 - `POST /v1/auth` (open)
@@ -30,7 +35,8 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/r
 
 - `POST /v1/auth/reset` (open)
   - Body: `{email}`
-  - Returns: `{status:"ok"}`
+  - Returns HTTP 202 with `{status:"accepted"}` for every syntactically valid request.
+  - Existing and unknown accounts use the same response and timing class.
 
 ## Categories
 - `GET /v1/categories`

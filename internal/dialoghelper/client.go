@@ -5,12 +5,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
 	"strings"
 	"time"
+
+	"github.com/linkasu/linka.type-backend/internal/httpclient"
 )
 
 type Client struct {
@@ -118,11 +119,10 @@ func (c *Client) Infer(ctx context.Context, payload InferPayload, audio *AudioPa
 	if err != nil {
 		return InferResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		data, _ := io.ReadAll(resp.Body)
-		return InferResponse{}, fmt.Errorf("dialog helper error: %s", strings.TrimSpace(string(data)))
+		return InferResponse{}, fmt.Errorf("dialog helper request failed: status %d", resp.StatusCode)
 	}
 
 	var out InferResponse

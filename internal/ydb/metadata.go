@@ -9,6 +9,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"github.com/linkasu/linka.type-backend/internal/httpclient"
 )
 
 const (
@@ -71,7 +73,7 @@ func (c *metadataCredentials) Token(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("fetch metadata token: %w", err)
 	}
-	defer resp.Body.Close()
+	defer httpclient.DrainAndClose(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("metadata token request failed: %s", resp.Status)
