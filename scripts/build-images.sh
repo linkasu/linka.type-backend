@@ -9,10 +9,10 @@ realtime_image="cr.yandex/${REGISTRY_ID}/linka-realtime:${IMAGE_TAG}"
 sync_image="cr.yandex/${REGISTRY_ID}/linka-sync-worker:${IMAGE_TAG}"
 dialog_image="cr.yandex/${REGISTRY_ID}/linka-dialog-worker:${IMAGE_TAG}"
 
-docker buildx build --platform linux/amd64 -f Dockerfile.core-api -t "${core_image}" . --push
-docker buildx build --platform linux/amd64 -f Dockerfile.realtime -t "${realtime_image}" . --push
-docker buildx build --platform linux/amd64 -f Dockerfile.sync-worker -t "${sync_image}" . --push
-docker buildx build --platform linux/amd64 -f Dockerfile.dialog-worker -t "${dialog_image}" . --push
+docker buildx build --platform linux/amd64 --provenance=false -f Dockerfile.core-api -t "${core_image}" . --push
+docker buildx build --platform linux/amd64 --provenance=false -f Dockerfile.realtime -t "${realtime_image}" . --push
+docker buildx build --platform linux/amd64 --provenance=false -f Dockerfile.sync-worker -t "${sync_image}" . --push
+docker buildx build --platform linux/amd64 --provenance=false -f Dockerfile.dialog-worker -t "${dialog_image}" . --push
 
 echo "Pushed:"
 echo "  ${core_image}"
