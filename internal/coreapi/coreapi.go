@@ -95,6 +95,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Delete("/categories/{id}", api.deleteCategory)
 
 			r.Get("/categories/{id}/statements", api.listStatements)
+			r.Put("/categories/{id}/statements", api.replaceStatements)
 			r.Post("/statements", api.createStatement)
 			r.Patch("/statements/{id}", api.patchStatement)
 			r.Delete("/statements/{id}", api.deleteStatement)
@@ -192,6 +193,11 @@ func (api *API) createCategory(w http.ResponseWriter, r *http.Request) {
 		AIUse   *bool  `json:"aiUse"`
 	}
 	if err := decodeJSON(w, r, &req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			httpapi.WriteError(w, http.StatusRequestEntityTooLarge, "payload_too_large")
+			return
+		}
 		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
 		return
 	}
@@ -289,6 +295,40 @@ func (api *API) listStatements(w http.ResponseWriter, r *http.Request) {
 		statements = []models.Statement{}
 	}
 	httpapi.WriteJSON(w, http.StatusOK, statements)
+}
+
+func (api *API) replaceStatements(w http.ResponseWriter, r *http.Request) {
+	user := mustUser(w, r)
+	if user.UID == "" {
+		return
+	}
+	categoryID := chi.URLParam(r, "id")
+	if categoryID == "" {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_id", "category id is required")
+		return
+	}
+	var req struct {
+		Text              *string `json:"text"`
+		ConfirmationToken string  `json:"confirmationToken"`
+	}
+	if err := decodeJSON(w, r, &req); err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+	if req.Text == nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_payload", "text is required")
+		return
+	}
+	result, err := api.svc.ReplaceStatements(r.Context(), user.UID, categoryID, *req.Text, req.ConfirmationToken)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			httpapi.WriteError(w, http.StatusNotFound, "category_not_found")
+			return
+		}
+		httpapi.WriteError(w, http.StatusInternalServerError, "replace_statements_failed")
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, result)
 }
 
 func (api *API) createStatement(w http.ResponseWriter, r *http.Request) {
@@ -1167,11 +1207,11 @@ func isNativeClient(r *http.Request) bool {
 
 // allowedOrigins is a whitelist of allowed CORS origins
 var allowedOrigins = map[string]bool{
-	"https://linka.su":     true,
-	"https://www.linka.su": true,
-	"https://type.linka.su": true,
-	"https://linkatype.web.app": true,
-	"https://linkatype.firebaseapp.com": true,
+	"https://linka.su":                                        true,
+	"https://www.linka.su":                                    true,
+	"https://type.linka.su":                                   true,
+	"https://linkatype.web.app":                               true,
+	"https://linkatype.firebaseapp.com":                       true,
 	"https://bbak2usvd9decvtc8sfm.containers.yandexcloud.net": true,
 	"http://localhost:3000":                                   true,
 	"https://localhost:3000":                                  true,

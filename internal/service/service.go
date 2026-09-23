@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -53,6 +55,23 @@ type StatementInput struct {
 // StatementPatch captures statement updates.
 type StatementPatch struct {
 	Text *string
+}
+
+// StatementReplaceSummary describes the effect of replacing a category's statements.
+type StatementReplaceSummary struct {
+	Added      int `json:"added"`
+	Kept       int `json:"kept"`
+	Removed    int `json:"removed"`
+	Duplicates int `json:"duplicates"`
+	Total      int `json:"total"`
+}
+
+// StatementReplaceResult is returned by ReplaceStatements.
+type StatementReplaceResult struct {
+	Applied           bool                    `json:"applied"`
+	Summary           StatementReplaceSummary `json:"summary"`
+	ConfirmationToken string                  `json:"confirmationToken,omitempty"`
+	Statements        []models.Statement      `json:"statements"`
 }
 
 // UserStatePatch captures user state updates.
@@ -363,6 +382,55 @@ func (s *Service) DeleteStatement(ctx context.Context, userID, statementID strin
 	_ = s.appendChange(ctx, userID, "statement", statementID, "delete", map[string]string{"id": statementID}, updatedAt)
 
 	return nil
+}
+
+// ReplaceStatements replaces a category's statements after server-side normalization.
+func (s *Service) ReplaceStatements(ctx context.Context, userID, categoryID, text, confirmationToken string) (StatementReplaceResult, error) {
+	if _, err := s.findCategory(ctx, userID, categoryID); err != nil {
+		return StatementReplaceResult{}, err
+	}
+	current, err := s.ListStatements(ctx, userID, categoryID)
+	if err != nil {
+		return StatementReplaceResult{}, err
+	}
+	texts, duplicates := normalizeStatementLines(text)
+	summary := summarizeStatementReplace(current, texts, duplicates)
+	if sameStatementTexts(current, texts) {
+		return StatementReplaceResult{Applied: true, Summary: summary, Statements: current}, nil
+	}
+
+	token := statementReplaceToken(current, texts)
+	if summary.Removed > 0 && confirmationToken != token {
+		return StatementReplaceResult{Summary: summary, ConfirmationToken: token}, nil
+	}
+
+	now := time.Now().UnixMilli()
+	byText := make(map[string][]models.Statement, len(current))
+	for _, statement := range current {
+		byText[statement.Text] = append(byText[statement.Text], statement)
+	}
+	updated := make([]models.Statement, 0, len(texts))
+	for i, statementText := range texts {
+		statement := models.Statement{ID: id.NewShort(), CategoryID: categoryID, Text: statementText}
+		if matches := byText[statementText]; len(matches) > 0 {
+			statement.ID = matches[0].ID
+			byText[statementText] = matches[1:]
+		}
+		statement.Created = now + int64(i)
+		statement.UpdatedAt = statement.Created
+		updated = append(updated, statement)
+	}
+	if err := s.Store.ReplaceStatements(ctx, userID, categoryID, updated); err != nil {
+		return StatementReplaceResult{}, err
+	}
+	if s.LegacyWriter != nil {
+		if err := s.LegacyWriter.ReplaceStatements(ctx, userID, categoryID, updated); err != nil {
+			return StatementReplaceResult{}, err
+		}
+	}
+	_ = s.appendChange(ctx, userID, "statements", categoryID, "statements_replace", updated, now)
+
+	return StatementReplaceResult{Applied: true, Summary: summary, Statements: updated}, nil
 }
 
 // GetUserState returns inited and quickes with default fallbacks.
@@ -999,6 +1067,76 @@ func normalizeLabel(label string) string {
 
 func statementDedupKey(categoryID, text string) string {
 	return strings.TrimSpace(categoryID) + "|" + strings.ToLower(strings.TrimSpace(text))
+}
+
+func normalizeStatementLines(raw string) ([]string, int) {
+	raw = strings.ReplaceAll(strings.ReplaceAll(raw, "\r\n", "\n"), "\r", "\n")
+	seen := make(map[string]struct{})
+	lines := make([]string, 0)
+	duplicates := 0
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if _, ok := seen[line]; ok {
+			duplicates++
+			continue
+		}
+		seen[line] = struct{}{}
+		lines = append(lines, line)
+	}
+	return lines, duplicates
+}
+
+func summarizeStatementReplace(current []models.Statement, texts []string, duplicates int) StatementReplaceSummary {
+	available := make(map[string]int, len(current))
+	for _, statement := range current {
+		available[statement.Text]++
+	}
+	summary := StatementReplaceSummary{Duplicates: duplicates, Total: len(texts)}
+	for _, text := range texts {
+		if available[text] > 0 {
+			available[text]--
+			summary.Kept++
+		} else {
+			summary.Added++
+		}
+	}
+	summary.Removed = len(current) - summary.Kept
+	return summary
+}
+
+func sameStatementTexts(current []models.Statement, texts []string) bool {
+	if len(current) != len(texts) {
+		return false
+	}
+	for i, statement := range current {
+		if statement.Text != texts[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func statementReplaceToken(current []models.Statement, texts []string) string {
+	state := make([]struct {
+		ID   string `json:"id"`
+		Text string `json:"text"`
+	}, len(current))
+	for i, statement := range current {
+		state[i].ID = statement.ID
+		state[i].Text = statement.Text
+	}
+	payload, _ := json.Marshal(struct {
+		Current []struct {
+			ID   string `json:"id"`
+			Text string `json:"text"`
+		} `json:"current"`
+		Result []string `json:"result"`
+	}{Current: state, Result: texts})
+	sum := sha256.Sum256(payload)
+	return fmt.Sprintf("%x", sum)
 }
 
 func filterStatements(statements []models.Statement, categoryID string) []models.Statement {

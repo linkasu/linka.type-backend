@@ -57,6 +57,11 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/r
 - `GET /v1/categories/{id}/statements`
   - Returns: `[{id, categoryId, text, created, updated_at?}]`
 
+- `PUT /v1/categories/{id}/statements`
+  - Body: `{text: string, confirmationToken?: string}`. `text` is normalized by the backend: CRLF/CR become LF, lines are trimmed, empty lines removed, and exact case-sensitive duplicates removed while preserving first occurrence and order.
+  - Replaces the entire category list. Returns `{applied, summary:{added, kept, removed, duplicates, total}, confirmationToken?, statements?}`.
+  - If replacement removes existing statements, the first request returns `applied:false` and `confirmationToken`; retry with that token applies the replacement. A stale token returns a fresh summary/token without changing data. An unchanged normalized list is an `applied:true` no-op.
+
 - `POST /v1/statements`
   - Body: `{id?, categoryId, text, created?, questions?}`
   - If `questions` is present, runs onboarding phrase generation and sets `inited` if needed.

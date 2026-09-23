@@ -52,6 +52,19 @@ func (w *Writer) UpsertStatement(ctx context.Context, userID string, statement m
 	return ref.Set(ctx, payload)
 }
 
+func (w *Writer) ReplaceStatements(ctx context.Context, userID, categoryID string, statements []models.Statement) error {
+	payload := make(map[string]any, len(statements))
+	for _, statement := range statements {
+		payload[statement.ID] = map[string]any{
+			"id":         statement.ID,
+			"categoryId": statement.CategoryID,
+			"text":       statement.Text,
+			"created":    statement.Created,
+		}
+	}
+	return w.db.NewRef(fmt.Sprintf("users/%s/Category/%s/statements", userID, categoryID)).Set(ctx, payload)
+}
+
 func (w *Writer) DeleteStatement(ctx context.Context, userID, categoryID, statementID string) error {
 	ref := w.db.NewRef(fmt.Sprintf("users/%s/Category/%s/statements/%s", userID, categoryID, statementID))
 	return ref.Delete(ctx)

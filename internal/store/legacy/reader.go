@@ -104,6 +104,9 @@ func (r *Reader) FetchUserData(ctx context.Context, userID string) ([]models.Cat
 			})
 		}
 	}
+	sort.SliceStable(statements, func(i, j int) bool {
+		return statements[i].Created < statements[j].Created
+	})
 
 	return categories, statements, nil
 }

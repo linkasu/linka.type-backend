@@ -277,6 +277,50 @@ ORDER BY created_at;`)
 	return out, nil
 }
 
+func (s *Store) ReplaceStatements(ctx context.Context, userID, categoryID string, statements []models.Statement) error {
+	query := s.withPrefix(`
+DECLARE $user_id AS Utf8;
+DECLARE $category_id AS Utf8;
+DECLARE $updated_at AS Int64;
+DECLARE $statements AS List<Struct<statement_id:Utf8,text:Utf8,created_at:Int64,updated_at:Int64>>;
+
+UPDATE statements
+SET deleted_at = $updated_at, updated_at = $updated_at
+WHERE user_id = $user_id AND category_id = $category_id AND deleted_at IS NULL;
+
+$items = AS_TABLE($statements);
+UPSERT INTO statements (user_id, category_id, statement_id, text, created_at, updated_at, deleted_at)
+SELECT $user_id, $category_id, statement_id, text, created_at, updated_at, CAST(NULL AS Int64?)
+FROM $items;`)
+
+	values := make([]types.Value, 0, len(statements))
+	for _, statement := range statements {
+		values = append(values, types.StructValue(
+			types.StructFieldValue("statement_id", types.UTF8Value(statement.ID)),
+			types.StructFieldValue("text", types.UTF8Value(statement.Text)),
+			types.StructFieldValue("created_at", types.Int64Value(statement.Created)),
+			types.StructFieldValue("updated_at", types.Int64Value(statement.UpdatedAt)),
+		))
+	}
+	statementListType := types.List(types.Struct(
+		types.StructField("statement_id", types.TypeUTF8),
+		types.StructField("text", types.TypeUTF8),
+		types.StructField("created_at", types.TypeInt64),
+		types.StructField("updated_at", types.TypeInt64),
+	))
+	statementValues := types.ZeroValue(statementListType)
+	if len(values) > 0 {
+		statementValues = types.ListValue(values...)
+	}
+
+	return s.execWrite(ctx, query, table.NewQueryParameters(
+		table.ValueParam("$user_id", types.UTF8Value(userID)),
+		table.ValueParam("$category_id", types.UTF8Value(categoryID)),
+		table.ValueParam("$updated_at", types.Int64Value(time.Now().UnixMilli())),
+		table.ValueParam("$statements", statementValues),
+	))
+}
+
 func (s *Store) UpsertStatement(ctx context.Context, userID string, statement models.Statement) (models.Statement, error) {
 	now := time.Now().UnixMilli()
 	if statement.Created == 0 {

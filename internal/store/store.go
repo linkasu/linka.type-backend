@@ -12,9 +12,9 @@ var ErrNotFound = errors.New("not found")
 
 // ClientKey represents a client API key.
 type ClientKey struct {
-	KeyHash  string
-	ClientID string
-	Status   string
+	KeyHash   string
+	ClientID  string
+	Status    string
 	CreatedAt int64
 	RevokedAt *int64
 }
@@ -27,6 +27,7 @@ type Store interface {
 
 	ListStatements(ctx context.Context, userID, categoryID string) ([]models.Statement, error)
 	ListAllStatements(ctx context.Context, userID string) ([]models.Statement, error)
+	ReplaceStatements(ctx context.Context, userID, categoryID string, statements []models.Statement) error
 	UpsertStatement(ctx context.Context, userID string, statement models.Statement) (models.Statement, error)
 	DeleteStatement(ctx context.Context, userID, categoryID, statementID string, updatedAt int64) error
 
@@ -93,6 +94,7 @@ type LegacyWriter interface {
 	UpsertCategory(ctx context.Context, userID string, category models.Category) error
 	DeleteCategory(ctx context.Context, userID, categoryID string) error
 	UpsertStatement(ctx context.Context, userID string, statement models.Statement) error
+	ReplaceStatements(ctx context.Context, userID, categoryID string, statements []models.Statement) error
 	DeleteStatement(ctx context.Context, userID, categoryID, statementID string) error
 	SetUserState(ctx context.Context, userID string, state models.UserState) error
 	SetQuickes(ctx context.Context, userID string, quickes []string) error
