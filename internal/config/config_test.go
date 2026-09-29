@@ -121,6 +121,9 @@ func TestTTSControlEnabledRequiresDependencies(t *testing.T) {
 	if !cfg.TTSControl.Enabled || cfg.TTSControl.AnonymousDailyChunks != 30 || cfg.TTSControl.AuthenticatedMaxChunks != 21 {
 		t.Fatalf("TTS control config = %#v", cfg.TTSControl)
 	}
+	if cfg.TTSControl.TrustedProxyHops != 1 || cfg.TTSControl.ChunkChars != 240 {
+		t.Fatalf("TTS control defaults = %#v", cfg.TTSControl)
+	}
 }
 
 func TestTTSControlRejectsInvalidConfiguredLimit(t *testing.T) {

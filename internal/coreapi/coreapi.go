@@ -10,10 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	fbauth "firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
@@ -28,6 +32,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/models"
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/store"
+	"github.com/linkasu/linka.type-backend/internal/ttscontrol"
 	"github.com/linkasu/linka.type-backend/internal/userctx"
 )
 
@@ -47,12 +52,25 @@ type API struct {
 	config             config.Config
 	httpClient         *http.Client
 	ttsHTTPClient      *http.Client
+	ttsControl         TTSControlService
 	ttsNow             func() time.Time
 	passwordResetDelay time.Duration
 }
 
+// TTSControlService is the route-facing subset of the TTS control plane.
+type TTSControlService interface {
+	IssueInstallationToken(context.Context, netip.Addr, string) (ttscontrol.InstallationToken, error)
+	VerifyInstallationToken(context.Context, string) (ttscontrol.VerifiedInstallation, error)
+	ReserveChunks(context.Context, ttscontrol.VerifiedInstallation, int) (ttscontrol.DailyQuota, error)
+}
+
 // New builds the core API router.
 func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jwtManager *jwt.Manager, cfg config.Config) http.Handler {
+	return NewWithTTSControl(svc, verifier, fbAuth, jwtManager, cfg, nil)
+}
+
+// NewWithTTSControl builds the core API router with an optional control-plane dependency.
+func NewWithTTSControl(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jwtManager *jwt.Manager, cfg config.Config, ttsControl TTSControlService) http.Handler {
 	ttsTimeout := cfg.TTS.Timeout
 	if ttsTimeout <= 0 {
 		ttsTimeout = defaultTTSTimeout
@@ -65,6 +83,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 		config:             cfg,
 		httpClient:         &http.Client{Timeout: 30 * time.Second},
 		ttsHTTPClient:      &http.Client{Timeout: ttsTimeout},
+		ttsControl:         ttsControl,
 		ttsNow:             time.Now,
 		passwordResetDelay: passwordResetMinDuration,
 	}
@@ -91,6 +110,14 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 			r.Post("/auth/refresh", api.authRefresh)
 			r.Post("/auth/logout", api.authLogout)
 		})
+
+		if cfg.TTSControl.Enabled && ttsControl != nil {
+			r.Group(func(r chi.Router) {
+				r.Use(APIRateLimiter.Middleware)
+				r.Post("/tts/installations", api.createTTSInstallation)
+				r.Post("/tts/anonymous", api.proxyAnonymousTTS)
+			})
+		}
 
 		// Public endpoints with general rate limiting (no auth required).
 		if cfg.TTS.ProxyEnabled {
@@ -1064,17 +1091,21 @@ func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
+	payload, err := readTTSBody(r)
+	if err != nil {
+		status := http.StatusBadRequest
+		if errors.Is(err, errTTSBodyTooLarge) {
+			status = http.StatusRequestEntityTooLarge
+		}
+		httpapi.WriteError(w, status, "proxy_failed")
+		return
+	}
+	api.proxyTTSPayload(w, r, payload)
+}
+
+func (api *API) proxyTTSPayload(w http.ResponseWriter, r *http.Request, payload []byte) {
 	var body io.Reader
-	if r.Method == http.MethodPost {
-		payload, err := io.ReadAll(io.LimitReader(r.Body, ttsMaxRequestBytes+1))
-		if err != nil {
-			httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed")
-			return
-		}
-		if len(payload) > ttsMaxRequestBytes {
-			httpapi.WriteError(w, http.StatusRequestEntityTooLarge, "proxy_failed")
-			return
-		}
+	if payload != nil {
 		body = bytes.NewReader(payload)
 	}
 
@@ -1133,6 +1164,165 @@ func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(resp.StatusCode)
 	_, _ = w.Write(audio)
+}
+
+var errTTSBodyTooLarge = errors.New("TTS request body too large")
+
+func readTTSBody(r *http.Request) ([]byte, error) {
+	if r.Method != http.MethodPost {
+		return nil, nil
+	}
+	payload, err := io.ReadAll(io.LimitReader(r.Body, ttsMaxRequestBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(payload) > ttsMaxRequestBytes {
+		return nil, errTTSBodyTooLarge
+	}
+	return payload, nil
+}
+
+func (api *API) createTTSInstallation(w http.ResponseWriter, r *http.Request) {
+	if !isEmptyJSONBody(r) {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_tts_installation")
+		return
+	}
+	ip, err := clientIP(r, api.config.TTSControl.TrustedProxyHops)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_client_ip")
+		return
+	}
+	if api.ttsControl == nil {
+		writeTTSControlUnavailable(w)
+		return
+	}
+	issued, err := api.ttsControl.IssueInstallationToken(r.Context(), ip, "")
+	if errors.Is(err, ttscontrol.ErrIssuanceLimit) {
+		setQuotaRetryAfter(w, time.Now())
+		httpapi.WriteError(w, http.StatusTooManyRequests, "tts_installation_limited")
+		return
+	}
+	if err != nil {
+		writeTTSControlUnavailable(w)
+		return
+	}
+	httpapi.WriteJSON(w, http.StatusOK, map[string]string{"token": issued.Token, "expires_at": issued.Installation.ExpiresAt.UTC().Format(time.RFC3339)})
+}
+
+func (api *API) proxyAnonymousTTS(w http.ResponseWriter, r *http.Request) {
+	payload, text, ok := anonymousTTSBody(r)
+	if !ok {
+		httpapi.WriteError(w, http.StatusBadRequest, "invalid_tts_request")
+		return
+	}
+	if api.ttsControl == nil {
+		writeTTSControlUnavailable(w)
+		return
+	}
+	verified, err := api.ttsControl.VerifyInstallationToken(r.Context(), strings.TrimSpace(r.Header.Get("X-TTS-Installation-Token")))
+	if errors.Is(err, ttscontrol.ErrTokenInvalid) {
+		httpapi.WriteError(w, http.StatusUnauthorized, "invalid_installation_token")
+		return
+	}
+	if err != nil {
+		writeTTSControlUnavailable(w)
+		return
+	}
+	if verified.Kind != ttscontrol.InstallationAnonymous {
+		httpapi.WriteError(w, http.StatusUnauthorized, "invalid_installation_token")
+		return
+	}
+	chunkChars := api.config.TTSControl.ChunkChars
+	if chunkChars <= 0 {
+		chunkChars = 240
+	}
+	maxChunks := api.config.TTSControl.AnonymousMaxChunks
+	if maxChunks <= 0 {
+		maxChunks = 5
+	}
+	chunks := (utf8.RuneCountInString(text) + chunkChars - 1) / chunkChars
+	if chunks > maxChunks {
+		setQuotaRetryAfter(w, time.Now())
+		httpapi.WriteError(w, http.StatusTooManyRequests, "tts_quota_exceeded")
+		return
+	}
+	if _, err := api.ttsControl.ReserveChunks(r.Context(), verified, chunks); err != nil {
+		if errors.Is(err, ttscontrol.ErrQuotaExceeded) {
+			setQuotaRetryAfter(w, time.Now())
+			httpapi.WriteError(w, http.StatusTooManyRequests, "tts_quota_exceeded")
+			return
+		}
+		writeTTSControlUnavailable(w)
+		return
+	}
+	api.proxyTTSPayload(w, r, payload)
+}
+
+func isEmptyJSONBody(r *http.Request) bool {
+	payload, err := io.ReadAll(io.LimitReader(r.Body, 1025))
+	if err != nil || len(payload) > 1024 || len(strings.TrimSpace(string(payload))) == 0 {
+		return err == nil && len(payload) <= 1024
+	}
+	var body map[string]json.RawMessage
+	return json.Unmarshal(payload, &body) == nil && body != nil && len(body) == 0
+}
+
+func anonymousTTSBody(r *http.Request) ([]byte, string, bool) {
+	payload, err := readTTSBody(r)
+	if err != nil {
+		return nil, "", false
+	}
+	var body map[string]json.RawMessage
+	if json.Unmarshal(payload, &body) != nil || body == nil {
+		return nil, "", false
+	}
+	var text string
+	if rawText, ok := body["text"]; !ok || json.Unmarshal(rawText, &text) != nil {
+		return nil, "", false
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, "", false
+	}
+	return payload, text, true
+}
+
+func clientIP(r *http.Request, trustedProxyHops int) (netip.Addr, error) {
+	if trustedProxyHops > 0 {
+		var chain []string
+		for _, header := range r.Header.Values("X-Forwarded-For") {
+			chain = append(chain, strings.Split(header, ",")...)
+		}
+		if len(chain) >= trustedProxyHops {
+			ip, err := netip.ParseAddr(strings.TrimSpace(chain[len(chain)-trustedProxyHops]))
+			if err != nil {
+				return netip.Addr{}, err
+			}
+			return ip.Unmap(), nil
+		}
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	ip, err := netip.ParseAddr(host)
+	if err != nil {
+		return netip.Addr{}, err
+	}
+	return ip.Unmap(), nil
+}
+
+func writeTTSControlUnavailable(w http.ResponseWriter) {
+	httpapi.WriteError(w, http.StatusServiceUnavailable, "tts_control_unavailable")
+}
+
+func setQuotaRetryAfter(w http.ResponseWriter, now time.Time) {
+	nextDay := now.UTC().Truncate(24 * time.Hour).Add(24 * time.Hour)
+	seconds := int(nextDay.Sub(now).Seconds())
+	if seconds < 1 {
+		seconds = 1
+	}
+	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 }
 
 func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {

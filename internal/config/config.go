@@ -85,6 +85,8 @@ type TTSControlConfig struct {
 	AuthenticatedMaxChunks       int
 	AnonymousGlobalDailyBudget   int
 	AnonymousGlobalMonthlyBudget int
+	TrustedProxyHops             int
+	ChunkChars                   int
 }
 
 // SyncConfig controls sync-worker behavior.
@@ -211,6 +213,14 @@ func Load() (Config, error) {
 	if err != nil {
 		return cfg, err
 	}
+	ttsTrustedProxyHops, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_TRUSTED_PROXY_HOPS", 1)
+	if err != nil {
+		return cfg, err
+	}
+	ttsChunkChars, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_CHUNK_CHARS", 240)
+	if err != nil {
+		return cfg, err
+	}
 	cfg.TTSControl = TTSControlConfig{
 		Enabled:                      ttsControlEnabled,
 		PostgresDSN:                  getenv("TTS_CONTROL_POSTGRES_DSN", ""),
@@ -227,6 +237,8 @@ func Load() (Config, error) {
 		AuthenticatedMaxChunks:       ttsAuthenticatedMaxChunks,
 		AnonymousGlobalDailyBudget:   ttsAnonymousGlobalDailyBudget,
 		AnonymousGlobalMonthlyBudget: ttsAnonymousGlobalMonthlyBudget,
+		TrustedProxyHops:             ttsTrustedProxyHops,
+		ChunkChars:                   ttsChunkChars,
 	}
 
 	cfg.Sync = SyncConfig{
@@ -285,7 +297,7 @@ func validateTTSControl(cfg TTSControlConfig) error {
 	if len(cfg.TokenSigningKey) < 32 || (cfg.PreviousTokenSigningKey != "" && len(cfg.PreviousTokenSigningKey) < 32) || len(cfg.IPHashKey) < 32 {
 		return fmt.Errorf("TTS_CONTROL_TOKEN_SIGNING_KEY and TTS_CONTROL_IP_HASH_KEY must each be at least 32 bytes when TTS_CONTROL_PLANE_ENABLED=true")
 	}
-	if cfg.RedisDB < 0 || cfg.AnonymousDailyChunks <= 0 || cfg.AuthenticatedDailyChunks <= 0 || cfg.AnonymousMaxChunks <= 0 || cfg.AuthenticatedMaxChunks <= 0 {
+	if cfg.RedisDB < 0 || cfg.TrustedProxyHops < 0 || cfg.AnonymousDailyChunks <= 0 || cfg.AuthenticatedDailyChunks <= 0 || cfg.AnonymousMaxChunks <= 0 || cfg.AuthenticatedMaxChunks <= 0 || cfg.ChunkChars <= 0 {
 		return fmt.Errorf("TTS control limits must be positive and TTS_CONTROL_REDIS_DB must not be negative")
 	}
 	if cfg.AnonymousGlobalDailyBudget < 0 || cfg.AnonymousGlobalMonthlyBudget < 0 {

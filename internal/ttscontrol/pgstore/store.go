@@ -11,8 +11,6 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/ttscontrol"
 )
 
-var ErrNotFound = errors.New("tts control record not found")
-
 type Store struct{ pool *pgxpool.Pool }
 
 func New(pool *pgxpool.Pool) *Store { return &Store{pool: pool} }
@@ -45,7 +43,7 @@ func (s *Store) FindInstallationByTokenHash(ctx context.Context, tokenHash []byt
 	var installation ttscontrol.Installation
 	err := s.pool.QueryRow(ctx, "SELECT id, token_hash, ip_prefix_hash, COALESCE(subject, ''), kind, issued_at, expires_at FROM tts_installations WHERE token_hash = $1", tokenHash).Scan(&installation.ID, &installation.TokenHash, &installation.IPPrefixHash, &installation.Subject, &installation.Kind, &installation.IssuedAt, &installation.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return ttscontrol.Installation{}, ErrNotFound
+		return ttscontrol.Installation{}, ttscontrol.ErrNotFound
 	}
 	return installation, err
 }
@@ -86,7 +84,7 @@ func (s *Store) GetIdempotency(ctx context.Context, scope, key string) (ttscontr
 	var record ttscontrol.IdempotencyRecord
 	err := s.pool.QueryRow(ctx, "SELECT idempotency_key, scope, response, created_at, expires_at FROM tts_idempotency WHERE scope = $1 AND idempotency_key = $2 AND expires_at > now()", scope, key).Scan(&record.Key, &record.Scope, &record.Response, &record.CreatedAt, &record.ExpiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return ttscontrol.IdempotencyRecord{}, ErrNotFound
+		return ttscontrol.IdempotencyRecord{}, ttscontrol.ErrNotFound
 	}
 	return record, err
 }

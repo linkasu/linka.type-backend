@@ -104,7 +104,11 @@ func main() {
 		DialogHelper: dialoghelper.New(cfg.Dialog.BaseURL, cfg.Dialog.APIKey, cfg.Dialog.Timeout),
 	}
 
-	handler := coreapi.New(svc, verifier, fbClients.Auth, jwtManager, cfg)
+	var ttsControlService coreapi.TTSControlService
+	if ttsRuntime != nil {
+		ttsControlService = ttsRuntime.Service
+	}
+	handler := coreapi.NewWithTTSControl(svc, verifier, fbClients.Auth, jwtManager, cfg, ttsControlService)
 
 	srv := &http.Server{
 		Addr:         cfg.HTTP.Addr,

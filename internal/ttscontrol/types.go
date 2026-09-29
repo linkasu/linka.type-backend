@@ -13,6 +13,7 @@ var (
 	ErrIssuanceLimit = errors.New("tts installation issuance limit exceeded")
 	ErrQuotaExceeded = errors.New("tts quota exceeded")
 	ErrTokenInvalid  = errors.New("tts installation token is invalid")
+	ErrNotFound      = errors.New("tts control record not found")
 )
 
 type InstallationKind string

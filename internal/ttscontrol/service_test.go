@@ -3,6 +3,7 @@ package ttscontrol
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"net/netip"
 	"sync"
 	"testing"
@@ -14,6 +15,8 @@ type memoryStore struct {
 	installations map[[32]byte]Installation
 	revoked       map[[32]byte]bool
 	quotas        map[string]DailyQuota
+	findErr       error
+	reserveCalls  int
 }
 
 func newMemoryStore() *memoryStore {
@@ -39,11 +42,28 @@ func (s *memoryStore) CreateInstallation(_ context.Context, installation Install
 func (s *memoryStore) FindInstallationByTokenHash(_ context.Context, tokenHash []byte) (Installation, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.findErr != nil {
+		return Installation{}, s.findErr
+	}
 	installation, ok := s.installations[sha256.Sum256(tokenHash)]
 	if !ok {
 		return Installation{}, ErrTokenInvalid
 	}
 	return installation, nil
+}
+
+func TestVerifyInstallationTokenPropagatesStorageFailure(t *testing.T) {
+	store := newMemoryStore()
+	service := testService(t, store)
+	service.now = func() time.Time { return time.Date(2026, 9, 29, 12, 0, 0, 0, time.UTC) }
+	issued, err := service.IssueInstallationToken(context.Background(), mustAddr(t, "203.0.113.55"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.findErr = errors.New("postgres unavailable")
+	if _, err := service.VerifyInstallationToken(context.Background(), issued.Token); err == nil || errors.Is(err, ErrTokenInvalid) {
+		t.Fatalf("storage error = %v", err)
+	}
 }
 
 func (s *memoryStore) RevokeToken(_ context.Context, tokenHash []byte, _ string) error {
@@ -61,6 +81,7 @@ func (s *memoryStore) IsTokenRevoked(_ context.Context, tokenHash []byte) (bool,
 func (s *memoryStore) ReserveDailyQuota(_ context.Context, key string, day time.Time, limit, chunks int) (DailyQuota, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.reserveCalls++
 	mapKey := key + day.UTC().Format("2006-01-02")
 	quota := s.quotas[mapKey]
 	if quota.Used+chunks > limit {
@@ -76,6 +97,13 @@ func (*memoryStore) GetIdempotency(context.Context, string, string) (Idempotency
 	return IdempotencyRecord{}, ErrTokenInvalid
 }
 func (*memoryStore) PutIdempotency(context.Context, IdempotencyRecord) error { return nil }
+
+type failingCounter struct{ calls int }
+
+func (c *failingCounter) SetDaily(context.Context, DailyQuota) error {
+	c.calls++
+	return errors.New("redis unavailable")
+}
 
 func testService(t *testing.T, store *memoryStore) *Service {
 	t.Helper()
@@ -145,6 +173,22 @@ func TestReserveChunksIsAtomic(t *testing.T) {
 	wg.Wait()
 	if accepted != 30 {
 		t.Fatalf("accepted = %d, want 30", accepted)
+	}
+}
+
+func TestReserveChunksSucceedsWhenRedisMirrorFails(t *testing.T) {
+	store := newMemoryStore()
+	counter := &failingCounter{}
+	service, err := NewService(store, counter, ServiceConfig{SigningKey: "signing-key-is-at-least-thirty-two-bytes", IPHashKey: "ip-hash-key-is-at-least-thirty-two-bytes", AnonymousDaily: 30, AuthenticatedDaily: 200, AnonymousMax: 5, AuthenticatedMax: 21})
+	if err != nil {
+		t.Fatal(err)
+	}
+	quota, err := service.ReserveChunks(context.Background(), VerifiedInstallation{InstallationID: "installation", Kind: InstallationAnonymous}, 1)
+	if err != nil || quota.Used != 1 {
+		t.Fatalf("quota = %#v, err = %v", quota, err)
+	}
+	if store.reserveCalls != 1 || counter.calls != 1 {
+		t.Fatalf("PG reservations = %d, Redis writes = %d", store.reserveCalls, counter.calls)
 	}
 }
 
