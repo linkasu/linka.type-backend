@@ -133,6 +133,21 @@ All endpoints except `POST /v1/auth`, `POST /v1/auth/register`, `POST /v1/auth/r
 - `GET /v1/voices` (open) -> `https://tts.linka.su/voices`
 - `POST /v1/tts` (requires auth) -> `https://tts.linka.su/tts`
 
+## Optional anonymous TTS control plane
+These routes exist only when `TTS_CONTROL_PLANE_ENABLED=true`; enabling them requires the separately migrated PostgreSQL schema and Redis. They do not change authenticated `POST /v1/tts`.
+
+- `POST /v1/tts/installations` (open)
+  - Body: empty or `{}`.
+  - Returns: `{token, expires_at}` where `expires_at` is RFC3339 UTC.
+  - The client IP is selected from the right side of `X-Forwarded-For` using `TTS_CONTROL_TRUSTED_PROXY_HOPS` (default `1`), or from `RemoteAddr` if there are not enough trusted entries. The gateway must overwrite or append `X-Forwarded-For`; malformed selected addresses return HTTP 400.
+
+- `POST /v1/tts/anonymous` (open)
+  - Headers: `X-TTS-Installation-Token: <token>`.
+  - Body: the normal TTS JSON payload with non-empty `text`.
+  - Returns the same audio response as `POST /v1/tts`. The installation token is never forwarded upstream.
+  - Provider chunks are `ceil(trimmed Unicode rune count(text) / TTS_CONTROL_CHUNK_CHARS)`; requests above the anonymous maximum or exhausted daily quota return HTTP 429 with `Retry-After`.
+  - Invalid/revoked tokens return HTTP 401 without distinguishing the cause. Control-plane storage failures return HTTP 503; Redis quota mirrors are best-effort.
+
 ## Dialog helper
 - `GET /v1/dialog/chats`
   - Returns: `[{id, title, created, updated_at?, last_message_at?, message_count?}]`

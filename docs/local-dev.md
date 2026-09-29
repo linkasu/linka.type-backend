@@ -33,6 +33,8 @@
 - `TTS_CONTROL_ANONYMOUS_DAILY_CHUNKS` / `TTS_CONTROL_AUTH_DAILY_CHUNKS` - defaults `30` / `200`.
 - `TTS_CONTROL_ANONYMOUS_MAX_CHUNKS` / `TTS_CONTROL_AUTH_MAX_CHUNKS` - defaults `5` / `21`.
 - `TTS_CONTROL_ANONYMOUS_GLOBAL_DAILY_BUDGET` / `TTS_CONTROL_ANONYMOUS_GLOBAL_MONTHLY_BUDGET` - reserved global-budget placeholders, default `0`.
+- `TTS_CONTROL_TRUSTED_PROXY_HOPS` - number of rightmost `X-Forwarded-For` entries trusted when issuing an installation token (default `1`; `0` uses `RemoteAddr`).
+- `TTS_CONTROL_CHUNK_CHARS` - Unicode rune count per provider chunk (default `240`).
 - `DIALOG_HELPER_URL` - dialog-helper API base URL
 - `DIALOG_HELPER_API_KEY` - API key for dialog-helper
 - `DIALOG_HELPER_TIMEOUT` - dialog-helper request timeout (default `20s`)

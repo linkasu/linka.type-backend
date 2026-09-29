@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/netip"
 	"strconv"
@@ -79,11 +80,20 @@ func (s *Service) VerifyInstallationToken(ctx context.Context, token string) (Ve
 	}
 	hash := sha256.Sum256([]byte(token))
 	installation, err := s.store.FindInstallationByTokenHash(ctx, hash[:])
-	if err != nil || installation.ID != id || !installation.ExpiresAt.After(s.now()) {
+	if errors.Is(err, ErrNotFound) {
+		return VerifiedInstallation{}, ErrTokenInvalid
+	}
+	if err != nil {
+		return VerifiedInstallation{}, err
+	}
+	if installation.ID != id || !installation.ExpiresAt.After(s.now()) {
 		return VerifiedInstallation{}, ErrTokenInvalid
 	}
 	revoked, err := s.store.IsTokenRevoked(ctx, hash[:])
-	if err != nil || revoked {
+	if err != nil {
+		return VerifiedInstallation{}, err
+	}
+	if revoked {
 		return VerifiedInstallation{}, ErrTokenInvalid
 	}
 	return VerifiedInstallation{InstallationID: installation.ID, Subject: installation.Subject, Kind: installation.Kind, ExpiresAt: installation.ExpiresAt}, nil
@@ -98,6 +108,7 @@ func (s *Service) ReserveChunks(ctx context.Context, verified VerifiedInstallati
 		return DailyQuota{}, err
 	}
 	if s.counters != nil {
+		// Redis is a rebuildable mirror; returning its error would make retries double-charge PG quota.
 		_ = s.counters.SetDaily(ctx, quota)
 	}
 	return quota, nil

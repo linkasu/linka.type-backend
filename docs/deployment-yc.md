@@ -30,4 +30,6 @@ The control plane is disabled by default. Leave `TTS_CONTROL_PLANE_ENABLED=false
 
 Rolling invariant: old revisions ignore all TTS control-plane variables; new revisions with the flag off neither require nor connect to PostgreSQL or Redis.
 
-Configure deployment variables: `TTS_CONTROL_PLANE_ENABLED` (keep `false`), `TTS_CONTROL_REDIS_USERNAME`, `TTS_CONTROL_REDIS_DB`, daily/max chunk limits and optional anonymous global budget placeholders. Configure secrets: `TTS_CONTROL_POSTGRES_DSN`, `TTS_CONTROL_REDIS_ADDR`, `TTS_CONTROL_REDIS_PASSWORD`, `TTS_CONTROL_TOKEN_SIGNING_KEY`, optional `TTS_CONTROL_TOKEN_PREVIOUS_SIGNING_KEY`, and `TTS_CONTROL_IP_HASH_KEY`.
+Configure deployment variables: `TTS_CONTROL_PLANE_ENABLED` (keep `false`), `TTS_CONTROL_REDIS_USERNAME`, `TTS_CONTROL_REDIS_DB`, daily/max chunk limits, `TTS_CONTROL_TRUSTED_PROXY_HOPS` (default `1`), `TTS_CONTROL_CHUNK_CHARS` (default `240`), and optional anonymous global budget placeholders. Configure secrets: `TTS_CONTROL_POSTGRES_DSN`, `TTS_CONTROL_REDIS_ADDR`, `TTS_CONTROL_REDIS_PASSWORD`, `TTS_CONTROL_TOKEN_SIGNING_KEY`, optional `TTS_CONTROL_TOKEN_PREVIOUS_SIGNING_KEY`, and `TTS_CONTROL_IP_HASH_KEY`.
+
+The gateway must overwrite or append `X-Forwarded-For` before forwarding to core-api. The API selects the configured rightmost trusted entry and rejects malformed selected addresses; it never trusts the leftmost client-supplied value by default.
