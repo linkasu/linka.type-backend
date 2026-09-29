@@ -21,6 +21,9 @@
 - `FEATURE_COHORT_PERCENT` - 0-100 for `cohort` mode
 - `TTS_PROXY_ENABLED` - enable `/v1/tts` and `/v1/voices`
 - `TTS_BASE_URL` - defaults to `https://tts.linka.su`
+- `TTS_SERVICE_TOKEN` - optional token sent upstream as `X-TTS-Service-Token`
+- `TTS_MAX_AUDIO_BYTES` - max proxied TTS response size (default `50MiB`)
+- `TTS_TIMEOUT` - TTS upstream request timeout (default `120s`)
 - `DIALOG_HELPER_URL` - dialog-helper API base URL
 - `DIALOG_HELPER_API_KEY` - API key for dialog-helper
 - `DIALOG_HELPER_TIMEOUT` - dialog-helper request timeout (default `20s`)

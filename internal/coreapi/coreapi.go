@@ -29,7 +29,12 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/userctx"
 )
 
-const passwordResetMinDuration = 500 * time.Millisecond
+const (
+	passwordResetMinDuration = 500 * time.Millisecond
+	ttsMaxRequestBytes       = 1 * 1024 * 1024
+	defaultTTSMaxAudioBytes  = 50 * 1024 * 1024
+	defaultTTSTimeout        = 120 * time.Second
+)
 
 // API wires HTTP handlers for core-api.
 type API struct {
@@ -39,11 +44,16 @@ type API struct {
 	jwtManager         *jwt.Manager
 	config             config.Config
 	httpClient         *http.Client
+	ttsHTTPClient      *http.Client
 	passwordResetDelay time.Duration
 }
 
 // New builds the core API router.
 func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jwtManager *jwt.Manager, cfg config.Config) http.Handler {
+	ttsTimeout := cfg.TTS.Timeout
+	if ttsTimeout <= 0 {
+		ttsTimeout = defaultTTSTimeout
+	}
 	api := &API{
 		svc:                svc,
 		auth:               verifier,
@@ -51,6 +61,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 		jwtManager:         jwtManager,
 		config:             cfg,
 		httpClient:         &http.Client{Timeout: 30 * time.Second},
+		ttsHTTPClient:      &http.Client{Timeout: ttsTimeout},
 		passwordResetDelay: passwordResetMinDuration,
 	}
 
@@ -1049,7 +1060,74 @@ func (api *API) proxyVoices(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
-	api.proxyRequest(w, r, api.config.TTS.BaseURL+"/tts")
+	var body io.Reader
+	if r.Method == http.MethodPost {
+		payload, err := io.ReadAll(io.LimitReader(r.Body, ttsMaxRequestBytes+1))
+		if err != nil {
+			httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed")
+			return
+		}
+		if len(payload) > ttsMaxRequestBytes {
+			httpapi.WriteError(w, http.StatusRequestEntityTooLarge, "proxy_failed")
+			return
+		}
+		body = bytes.NewReader(payload)
+	}
+
+	target := api.config.TTS.BaseURL + "/tts"
+	if r.URL.RawQuery != "" {
+		target += "?" + r.URL.RawQuery
+	}
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, target, body)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed")
+		return
+	}
+	for _, key := range []string{"Content-Type", "Accept", "X-Request-ID"} {
+		for _, value := range r.Header.Values(key) {
+			req.Header.Add(key, value)
+		}
+	}
+	if api.config.TTS.ServiceToken != "" {
+		req.Header.Set("X-TTS-Service-Token", api.config.TTS.ServiceToken)
+	}
+
+	client := api.ttsHTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: defaultTTSTimeout}
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
+		return
+	}
+	defer httpclient.DrainAndClose(resp.Body)
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
+		httpapi.WriteError(w, resp.StatusCode, "proxy_failed")
+		return
+	}
+
+	maxAudioBytes := api.config.TTS.MaxAudioBytes
+	if maxAudioBytes <= 0 {
+		maxAudioBytes = defaultTTSMaxAudioBytes
+	}
+	if resp.ContentLength > maxAudioBytes {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
+		return
+	}
+	audio, err := io.ReadAll(io.LimitReader(resp.Body, maxAudioBytes+1))
+	if err != nil || int64(len(audio)) > maxAudioBytes {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
+		return
+	}
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(resp.StatusCode)
+	_, _ = w.Write(audio)
 }
 
 func (api *API) predictorComplete(w http.ResponseWriter, r *http.Request) {
