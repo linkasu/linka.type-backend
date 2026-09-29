@@ -10,17 +10,17 @@ import (
 
 // Config aggregates configuration used by services.
 type Config struct {
-	Env       string
-	HTTP      HTTPConfig
-	Firebase  FirebaseConfig
-	YDB       YDBConfig
-	Feature   FeatureConfig
-	TTS       TTSConfig
-	Sync      SyncConfig
-	Predictor PredictorConfig
-	Dialog    DialogHelperConfig
+	Env          string
+	HTTP         HTTPConfig
+	Firebase     FirebaseConfig
+	YDB          YDBConfig
+	Feature      FeatureConfig
+	TTS          TTSConfig
+	Sync         SyncConfig
+	Predictor    PredictorConfig
+	Dialog       DialogHelperConfig
 	DialogWorker DialogWorkerConfig
-	JWT       JWTConfig
+	JWT          JWTConfig
 }
 
 // HTTPConfig controls HTTP server behavior.
@@ -56,8 +56,11 @@ type FeatureConfig struct {
 
 // TTSConfig controls the optional proxy.
 type TTSConfig struct {
-	ProxyEnabled bool
-	BaseURL      string
+	ProxyEnabled  bool
+	BaseURL       string
+	ServiceToken  string
+	MaxAudioBytes int64
+	Timeout       time.Duration
 }
 
 // SyncConfig controls sync-worker behavior.
@@ -134,8 +137,11 @@ func Load() (Config, error) {
 	}
 
 	cfg.TTS = TTSConfig{
-		ProxyEnabled: getenvBool("TTS_PROXY_ENABLED", false),
-		BaseURL:      getenv("TTS_BASE_URL", "https://tts.linka.su"),
+		ProxyEnabled:  getenvBool("TTS_PROXY_ENABLED", false),
+		BaseURL:       getenv("TTS_BASE_URL", "https://tts.linka.su"),
+		ServiceToken:  getenv("TTS_SERVICE_TOKEN", ""),
+		MaxAudioBytes: int64(getenvInt("TTS_MAX_AUDIO_BYTES", 50*1024*1024)),
+		Timeout:       getenvDuration("TTS_TIMEOUT", 120*time.Second),
 	}
 
 	cfg.Sync = SyncConfig{
