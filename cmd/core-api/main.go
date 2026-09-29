@@ -19,6 +19,7 @@ import (
 	"github.com/linkasu/linka.type-backend/internal/service"
 	"github.com/linkasu/linka.type-backend/internal/store/legacy"
 	"github.com/linkasu/linka.type-backend/internal/store/ydbstore"
+	"github.com/linkasu/linka.type-backend/internal/ttscontrol/bootstrap"
 	"github.com/linkasu/linka.type-backend/internal/ydb"
 )
 
@@ -30,6 +31,13 @@ func main() {
 		os.Exit(1)
 	}
 	logger := logging.New("core-api", cfg.Env)
+
+	ttsRuntime, err := bootstrap.NewRuntime(ctx, cfg.TTSControl)
+	if err != nil {
+		logger.Error("failed to init TTS control plane", "error_code", "tts_control_init_failed")
+		os.Exit(1)
+	}
+	defer ttsRuntime.Close()
 
 	// Validate Firebase credentials are present
 	if cfg.Firebase.CredentialsJSON == "" && cfg.Firebase.CredentialsFile == "" {

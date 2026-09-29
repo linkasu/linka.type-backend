@@ -16,6 +16,7 @@ type Config struct {
 	YDB          YDBConfig
 	Feature      FeatureConfig
 	TTS          TTSConfig
+	TTSControl   TTSControlConfig
 	Sync         SyncConfig
 	Predictor    PredictorConfig
 	Dialog       DialogHelperConfig
@@ -61,6 +62,25 @@ type TTSConfig struct {
 	ServiceToken  string
 	MaxAudioBytes int64
 	Timeout       time.Duration
+}
+
+// TTSControlConfig controls the isolated TTS control-plane foundation.
+type TTSControlConfig struct {
+	Enabled                      bool
+	PostgresDSN                  string
+	RedisAddr                    string
+	RedisUsername                string
+	RedisPassword                string
+	RedisDB                      int
+	TokenSigningKey              string
+	PreviousTokenSigningKey      string
+	IPHashKey                    string
+	AnonymousDailyChunks         int
+	AuthenticatedDailyChunks     int
+	AnonymousMaxChunks           int
+	AuthenticatedMaxChunks       int
+	AnonymousGlobalDailyBudget   int
+	AnonymousGlobalMonthlyBudget int
 }
 
 // SyncConfig controls sync-worker behavior.
@@ -143,6 +163,52 @@ func Load() (Config, error) {
 		MaxAudioBytes: int64(getenvInt("TTS_MAX_AUDIO_BYTES", 50*1024*1024)),
 		Timeout:       getenvDuration("TTS_TIMEOUT", 120*time.Second),
 	}
+	ttsControlEnabled := getenvBool("TTS_CONTROL_PLANE_ENABLED", false)
+	ttsRedisDB, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_REDIS_DB", 0)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAnonymousDailyChunks, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_ANONYMOUS_DAILY_CHUNKS", 30)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAuthenticatedDailyChunks, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_AUTH_DAILY_CHUNKS", 200)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAnonymousMaxChunks, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_ANONYMOUS_MAX_CHUNKS", 5)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAuthenticatedMaxChunks, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_AUTH_MAX_CHUNKS", 21)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAnonymousGlobalDailyBudget, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_ANONYMOUS_GLOBAL_DAILY_BUDGET", 0)
+	if err != nil {
+		return cfg, err
+	}
+	ttsAnonymousGlobalMonthlyBudget, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_ANONYMOUS_GLOBAL_MONTHLY_BUDGET", 0)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.TTSControl = TTSControlConfig{
+		Enabled:                      ttsControlEnabled,
+		PostgresDSN:                  getenv("TTS_CONTROL_POSTGRES_DSN", ""),
+		RedisAddr:                    getenv("TTS_CONTROL_REDIS_ADDR", ""),
+		RedisUsername:                getenv("TTS_CONTROL_REDIS_USERNAME", ""),
+		RedisPassword:                getenv("TTS_CONTROL_REDIS_PASSWORD", ""),
+		RedisDB:                      ttsRedisDB,
+		TokenSigningKey:              getenv("TTS_CONTROL_TOKEN_SIGNING_KEY", ""),
+		PreviousTokenSigningKey:      getenv("TTS_CONTROL_TOKEN_PREVIOUS_SIGNING_KEY", ""),
+		IPHashKey:                    getenv("TTS_CONTROL_IP_HASH_KEY", ""),
+		AnonymousDailyChunks:         ttsAnonymousDailyChunks,
+		AuthenticatedDailyChunks:     ttsAuthenticatedDailyChunks,
+		AnonymousMaxChunks:           ttsAnonymousMaxChunks,
+		AuthenticatedMaxChunks:       ttsAuthenticatedMaxChunks,
+		AnonymousGlobalDailyBudget:   ttsAnonymousGlobalDailyBudget,
+		AnonymousGlobalMonthlyBudget: ttsAnonymousGlobalMonthlyBudget,
+	}
 
 	cfg.Sync = SyncConfig{
 		PollInterval:    getenvDuration("SYNC_POLL_INTERVAL", 5*time.Second),
@@ -183,8 +249,49 @@ func Load() (Config, error) {
 	if cfg.Feature.CohortPercent < 0 || cfg.Feature.CohortPercent > 100 {
 		return cfg, fmt.Errorf("FEATURE_COHORT_PERCENT must be between 0 and 100")
 	}
+	if err := validateTTSControl(cfg.TTSControl); err != nil {
+		return cfg, err
+	}
 
 	return cfg, nil
+}
+
+func validateTTSControl(cfg TTSControlConfig) error {
+	if !cfg.Enabled {
+		return nil
+	}
+	if cfg.PostgresDSN == "" || cfg.RedisAddr == "" {
+		return fmt.Errorf("TTS_CONTROL_POSTGRES_DSN and TTS_CONTROL_REDIS_ADDR are required when TTS_CONTROL_PLANE_ENABLED=true")
+	}
+	if len(cfg.TokenSigningKey) < 32 || (cfg.PreviousTokenSigningKey != "" && len(cfg.PreviousTokenSigningKey) < 32) || len(cfg.IPHashKey) < 32 {
+		return fmt.Errorf("TTS_CONTROL_TOKEN_SIGNING_KEY and TTS_CONTROL_IP_HASH_KEY must each be at least 32 bytes when TTS_CONTROL_PLANE_ENABLED=true")
+	}
+	if cfg.RedisDB < 0 || cfg.AnonymousDailyChunks <= 0 || cfg.AuthenticatedDailyChunks <= 0 || cfg.AnonymousMaxChunks <= 0 || cfg.AuthenticatedMaxChunks <= 0 {
+		return fmt.Errorf("TTS control limits must be positive and TTS_CONTROL_REDIS_DB must not be negative")
+	}
+	if cfg.AnonymousGlobalDailyBudget < 0 || cfg.AnonymousGlobalMonthlyBudget < 0 {
+		return fmt.Errorf("TTS control anonymous global budgets must not be negative")
+	}
+	return nil
+}
+
+func getenvStrictInt(key string, fallback int) (int, error) {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback, nil
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be an integer", key)
+	}
+	return parsed, nil
+}
+
+func getenvTTSControlInt(enabled bool, key string, fallback int) (int, error) {
+	if !enabled {
+		return fallback, nil
+	}
+	return getenvStrictInt(key, fallback)
 }
 
 func firebaseCredentialsJSON() (string, error) {
