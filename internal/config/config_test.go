@@ -1,6 +1,9 @@
 package config
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
+	"encoding/base64"
 	"testing"
 	"time"
 )
@@ -27,6 +30,9 @@ func TestLoadTTSConfig(t *testing.T) {
 
 func TestLoadTTSConfigDefaults(t *testing.T) {
 	t.Setenv("TTS_SERVICE_TOKEN", "")
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", "")
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "")
+	t.Setenv("TTS_SERVICE_JWT_TTL", "")
 	t.Setenv("TTS_MAX_AUDIO_BYTES", "")
 	t.Setenv("TTS_TIMEOUT", "")
 
@@ -42,6 +48,54 @@ func TestLoadTTSConfigDefaults(t *testing.T) {
 	}
 	if cfg.TTS.Timeout != 120*time.Second {
 		t.Fatalf("Timeout = %s", cfg.TTS.Timeout)
+	}
+	if cfg.TTS.ServiceJWTTTL != 5*time.Minute {
+		t.Fatalf("ServiceJWTTTL = %s", cfg.TTS.ServiceJWTTTL)
+	}
+}
+
+func TestLoadTTSServiceJWTConfig(t *testing.T) {
+	_, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", base64.StdEncoding.EncodeToString(privateKey))
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "key-1")
+	t.Setenv("TTS_SERVICE_JWT_TTL", "4m")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if string(cfg.TTS.ServiceJWTPrivateKey) != string(privateKey) || cfg.TTS.ServiceJWTKeyID != "key-1" || cfg.TTS.ServiceJWTTTL != 4*time.Minute {
+		t.Fatal("TTS service JWT config was not loaded")
+	}
+}
+
+func TestLoadRejectsInvalidTTSServiceJWTConfig(t *testing.T) {
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", base64.StdEncoding.EncodeToString(make([]byte, ed25519.PrivateKeySize)))
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted a TTS service JWT key without key ID")
+	}
+
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", "not-base64")
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "key-1")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted malformed TTS service JWT key")
+	}
+
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", "")
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "key-1")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted a TTS service JWT key ID without key")
+	}
+
+	t.Setenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64", base64.StdEncoding.EncodeToString(make([]byte, ed25519.PrivateKeySize)))
+	t.Setenv("TTS_SERVICE_JWT_KEY_ID", "key-1")
+	t.Setenv("TTS_SERVICE_JWT_TTL", "6m")
+	if _, err := Load(); err == nil {
+		t.Fatal("Load() accepted a TTS service JWT TTL above five minutes")
 	}
 }
 

@@ -17,6 +17,8 @@ import (
 
 	fbauth "firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
+	jwtgo "github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"github.com/linkasu/linka.type-backend/internal/auth"
 	"github.com/linkasu/linka.type-backend/internal/config"
 	"github.com/linkasu/linka.type-backend/internal/httpapi"
@@ -45,6 +47,7 @@ type API struct {
 	config             config.Config
 	httpClient         *http.Client
 	ttsHTTPClient      *http.Client
+	ttsNow             func() time.Time
 	passwordResetDelay time.Duration
 }
 
@@ -62,6 +65,7 @@ func New(svc *service.Service, verifier auth.Verifier, fbAuth *fbauth.Client, jw
 		config:             cfg,
 		httpClient:         &http.Client{Timeout: 30 * time.Second},
 		ttsHTTPClient:      &http.Client{Timeout: ttsTimeout},
+		ttsNow:             time.Now,
 		passwordResetDelay: passwordResetMinDuration,
 	}
 
@@ -1088,8 +1092,9 @@ func (api *API) proxyTTS(w http.ResponseWriter, r *http.Request) {
 			req.Header.Add(key, value)
 		}
 	}
-	if api.config.TTS.ServiceToken != "" {
-		req.Header.Set("X-TTS-Service-Token", api.config.TTS.ServiceToken)
+	if err := api.setTTSServiceAuth(req); err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
+		return
 	}
 
 	client := api.ttsHTTPClient
@@ -1219,9 +1224,21 @@ func (api *API) proxyRequest(w http.ResponseWriter, r *http.Request, target stri
 		httpapi.WriteError(w, http.StatusBadRequest, "proxy_failed")
 		return
 	}
-	req.Header = r.Header.Clone()
+	for _, key := range []string{"Content-Type", "Accept", "X-Request-ID"} {
+		for _, value := range r.Header.Values(key) {
+			req.Header.Add(key, value)
+		}
+	}
+	if err := api.setTTSServiceAuth(req); err != nil {
+		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
+		return
+	}
 
-	resp, err := api.httpClient.Do(req)
+	client := api.ttsHTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: defaultTTSTimeout}
+	}
+	resp, err := client.Do(req)
 	if err != nil {
 		httpapi.WriteError(w, http.StatusBadGateway, "proxy_failed")
 		return
@@ -1239,6 +1256,40 @@ func (api *API) proxyRequest(w http.ResponseWriter, r *http.Request, target stri
 	}
 	w.WriteHeader(resp.StatusCode)
 	_, _ = io.Copy(w, resp.Body)
+}
+
+func (api *API) setTTSServiceAuth(req *http.Request) error {
+	if api.config.TTS.ServiceToken != "" {
+		req.Header.Set("X-TTS-Service-Token", api.config.TTS.ServiceToken)
+	}
+	if len(api.config.TTS.ServiceJWTPrivateKey) == 0 {
+		return nil
+	}
+
+	now := time.Now
+	if api.ttsNow != nil {
+		now = api.ttsNow
+	}
+	issuedAt := now().UTC()
+	ttl := api.config.TTS.ServiceJWTTTL
+	if ttl <= 0 || ttl > 5*time.Minute {
+		ttl = 5 * time.Minute
+	}
+	token := jwtgo.NewWithClaims(jwtgo.SigningMethodEdDSA, jwtgo.MapClaims{
+		"iss":   "linka-type-backend",
+		"aud":   []string{"tts-echo"},
+		"scope": []string{"synthesize"},
+		"iat":   issuedAt.Unix(),
+		"exp":   issuedAt.Add(ttl).Unix(),
+		"jti":   uuid.NewString(),
+	})
+	token.Header["kid"] = api.config.TTS.ServiceJWTKeyID
+	signed, err := token.SignedString(api.config.TTS.ServiceJWTPrivateKey)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("X-TTS-Service-JWT", signed)
+	return nil
 }
 
 func mustUser(w http.ResponseWriter, r *http.Request) auth.User {

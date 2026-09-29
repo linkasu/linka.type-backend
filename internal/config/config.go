@@ -1,6 +1,7 @@
 package config
 
 import (
+	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -57,11 +58,14 @@ type FeatureConfig struct {
 
 // TTSConfig controls the optional proxy.
 type TTSConfig struct {
-	ProxyEnabled  bool
-	BaseURL       string
-	ServiceToken  string
-	MaxAudioBytes int64
-	Timeout       time.Duration
+	ProxyEnabled         bool
+	BaseURL              string
+	ServiceToken         string
+	ServiceJWTPrivateKey ed25519.PrivateKey
+	ServiceJWTKeyID      string
+	ServiceJWTTTL        time.Duration
+	MaxAudioBytes        int64
+	Timeout              time.Duration
 }
 
 // TTSControlConfig controls the isolated TTS control-plane foundation.
@@ -156,12 +160,27 @@ func Load() (Config, error) {
 		CohortPercent: getenvInt("FEATURE_COHORT_PERCENT", 0),
 	}
 
+	ttsServiceJWTConfigured := os.Getenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64") != "" || os.Getenv("TTS_SERVICE_JWT_KEY_ID") != ""
+	ttsServiceJWTPrivateKey, err := ttsServiceJWTPrivateKey()
+	if err != nil {
+		return cfg, err
+	}
+	ttsServiceJWTTTL, err := ttsServiceJWTTTL(ttsServiceJWTConfigured)
+	if err != nil {
+		return cfg, err
+	}
 	cfg.TTS = TTSConfig{
-		ProxyEnabled:  getenvBool("TTS_PROXY_ENABLED", false),
-		BaseURL:       getenv("TTS_BASE_URL", "https://tts.linka.su"),
-		ServiceToken:  getenv("TTS_SERVICE_TOKEN", ""),
-		MaxAudioBytes: int64(getenvInt("TTS_MAX_AUDIO_BYTES", 50*1024*1024)),
-		Timeout:       getenvDuration("TTS_TIMEOUT", 120*time.Second),
+		ProxyEnabled:         getenvBool("TTS_PROXY_ENABLED", false),
+		BaseURL:              getenv("TTS_BASE_URL", "https://tts.linka.su"),
+		ServiceToken:         getenv("TTS_SERVICE_TOKEN", ""),
+		ServiceJWTPrivateKey: ttsServiceJWTPrivateKey,
+		ServiceJWTKeyID:      getenv("TTS_SERVICE_JWT_KEY_ID", ""),
+		ServiceJWTTTL:        ttsServiceJWTTTL,
+		MaxAudioBytes:        int64(getenvInt("TTS_MAX_AUDIO_BYTES", 50*1024*1024)),
+		Timeout:              getenvDuration("TTS_TIMEOUT", 120*time.Second),
+	}
+	if err := validateTTSServiceJWT(cfg.TTS); err != nil {
+		return cfg, err
 	}
 	ttsControlEnabled := getenvBool("TTS_CONTROL_PLANE_ENABLED", false)
 	ttsRedisDB, err := getenvTTSControlInt(ttsControlEnabled, "TTS_CONTROL_REDIS_DB", 0)
@@ -271,6 +290,44 @@ func validateTTSControl(cfg TTSControlConfig) error {
 	}
 	if cfg.AnonymousGlobalDailyBudget < 0 || cfg.AnonymousGlobalMonthlyBudget < 0 {
 		return fmt.Errorf("TTS control anonymous global budgets must not be negative")
+	}
+	return nil
+}
+
+func ttsServiceJWTPrivateKey() (ed25519.PrivateKey, error) {
+	encoded := os.Getenv("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64")
+	if encoded == "" {
+		return nil, nil
+	}
+	key, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, fmt.Errorf("decode TTS_SERVICE_JWT_PRIVATE_KEY_BASE64: %w", err)
+	}
+	if len(key) != ed25519.PrivateKeySize {
+		return nil, fmt.Errorf("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64 must decode to %d bytes", ed25519.PrivateKeySize)
+	}
+	return ed25519.PrivateKey(key), nil
+}
+
+func ttsServiceJWTTTL(configured bool) (time.Duration, error) {
+	const maxTTL = 5 * time.Minute
+	if !configured {
+		return maxTTL, nil
+	}
+	value := os.Getenv("TTS_SERVICE_JWT_TTL")
+	if value == "" {
+		return maxTTL, nil
+	}
+	ttl, err := time.ParseDuration(value)
+	if err != nil || ttl <= 0 || ttl > maxTTL {
+		return 0, fmt.Errorf("TTS_SERVICE_JWT_TTL must be positive and no more than %s", maxTTL)
+	}
+	return ttl, nil
+}
+
+func validateTTSServiceJWT(cfg TTSConfig) error {
+	if (len(cfg.ServiceJWTPrivateKey) == 0) != (cfg.ServiceJWTKeyID == "") {
+		return fmt.Errorf("TTS_SERVICE_JWT_PRIVATE_KEY_BASE64 and TTS_SERVICE_JWT_KEY_ID must be configured together")
 	}
 	return nil
 }
