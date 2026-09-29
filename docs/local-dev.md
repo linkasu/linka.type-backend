@@ -22,6 +22,8 @@
 - `TTS_PROXY_ENABLED` - enable `/v1/tts` and `/v1/voices`
 - `TTS_BASE_URL` - defaults to `https://tts.linka.su`
 - `TTS_SERVICE_TOKEN` - optional token sent upstream as `X-TTS-Service-Token`
+- `TTS_SERVICE_JWT_PRIVATE_KEY_BASE64` and `TTS_SERVICE_JWT_KEY_ID` - optional Ed25519 service JWT signing pair; both must be set. The private key is the base64-encoded raw 64-byte key and is sent upstream only as a signature.
+- `TTS_SERVICE_JWT_TTL` - optional JWT lifetime, defaults to and cannot exceed `5m`.
 - `TTS_MAX_AUDIO_BYTES` - max proxied TTS response size (default `50MiB`)
 - `TTS_TIMEOUT` - TTS upstream request timeout (default `120s`)
 - `TTS_CONTROL_PLANE_ENABLED` - enables the isolated TTS control-plane runtime (default `false`); it does not expose routes.
